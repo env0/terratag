@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"github.com/bmatcuk/doublestar"
 	"github.com/hashicorp/hcl/v2"
 	"github.com/hashicorp/hcl/v2/hclwrite"
 	"github.com/mitchellh/mapstructure"
@@ -24,13 +25,12 @@ func main() {
 	tagDirectoryResources(dir, tags)
 }
 
-func tagDirectoryResources(dir string, tags string) error {
-	return filepath.Walk(dir, func(path string, info os.FileInfo, err error) error {
-		if !info.IsDir() && strings.HasSuffix(info.Name(), ".tf") {
-			tagFileResources(path, dir, tags)
-		}
-		return nil
-	})
+func tagDirectoryResources(dir string, tags string) {
+	matches, err := doublestar.Glob(dir + "/**/*.tf")
+	panicOnError(err, nil)
+	for _, path := range matches {
+		tagFileResources(path, dir, tags)
+	}
 }
 
 func initArgs() (string, string, bool) {
@@ -38,10 +38,8 @@ func initArgs() (string, string, bool) {
 	var dir string
 	isMissingArg := false
 
-	for _, arg := range os.Args {
-		tags = setFlag("tags", arg, "")
-		dir = setFlag("dir", arg, ".")
-	}
+	tags = setFlag("tags", "")
+	dir = setFlag("dir", ".")
 
 	if tags == "" {
 		log.Println("Usage: terratag -tags='{ some_tag = \"value\" }' [-dir=\".\"]")
@@ -51,18 +49,21 @@ func initArgs() (string, string, bool) {
 	return tags, dir, isMissingArg
 }
 
-func setFlag(flag string, arg string, defaultValue string) string {
+func setFlag(flag string, defaultValue string) string {
 	result := defaultValue
-	prefix := "-" + flag
-	if strings.HasPrefix(arg, prefix) {
-		result = strings.TrimPrefix(arg, prefix)
+	prefix := "-" + flag + "="
+	for _, arg := range os.Args {
+		if strings.HasPrefix(arg, prefix) {
+			result = strings.TrimPrefix(arg, prefix)
+		}
 	}
+
 	return result
 }
 
 func tagFileResources(path string, dir string, tags string) {
 	src, err := ioutil.ReadFile(path)
-	panicOnError(err)
+	panicOnError(err, nil)
 
 	file, diagnostics := hclwrite.ParseConfig(src, path, hcl.InitialPos)
 	if diagnostics.HasErrors() {
@@ -97,8 +98,11 @@ func tagFileResources(path string, dir string, tags string) {
 	}
 }
 
-func panicOnError(err error) {
+func panicOnError(err error, moreInfo *string) {
 	if err != nil {
+		if moreInfo != nil {
+			log.Println(*moreInfo)
+		}
 		log.Fatalln(err)
 	}
 }
@@ -109,11 +113,11 @@ func replaceWithTerratagFile(path string, textContent string) {
 
 	log.Print("Creating file ", taggedFilename)
 	taggedFileError := ioutil.WriteFile(taggedFilename, []byte(textContent), 0644)
-	panicOnError(taggedFileError)
+	panicOnError(taggedFileError, nil)
 
 	log.Print("Renaming original file from ", path, " to ", backupFilename)
 	backupFileError := os.Rename(path, backupFilename)
-	panicOnError(backupFileError)
+	panicOnError(backupFileError, nil)
 }
 
 func unqouteTagsAttribute(swappedTagsStrings []string, text string) string {
@@ -145,19 +149,20 @@ func isTaggable(dir string, resourceType string) bool {
 	command := exec.Command("tfschema", "resource", "show", "-format=json", resourceType)
 	command.Dir = dir
 	output, err := command.Output()
-	panicOnError(err)
+	outputAsString := string(output)
+	panicOnError(err, &outputAsString)
 
 	var schema map[string]interface{}
 
 	err = json.Unmarshal(output, &schema)
-	panicOnError(err)
+	panicOnError(err, nil)
 
 	isTaggable := false
 	attributes := schema["attributes"].([]interface{})
 	for _, attributeMap := range attributes {
 		var attribute TfSchemaAttribute
 		err := mapstructure.Decode(attributeMap, &attribute)
-		panicOnError(err)
+		panicOnError(err, nil)
 
 		if attribute.Name == "tags" {
 			isTaggable = true
