@@ -1,9 +1,10 @@
+
 # Terratag
-Add tags to your AWS resources in HCL 2 (Terraform 12)
+Add tags to your AWS resources in both Terraform 0.11 and 0.12!
 
 ## Prerequisites
 - [tfschema](https://github.com/minamijoyo/tfschema) to assert which resources support `tags` in AWS Provider
-- Terraform > 12
+- Terraform 0.11 or 0.12
 - Go > 1.13.5
 
 ## Build
@@ -27,7 +28,8 @@ terratag -dir=foo/bar -tags='{ hello = "world" }'  # (or go main.go -dir=... -ta
 - Resources already having the exact same tag as the one being appeneded will be overridden
 
 ## How's it different from [env0/terratag.js](https://github.com/env0/terratag.js)?
-`terratag.js` relies on HCL to JSON translation to traverse and manipulate the HCL.    
+- Multi version support! Terratag works on Terraform 0.11 as well as 0.12
+- `terratag.js` relies on HCL to JSON translation to traverse and manipulate the HCL.    
 Such conversion is [unsafe](https://github.com/hashicorp/terraform/issues/9354#issuecomment-512624185), and becomes even more fragile and difficult in HCL2 (introduced in Terraform 12).  
 Instead, `terratag` uses HashiCorps' [`hclwrite`](https://godoc.org/github.com/hashicorp/terraform/vendor/github.com/hashicorp/hcl/v2/hclwrite) to surgically manipulate the tags attribute directrly in HCL 2.   
 
