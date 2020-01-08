@@ -18,18 +18,35 @@ import (
 func main() {
 	tags, dir, isMissingArg := initArgs()
 
+	tfVersion := getTeraformVersion()
+
 	if isMissingArg {
 		return
 	}
 
-	tagDirectoryResources(dir, tags)
+	tagDirectoryResources(dir, tags, tfVersion)
 }
 
-func tagDirectoryResources(dir string, tags string) {
+func getTeraformVersion() int {
+	output, err := exec.Command("terraform", "version").Output()
+	outputAsString := strings.TrimSpace(string(output))
+	panicOnError(err, &outputAsString)
+
+	if strings.HasPrefix(outputAsString, "Terraform v0.11") {
+		return 11
+	} else if strings.HasPrefix(outputAsString, "Terraform v0.12") {
+		return 12
+	}
+
+	log.Fatalln("Terratag only supports Terraform 0.11.x and 0.12.x - your version says ", outputAsString)
+	return -1
+}
+
+func tagDirectoryResources(dir string, tags string, tfVersion int) {
 	matches, err := doublestar.Glob(dir + "/**/*.tf")
 	panicOnError(err, nil)
 	for _, path := range matches {
-		tagFileResources(path, dir, tags)
+		tagFileResources(path, dir, tags, tfVersion)
 	}
 }
 
@@ -61,7 +78,7 @@ func setFlag(flag string, defaultValue string) string {
 	return result
 }
 
-func tagFileResources(path string, dir string, tags string) {
+func tagFileResources(path string, dir string, tags string, tfVersion int) {
 	src, err := ioutil.ReadFile(path)
 	panicOnError(err, nil)
 
@@ -80,7 +97,7 @@ func tagFileResources(path string, dir string, tags string) {
 			isTaggable := isTaggable(dir, resourceType)
 
 			if isTaggable {
-				swappedTagsStrings = tagResource(block, tags, swappedTagsStrings)
+				swappedTagsStrings = tagResource(block, tags, swappedTagsStrings, tfVersion)
 			} else {
 				log.Print("Resource not taggable, skipping. ")
 			}
@@ -90,7 +107,7 @@ func tagFileResources(path string, dir string, tags string) {
 	if swappedTagsStrings != nil {
 		text := string(file.Bytes())
 
-		text = unqouteTagsAttribute(swappedTagsStrings, text)
+		text = unquoteTagsAttribute(swappedTagsStrings, text)
 
 		replaceWithTerratagFile(path, text)
 	} else {
@@ -120,29 +137,108 @@ func replaceWithTerratagFile(path string, textContent string) {
 	panicOnError(backupFileError, nil)
 }
 
-func unqouteTagsAttribute(swappedTagsStrings []string, text string) string {
+func unquoteTagsAttribute(swappedTagsStrings []string, text string) string {
 	for _, swappedTagString := range swappedTagsStrings {
-		escapedTagsString := "\"" + strings.ReplaceAll(swappedTagString, "\"", "\\\"") + "\""
-		text = strings.ReplaceAll(text, escapedTagsString, swappedTagString)
+		escapedByWriter := strings.ReplaceAll(swappedTagString, "\"", "\\\"")
+
+		if strings.HasPrefix(swappedTagString, "${") && strings.HasSuffix(swappedTagString, "}") {
+			escapedByWriter = strings.ReplaceAll(escapedByWriter, "${", "$${")
+		} else {
+			escapedByWriter = "\"" + escapedByWriter + "\""
+		}
+
+		text = strings.ReplaceAll(text, escapedByWriter, swappedTagString)
 	}
 	return text
 }
 
-func tagResource(block *hclwrite.Block, tags string, swappedTagsStrings []string) []string {
+func tagResource(block *hclwrite.Block, tags string, swappedTagsStrings []string, tfVersion int) []string {
 	log.Print("Resource taggable, processing...")
-	existingTags := "{}"
+
 	tagsAttribute := block.Body().GetAttribute("tags")
+
+	mergedTags := mergeTags(tagsAttribute, tags, tfVersion)
+
+	block.Body().SetAttributeValue("tags", cty.StringVal(mergedTags))
+
+	swappedTagsStrings = append(swappedTagsStrings, mergedTags)
+	return swappedTagsStrings
+}
+
+func mergeTags(tagsAttribute *hclwrite.Attribute, tags string, tfVersion int) string {
+	existingTags := ""
+	mergedTags := ""
 
 	if tagsAttribute != nil {
 		log.Print("Preexisting tags found on resource. Merging.")
 		existingTags = string(tagsAttribute.Expr().BuildTokens(hclwrite.Tokens{}).Bytes())
 	}
 
-	mergedTags := "merge(" + existingTags + ", " + tags + ")"
-	block.Body().SetAttributeValue("tags", cty.StringVal(mergedTags))
+	switch tfVersion {
+	case 11:
+		if existingTags == "" {
+			existingTags = "map()"
+		}
+		existingTags = convertExistingTagsToFunctionParameter(existingTags)
 
-	swappedTagsStrings = append(swappedTagsStrings, mergedTags)
-	return swappedTagsStrings
+		mergedTags = "${ merge(" + existingTags + ", " + convertHclMapToHclMapFunction(tags) + " ) }"
+		break
+	case 12:
+		if existingTags == "" {
+			existingTags = "{}"
+		}
+
+		mergedTags = "merge(" + existingTags + ", " + tags + ")"
+		break
+	}
+
+	return mergedTags
+}
+
+func convertExistingTagsToFunctionParameter(existingTags string) string {
+	existingTags = strings.TrimSpace(existingTags)
+	if isHcl1Placeholder(existingTags) {
+		existingTags = strings.TrimSuffix(strings.TrimPrefix(existingTags, "\"${"), "}\"")
+	} else if isHclMap(existingTags) {
+		existingTags = convertHclMapToHclMapFunction(existingTags)
+	}
+	return existingTags
+}
+
+func convertHclMapToHclMapFunction(hclMap string) string {
+	hclMapFunction := "map("
+
+	hclMap = strings.TrimPrefix(hclMap, "{")
+	hclMap = strings.TrimSuffix(hclMap, "}")
+
+	keyValues := strings.Split(hclMap, ",")
+
+	var functionVariables []string
+
+	for _, keyValue := range keyValues {
+		pair := strings.Split(keyValue, "=")
+		key := strings.TrimSpace(pair[0])
+		value := strings.TrimSpace(pair[1])
+
+		if !(strings.HasPrefix(key, "\"") && strings.HasSuffix(key, "\"")) {
+			key = "\"" + key + "\""
+		}
+
+		functionVariables = append(functionVariables, key)
+		functionVariables = append(functionVariables, value)
+	}
+
+	hclMapFunction = hclMapFunction + strings.Join(functionVariables, ", ") + ")"
+
+	return hclMapFunction
+}
+
+func isHclMap(existingTags string) bool {
+	return strings.HasPrefix(existingTags, "{") && strings.HasSuffix(existingTags, "}")
+}
+
+func isHcl1Placeholder(existingTags string) bool {
+	return strings.HasPrefix(existingTags, "\"${") && strings.HasSuffix(existingTags, "}\"")
 }
 
 func isTaggable(dir string, resourceType string) bool {
