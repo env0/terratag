@@ -29,7 +29,7 @@ func main() {
 
 func getTeraformVersion() int {
 	output, err := exec.Command("terraform", "version").Output()
-	outputAsString := string(output)
+	outputAsString := strings.TrimSpace(string(output))
 	panicOnError(err, &outputAsString)
 
 	if strings.HasPrefix(outputAsString, "Terraform v0.11") {
