@@ -88,6 +88,7 @@ func setFlag(flag string, defaultValue string) string {
 }
 
 func tagFileResources(path string, dir string, tags string, tfVersion int) {
+	log.Print("Processing file ", path)
 	src, err := ioutil.ReadFile(path)
 	panicOnError(err, nil)
 
@@ -164,9 +165,7 @@ func unquoteTagsAttribute(swappedTagsStrings []string, text string) string {
 func tagResource(block *hclwrite.Block, tags string, swappedTagsStrings []string, tfVersion int) []string {
 	log.Print("Resource taggable, processing...")
 
-	tagsAttribute := block.Body().GetAttribute("tags")
-
-	mergedTags := mergeTags(tagsAttribute, tags, tfVersion)
+	mergedTags := mergeTags(block, tags, tfVersion)
 
 	block.Body().SetAttributeValue("tags", cty.StringVal(mergedTags))
 
@@ -174,13 +173,28 @@ func tagResource(block *hclwrite.Block, tags string, swappedTagsStrings []string
 	return swappedTagsStrings
 }
 
-func mergeTags(tagsAttribute *hclwrite.Attribute, tags string, tfVersion int) string {
+func mergeTags(block *hclwrite.Block, tags string, tfVersion int) string {
 	existingTags := ""
 	mergedTags := ""
 
+	// First we try to find tags as attribute
+	tagsAttribute := block.Body().GetAttribute("tags")
+
 	if tagsAttribute != nil {
-		log.Print("Preexisting tags found on resource. Merging.")
+		// If attribute found, get its value
+		log.Print("Preexisting tags ATTRIBUTE found on resource. Merging.")
 		existingTags = string(tagsAttribute.Expr().BuildTokens(hclwrite.Tokens{}).Bytes())
+	} else {
+		// Otherwise, we try to get tags as block
+		tagsBlock := block.Body().FirstMatchingBlock("tags", nil)
+		if tagsBlock != nil {
+			existingTags = getExistingTagsFromBlock(tagsBlock, existingTags)
+			// If we did get tags from block, we will now remove that block, as we're going to add a merged tags ATTRIBUTE
+			removeBlockResult := block.Body().RemoveBlock(tagsBlock)
+			if removeBlockResult == false {
+				log.Fatal("Failed to remove found tags block!")
+			}
+		}
 	}
 
 	switch tfVersion {
@@ -202,6 +216,20 @@ func mergeTags(tagsAttribute *hclwrite.Attribute, tags string, tfVersion int) st
 	}
 
 	return mergedTags
+}
+
+func getExistingTagsFromBlock(tagsBlock *hclwrite.Block, existingTags string) string {
+	var mapAttributes []string
+	for key, attribute := range tagsBlock.Body().Attributes() {
+		value := string(attribute.Expr().BuildTokens(hclwrite.Tokens{}).Bytes())
+		mapAttributes = append(mapAttributes, key+"="+value)
+	}
+
+	if mapAttributes != nil {
+		log.Print("Preexisting tags BLOCK found on resource. Merging.")
+		existingTags = "{" + strings.Join(mapAttributes, ",") + "}"
+	}
+	return existingTags
 }
 
 func convertExistingTagsToFunctionParameter(existingTags string) string {
