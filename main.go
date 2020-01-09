@@ -218,7 +218,7 @@ func moveExistingTags(filename string, terratag TerratagLocal, resource *hclwrit
 		// Otherwise, we try to get tags as block
 		tagsBlock := resource.Body().FirstMatchingBlock("tags", nil)
 		if tagsBlock != nil {
-			//existingTags = getExistingTagsFromBlock(tagsBlock, existingTags)
+			existingTags = funk.Tail(tagsBlock.BuildTokens(hclwrite.Tokens{})).(hclwrite.Tokens)
 			// If we did get tags from block, we will now remove that block, as we're going to add a merged tags ATTRIBUTE
 			removeBlockResult := resource.Body().RemoveBlock(tagsBlock)
 			if removeBlockResult == false {
@@ -242,20 +242,6 @@ func getResourceExistingTagsKey(filename string, resource *hclwrite.Block) strin
 	delimiter := "__"
 	return "terratag_found_" + filename + delimiter + strings.Join(resource.Labels(), delimiter)
 }
-
-//func getExistingTagsFromBlock(tagsBlock *hclwrite.Block, existingTags string) string {
-//	var mapAttributes []string
-//	for key, attribute := range tagsBlock.Body().Attributes() {
-//		value := string(attribute.Expr().BuildTokens(hclwrite.Tokens{}).Bytes())
-//		mapAttributes = append(mapAttributes, key+"="+value)
-//	}
-//
-//	if mapAttributes != nil {
-//		log.Print("Preexisting tags BLOCK found on resource. Merging.")
-//		existingTags = "{" + strings.Join(mapAttributes, ",") + "}"
-//	}
-//	return existingTags
-//}
 
 func isTaggable(dir string, resourceType string) bool {
 	command := exec.Command("tfschema", "resource", "show", "-format=json", resourceType)
