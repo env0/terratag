@@ -103,7 +103,7 @@ func tagFileResources(path string, dir string, tags string, tfVersion int) {
 		Added: tags,
 	}
 
-	var swappedTagsStrings []string
+	anyTagged := false
 	for _, block := range file.Body().Blocks() {
 		if block.Type() == "resource" {
 			resourceType := block.Labels()[0]
@@ -112,15 +112,15 @@ func tagFileResources(path string, dir string, tags string, tfVersion int) {
 			isTaggable := isTaggable(dir, resourceType)
 
 			if isTaggable {
-				swappedTagsStrings = tagResource(terratag, block, tags, swappedTagsStrings, tfVersion)
+				tagResource(terratag, block, tags, tfVersion)
+				anyTagged = true
 			} else {
 				log.Print("Resource not taggable, skipping. ")
 			}
 		}
 	}
 
-	if swappedTagsStrings != nil {
-
+	if anyTagged {
 		locals := file.Body().AppendNewBlock("locals", nil)
 
 		ctyFound := map[string]cty.Value{}
@@ -144,6 +144,11 @@ func tagFileResources(path string, dir string, tags string, tfVersion int) {
 
 		text := string(file.Bytes())
 
+		var swappedTagsStrings []string
+		swappedTagsStrings = append(swappedTagsStrings, terratag.Added)
+		for _, found := range terratag.Found {
+			swappedTagsStrings = append(swappedTagsStrings, found)
+		}
 		text = unquoteTagsAttribute(swappedTagsStrings, text)
 
 		replaceWithTerratagFile(path, text)
@@ -189,7 +194,7 @@ func unquoteTagsAttribute(swappedTagsStrings []string, text string) string {
 	return text
 }
 
-func tagResource(terratag TerratagLocal, resource *hclwrite.Block, tags string, swappedTagsStrings []string, tfVersion int) []string {
+func tagResource(terratag TerratagLocal, resource *hclwrite.Block, tags string, tfVersion int) {
 	log.Print("Resource taggable, processing...")
 
 	hasExistingTags := moveExistingTags(terratag, resource)
@@ -206,9 +211,6 @@ func tagResource(terratag TerratagLocal, resource *hclwrite.Block, tags string, 
 	}
 
 	resource.Body().SetAttributeValue("tags", cty.StringVal(tagsValue))
-
-	swappedTagsStrings = append(swappedTagsStrings, tagsValue)
-	return swappedTagsStrings
 }
 
 func moveExistingTags(terratag TerratagLocal, resource *hclwrite.Block) bool {
