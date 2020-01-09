@@ -98,6 +98,11 @@ func tagFileResources(path string, dir string, tags string, tfVersion int) {
 		log.Fatalln(hclErrors)
 	}
 
+	terratag := TerratagLocal{
+		Found: map[string]string{},
+		Added: tags,
+	}
+
 	var swappedTagsStrings []string
 	for _, block := range file.Body().Blocks() {
 		if block.Type() == "resource" {
@@ -107,7 +112,7 @@ func tagFileResources(path string, dir string, tags string, tfVersion int) {
 			isTaggable := isTaggable(dir, resourceType)
 
 			if isTaggable {
-				swappedTagsStrings = tagResource(block, tags, swappedTagsStrings, tfVersion)
+				swappedTagsStrings = tagResource(terratag, block, tags, swappedTagsStrings, tfVersion)
 			} else {
 				log.Print("Resource not taggable, skipping. ")
 			}
@@ -115,6 +120,28 @@ func tagFileResources(path string, dir string, tags string, tfVersion int) {
 	}
 
 	if swappedTagsStrings != nil {
+
+		locals := file.Body().AppendNewBlock("locals", nil)
+
+		ctyFound := map[string]cty.Value{}
+		for key, value := range terratag.Found {
+			ctyFound[key] = cty.StringVal(value)
+		}
+
+		var ctyFoundMap cty.Value
+		if len(ctyFound) != 0 {
+			ctyFoundMap = cty.MapVal(ctyFound)
+		} else {
+			ctyFoundMap = cty.MapValEmpty(cty.String)
+		}
+
+		ctyTerratag := cty.ObjectVal(map[string]cty.Value{
+			"added": cty.StringVal(terratag.Added),
+			"found": ctyFoundMap,
+		})
+
+		locals.Body().SetAttributeValue("terratag", ctyTerratag)
+
 		text := string(file.Bytes())
 
 		text = unquoteTagsAttribute(swappedTagsStrings, text)
@@ -130,7 +157,7 @@ func panicOnError(err error, moreInfo *string) {
 		if moreInfo != nil {
 			log.Println(*moreInfo)
 		}
-		log.Fatalln(err)
+		panic(err)
 	}
 }
 
@@ -162,23 +189,33 @@ func unquoteTagsAttribute(swappedTagsStrings []string, text string) string {
 	return text
 }
 
-func tagResource(block *hclwrite.Block, tags string, swappedTagsStrings []string, tfVersion int) []string {
+func tagResource(terratag TerratagLocal, resource *hclwrite.Block, tags string, swappedTagsStrings []string, tfVersion int) []string {
 	log.Print("Resource taggable, processing...")
 
-	mergedTags := mergeTags(block, tags, tfVersion)
+	hasExistingTags := moveExistingTags(terratag, resource)
 
-	block.Body().SetAttributeValue("tags", cty.StringVal(mergedTags))
+	tagsValue := ""
+	if hasExistingTags {
+		tagsValue = "merge(local.terratag.found." + getResourceExistingTagsKey(resource) + ", local.terratag.added)"
+	} else {
+		tagsValue = "local.terratag.added"
+	}
 
-	swappedTagsStrings = append(swappedTagsStrings, mergedTags)
+	if tfVersion == 11 {
+		tagsValue = "${" + tagsValue + "}"
+	}
+
+	resource.Body().SetAttributeValue("tags", cty.StringVal(tagsValue))
+
+	swappedTagsStrings = append(swappedTagsStrings, tagsValue)
 	return swappedTagsStrings
 }
 
-func mergeTags(block *hclwrite.Block, tags string, tfVersion int) string {
+func moveExistingTags(terratag TerratagLocal, resource *hclwrite.Block) bool {
 	existingTags := ""
-	mergedTags := ""
 
 	// First we try to find tags as attribute
-	tagsAttribute := block.Body().GetAttribute("tags")
+	tagsAttribute := resource.Body().GetAttribute("tags")
 
 	if tagsAttribute != nil {
 		// If attribute found, get its value
@@ -186,36 +223,26 @@ func mergeTags(block *hclwrite.Block, tags string, tfVersion int) string {
 		existingTags = string(tagsAttribute.Expr().BuildTokens(hclwrite.Tokens{}).Bytes())
 	} else {
 		// Otherwise, we try to get tags as block
-		tagsBlock := block.Body().FirstMatchingBlock("tags", nil)
+		tagsBlock := resource.Body().FirstMatchingBlock("tags", nil)
 		if tagsBlock != nil {
 			existingTags = getExistingTagsFromBlock(tagsBlock, existingTags)
 			// If we did get tags from block, we will now remove that block, as we're going to add a merged tags ATTRIBUTE
-			removeBlockResult := block.Body().RemoveBlock(tagsBlock)
+			removeBlockResult := resource.Body().RemoveBlock(tagsBlock)
 			if removeBlockResult == false {
 				log.Fatal("Failed to remove found tags block!")
 			}
 		}
 	}
 
-	switch tfVersion {
-	case 11:
-		if existingTags == "" {
-			existingTags = "map()"
-		}
-		existingTags = convertExistingTagsToFunctionParameter(existingTags)
-
-		mergedTags = "${ merge(" + existingTags + ", " + convertHclMapToHclMapFunction(tags) + " ) }"
-		break
-	case 12:
-		if existingTags == "" {
-			existingTags = "{}"
-		}
-
-		mergedTags = "merge(" + existingTags + ", " + tags + ")"
-		break
+	if existingTags != "" {
+		terratag.Found[getResourceExistingTagsKey(resource)] = existingTags
+		return true
 	}
+	return false
+}
 
-	return mergedTags
+func getResourceExistingTagsKey(resource *hclwrite.Block) string {
+	return strings.Join(resource.Labels(), "__")
 }
 
 func getExistingTagsFromBlock(tagsBlock *hclwrite.Block, existingTags string) string {
@@ -230,52 +257,6 @@ func getExistingTagsFromBlock(tagsBlock *hclwrite.Block, existingTags string) st
 		existingTags = "{" + strings.Join(mapAttributes, ",") + "}"
 	}
 	return existingTags
-}
-
-func convertExistingTagsToFunctionParameter(existingTags string) string {
-	existingTags = strings.TrimSpace(existingTags)
-	if isHcl1Placeholder(existingTags) {
-		existingTags = strings.TrimSuffix(strings.TrimPrefix(existingTags, "\"${"), "}\"")
-	} else if isHclMap(existingTags) {
-		existingTags = convertHclMapToHclMapFunction(existingTags)
-	}
-	return existingTags
-}
-
-func convertHclMapToHclMapFunction(hclMap string) string {
-	hclMapFunction := "map("
-
-	hclMap = strings.TrimPrefix(hclMap, "{")
-	hclMap = strings.TrimSuffix(hclMap, "}")
-
-	keyValues := strings.Split(hclMap, ",")
-
-	var functionVariables []string
-
-	for _, keyValue := range keyValues {
-		pair := strings.Split(keyValue, "=")
-		key := strings.TrimSpace(pair[0])
-		value := strings.TrimSpace(pair[1])
-
-		if !(strings.HasPrefix(key, "\"") && strings.HasSuffix(key, "\"")) {
-			key = "\"" + key + "\""
-		}
-
-		functionVariables = append(functionVariables, key)
-		functionVariables = append(functionVariables, value)
-	}
-
-	hclMapFunction = hclMapFunction + strings.Join(functionVariables, ", ") + ")"
-
-	return hclMapFunction
-}
-
-func isHclMap(existingTags string) bool {
-	return strings.HasPrefix(existingTags, "{") && strings.HasSuffix(existingTags, "}")
-}
-
-func isHcl1Placeholder(existingTags string) bool {
-	return strings.HasPrefix(existingTags, "\"${") && strings.HasSuffix(existingTags, "}\"")
 }
 
 func isTaggable(dir string, resourceType string) bool {
@@ -307,4 +288,9 @@ func isTaggable(dir string, resourceType string) bool {
 type TfSchemaAttribute struct {
 	Name string
 	Type string
+}
+
+type TerratagLocal struct {
+	Found map[string]string
+	Added string
 }
