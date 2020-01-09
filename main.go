@@ -6,6 +6,7 @@ import (
 	"github.com/hashicorp/hcl/v2"
 	"github.com/hashicorp/hcl/v2/hclwrite"
 	"github.com/mitchellh/mapstructure"
+	"github.com/thoas/go-funk"
 	"github.com/zclconf/go-cty/cty"
 	"io/ioutil"
 	"log"
@@ -45,6 +46,14 @@ func getTeraformVersion() int {
 func tagDirectoryResources(dir string, tags string, tfVersion int) {
 	matches, err := doublestar.Glob(dir + "/**/*.tf")
 	panicOnError(err, nil)
+
+	for i, match := range matches {
+		resolvedMatch, err := filepath.EvalSymlinks(match)
+		matches[i] = resolvedMatch
+		panicOnError(err, nil)
+	}
+	matches = funk.UniqString(matches)
+
 	for _, path := range matches {
 		tagFileResources(path, dir, tags, tfVersion)
 	}
