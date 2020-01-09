@@ -94,6 +94,7 @@ func tagFileResources(path string, dir string, tags string, tfVersion int) {
 
 	_, filename := filepath.Split(path)
 	filename = strings.TrimSuffix(filename, filepath.Ext(path))
+	filename = strings.ReplaceAll(filename, ".", "-")
 
 	file, diagnostics := hclwrite.ParseConfig(src, path, hcl.InitialPos)
 	if diagnostics.HasErrors() {
