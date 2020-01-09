@@ -123,7 +123,9 @@ func tagFileResources(path string, dir string, tags string, tfVersion int) {
 	}
 
 	if anyTagged {
+		file.Body().AppendNewline()
 		locals := file.Body().AppendNewBlock("locals", nil)
+		file.Body().AppendNewline()
 
 		for key, tokens := range terratag.Found {
 			locals.Body().SetAttributeRaw("terratag_found_"+key, tokens)
