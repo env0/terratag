@@ -99,11 +99,13 @@ func tagFileResources(path string, dir string, tags string, tfVersion int) {
 	}
 
 	terratag := TerratagLocal{
-		Found: map[string]string{},
+		Found: map[string]hclwrite.Tokens{},
 		Added: tags,
 	}
 
 	anyTagged := false
+	var swappedTagsStrings []string
+
 	for _, block := range file.Body().Blocks() {
 		if block.Type() == "resource" {
 			resourceType := block.Labels()[0]
@@ -112,7 +114,7 @@ func tagFileResources(path string, dir string, tags string, tfVersion int) {
 			isTaggable := isTaggable(dir, resourceType)
 
 			if isTaggable {
-				tagResource(terratag, block, tags, tfVersion)
+				swappedTagsStrings = append(swappedTagsStrings, tagResource(terratag, block, tfVersion))
 				anyTagged = true
 			} else {
 				log.Print("Resource not taggable, skipping. ")
@@ -123,32 +125,14 @@ func tagFileResources(path string, dir string, tags string, tfVersion int) {
 	if anyTagged {
 		locals := file.Body().AppendNewBlock("locals", nil)
 
-		ctyFound := map[string]cty.Value{}
-		for key, value := range terratag.Found {
-			ctyFound[key] = cty.StringVal(value)
+		for key, tokens := range terratag.Found {
+			locals.Body().SetAttributeRaw("terratag_found_"+key, tokens)
 		}
-
-		var ctyFoundMap cty.Value
-		if len(ctyFound) != 0 {
-			ctyFoundMap = cty.MapVal(ctyFound)
-		} else {
-			ctyFoundMap = cty.MapValEmpty(cty.String)
-		}
-
-		ctyTerratag := cty.ObjectVal(map[string]cty.Value{
-			"added": cty.StringVal(terratag.Added),
-			"found": ctyFoundMap,
-		})
-
-		locals.Body().SetAttributeValue("terratag", ctyTerratag)
+		locals.Body().SetAttributeValue("terratag_added", cty.StringVal(terratag.Added))
 
 		text := string(file.Bytes())
 
-		var swappedTagsStrings []string
 		swappedTagsStrings = append(swappedTagsStrings, terratag.Added)
-		for _, found := range terratag.Found {
-			swappedTagsStrings = append(swappedTagsStrings, found)
-		}
 		text = unquoteTagsAttribute(swappedTagsStrings, text)
 
 		replaceWithTerratagFile(path, text)
@@ -194,16 +178,16 @@ func unquoteTagsAttribute(swappedTagsStrings []string, text string) string {
 	return text
 }
 
-func tagResource(terratag TerratagLocal, resource *hclwrite.Block, tags string, tfVersion int) {
+func tagResource(terratag TerratagLocal, resource *hclwrite.Block, tfVersion int) string {
 	log.Print("Resource taggable, processing...")
 
 	hasExistingTags := moveExistingTags(terratag, resource)
 
 	tagsValue := ""
 	if hasExistingTags {
-		tagsValue = "merge(local.terratag.found." + getResourceExistingTagsKey(resource) + ", local.terratag.added)"
+		tagsValue = "merge(local.terratag_found_" + getResourceExistingTagsKey(resource) + ", local.terratag_added)"
 	} else {
-		tagsValue = "local.terratag.added"
+		tagsValue = "local.terratag_added"
 	}
 
 	if tfVersion == 11 {
@@ -211,10 +195,12 @@ func tagResource(terratag TerratagLocal, resource *hclwrite.Block, tags string, 
 	}
 
 	resource.Body().SetAttributeValue("tags", cty.StringVal(tagsValue))
+
+	return tagsValue
 }
 
 func moveExistingTags(terratag TerratagLocal, resource *hclwrite.Block) bool {
-	existingTags := ""
+	var existingTags hclwrite.Tokens
 
 	// First we try to find tags as attribute
 	tagsAttribute := resource.Body().GetAttribute("tags")
@@ -222,12 +208,12 @@ func moveExistingTags(terratag TerratagLocal, resource *hclwrite.Block) bool {
 	if tagsAttribute != nil {
 		// If attribute found, get its value
 		log.Print("Preexisting tags ATTRIBUTE found on resource. Merging.")
-		existingTags = string(tagsAttribute.Expr().BuildTokens(hclwrite.Tokens{}).Bytes())
+		existingTags = tagsAttribute.Expr().BuildTokens(hclwrite.Tokens{})
 	} else {
 		// Otherwise, we try to get tags as block
 		tagsBlock := resource.Body().FirstMatchingBlock("tags", nil)
 		if tagsBlock != nil {
-			existingTags = getExistingTagsFromBlock(tagsBlock, existingTags)
+			//existingTags = getExistingTagsFromBlock(tagsBlock, existingTags)
 			// If we did get tags from block, we will now remove that block, as we're going to add a merged tags ATTRIBUTE
 			removeBlockResult := resource.Body().RemoveBlock(tagsBlock)
 			if removeBlockResult == false {
@@ -236,7 +222,7 @@ func moveExistingTags(terratag TerratagLocal, resource *hclwrite.Block) bool {
 		}
 	}
 
-	if existingTags != "" {
+	if existingTags != nil {
 		terratag.Found[getResourceExistingTagsKey(resource)] = existingTags
 		return true
 	}
@@ -247,19 +233,19 @@ func getResourceExistingTagsKey(resource *hclwrite.Block) string {
 	return strings.Join(resource.Labels(), "__")
 }
 
-func getExistingTagsFromBlock(tagsBlock *hclwrite.Block, existingTags string) string {
-	var mapAttributes []string
-	for key, attribute := range tagsBlock.Body().Attributes() {
-		value := string(attribute.Expr().BuildTokens(hclwrite.Tokens{}).Bytes())
-		mapAttributes = append(mapAttributes, key+"="+value)
-	}
-
-	if mapAttributes != nil {
-		log.Print("Preexisting tags BLOCK found on resource. Merging.")
-		existingTags = "{" + strings.Join(mapAttributes, ",") + "}"
-	}
-	return existingTags
-}
+//func getExistingTagsFromBlock(tagsBlock *hclwrite.Block, existingTags string) string {
+//	var mapAttributes []string
+//	for key, attribute := range tagsBlock.Body().Attributes() {
+//		value := string(attribute.Expr().BuildTokens(hclwrite.Tokens{}).Bytes())
+//		mapAttributes = append(mapAttributes, key+"="+value)
+//	}
+//
+//	if mapAttributes != nil {
+//		log.Print("Preexisting tags BLOCK found on resource. Merging.")
+//		existingTags = "{" + strings.Join(mapAttributes, ",") + "}"
+//	}
+//	return existingTags
+//}
 
 func isTaggable(dir string, resourceType string) bool {
 	command := exec.Command("tfschema", "resource", "show", "-format=json", resourceType)
@@ -293,6 +279,6 @@ type TfSchemaAttribute struct {
 }
 
 type TerratagLocal struct {
-	Found map[string]string
+	Found map[string]hclwrite.Tokens
 	Added string
 }
