@@ -92,6 +92,9 @@ func tagFileResources(path string, dir string, tags string, tfVersion int) {
 	src, err := ioutil.ReadFile(path)
 	panicOnError(err, nil)
 
+	_, filename := filepath.Split(path)
+	filename = strings.TrimSuffix(filename, filepath.Ext(path))
+
 	file, diagnostics := hclwrite.ParseConfig(src, path, hcl.InitialPos)
 	if diagnostics.HasErrors() {
 		hclErrors := diagnostics.Errs()
@@ -114,7 +117,7 @@ func tagFileResources(path string, dir string, tags string, tfVersion int) {
 			isTaggable := isTaggable(dir, resourceType)
 
 			if isTaggable {
-				swappedTagsStrings = append(swappedTagsStrings, tagResource(terratag, block, tfVersion))
+				swappedTagsStrings = append(swappedTagsStrings, tagResource(filename, terratag, block, tfVersion))
 				anyTagged = true
 			} else {
 				log.Print("Resource not taggable, skipping. ")
@@ -128,9 +131,9 @@ func tagFileResources(path string, dir string, tags string, tfVersion int) {
 		file.Body().AppendNewline()
 
 		for key, tokens := range terratag.Found {
-			locals.Body().SetAttributeRaw("terratag_found_"+key, tokens)
+			locals.Body().SetAttributeRaw(key, tokens)
 		}
-		locals.Body().SetAttributeValue("terratag_added", cty.StringVal(terratag.Added))
+		locals.Body().SetAttributeValue(getTerratagAddedKey(filename), cty.StringVal(terratag.Added))
 
 		text := string(file.Bytes())
 
@@ -180,16 +183,16 @@ func unquoteTagsAttribute(swappedTagsStrings []string, text string) string {
 	return text
 }
 
-func tagResource(terratag TerratagLocal, resource *hclwrite.Block, tfVersion int) string {
+func tagResource(filename string, terratag TerratagLocal, resource *hclwrite.Block, tfVersion int) string {
 	log.Print("Resource taggable, processing...")
 
-	hasExistingTags := moveExistingTags(terratag, resource)
+	hasExistingTags := moveExistingTags(filename, terratag, resource)
 
 	tagsValue := ""
 	if hasExistingTags {
-		tagsValue = "merge(local.terratag_found_" + getResourceExistingTagsKey(resource) + ", local.terratag_added)"
+		tagsValue = "merge(local." + getResourceExistingTagsKey(filename, resource) + ", local." + getTerratagAddedKey(filename) + ")"
 	} else {
-		tagsValue = "local.terratag_added"
+		tagsValue = "local." + getTerratagAddedKey(filename)
 	}
 
 	if tfVersion == 11 {
@@ -201,7 +204,7 @@ func tagResource(terratag TerratagLocal, resource *hclwrite.Block, tfVersion int
 	return tagsValue
 }
 
-func moveExistingTags(terratag TerratagLocal, resource *hclwrite.Block) bool {
+func moveExistingTags(filename string, terratag TerratagLocal, resource *hclwrite.Block) bool {
 	var existingTags hclwrite.Tokens
 
 	// First we try to find tags as attribute
@@ -225,14 +228,19 @@ func moveExistingTags(terratag TerratagLocal, resource *hclwrite.Block) bool {
 	}
 
 	if existingTags != nil {
-		terratag.Found[getResourceExistingTagsKey(resource)] = existingTags
+		terratag.Found[getResourceExistingTagsKey(filename, resource)] = existingTags
 		return true
 	}
 	return false
 }
 
-func getResourceExistingTagsKey(resource *hclwrite.Block) string {
-	return strings.Join(resource.Labels(), "__")
+func getTerratagAddedKey(filname string) string {
+	return "terratag_added_" + filname
+}
+
+func getResourceExistingTagsKey(filename string, resource *hclwrite.Block) string {
+	delimiter := "__"
+	return "terratag_found_" + filename + delimiter + strings.Join(resource.Labels(), delimiter)
 }
 
 //func getExistingTagsFromBlock(tagsBlock *hclwrite.Block, existingTags string) string {
