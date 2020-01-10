@@ -16,11 +16,11 @@ go build
 ## Usage
 Terratag recives two commaind line arguments:  
 - `-dir` - optional, the directory to recursively search for any `.tf` file and try to terratag it.  
-- `-tags` - tags, in valid **HCL map syntax** (not JSON!)
+- `-tags` - tags, as valid JSON (NOT HCL)
 
 ```bash
 terraform init # needed to initialize provider schema and pull child terraform modules
-terratag -dir=foo/bar -tags='{ hello = "world" }'  # (or go main.go -dir=... -tags=...)
+terratag -dir=foo/bar -tags=\"hello\": \"world\"} # (or go run . -dir=... -tags=...)
 ```
 
 ## Notes
