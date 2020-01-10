@@ -219,9 +219,9 @@ func isHclMap(tokens hclwrite.Tokens) bool {
 func buildMapExpression(tokens hclwrite.Tokens) string {
 	// Need to convert to inline map expression
 
-	// First, we remove the first and last tokens - the openning and closing curly brackets of the map { }
+	// First, we remove the first and last two tokens - get rid of the openning { closing } and newline
 	tokens = tokens[1:]
-	tokens = tokens[:len(tokens)-1]
+	tokens = tokens[:len(tokens)-2]
 
 	// Then, we normalize the key-value paris so that they would be seperated by comma
 	// That's cause HCL supports both newline, comma or a combination of the two in seperating values
@@ -229,7 +229,7 @@ func buildMapExpression(tokens hclwrite.Tokens) string {
 	var tokensToRemove hclwrite.Tokens
 	for i, token := range tokens {
 		if token.Type == hclsyntax.TokenNewline {
-			// make sure there's no comma before
+			// make sure there is (or was) no comma before
 			if i > 0 && tokens[i-1].Type != hclsyntax.TokenComma && !funk.Contains(tokensToRemove, tokens[i-1]) {
 				tokens[i] = &hclwrite.Token{
 					Type:         hclsyntax.TokenComma,
@@ -261,7 +261,10 @@ func buildMapExpression(tokens hclwrite.Tokens) string {
 		}
 	}
 
-	return "map(" + string(tokens.Bytes()) + ")"
+	mapContent := string(tokens.Bytes())
+	mapContent = strings.TrimSpace(mapContent)
+	mapContent = strings.TrimSuffix(mapContent, ",") // remove any traling commas due to newline replaced
+	return "map(" + mapContent + ")"
 }
 
 func stringifyExpression(tokens hclwrite.Tokens) string {
@@ -287,7 +290,8 @@ func moveExistingTags(filename string, terratag TerratagLocal, resource *hclwrit
 		// Otherwise, we try to get tags as block
 		tagsBlock := resource.Body().FirstMatchingBlock("tags", nil)
 		if tagsBlock != nil {
-			existingTags = funk.Tail(tagsBlock.BuildTokens(hclwrite.Tokens{})).(hclwrite.Tokens)
+			quaotedTagBlock := quoteBlockKeys(tagsBlock)
+			existingTags = funk.Tail(quaotedTagBlock.BuildTokens(hclwrite.Tokens{})).(hclwrite.Tokens)
 			// If we did get tags from block, we will now remove that block, as we're going to add a merged tags ATTRIBUTE
 			removeBlockResult := resource.Body().RemoveBlock(tagsBlock)
 			if removeBlockResult == false {
@@ -301,6 +305,16 @@ func moveExistingTags(filename string, terratag TerratagLocal, resource *hclwrit
 		return true
 	}
 	return false
+}
+
+func quoteBlockKeys(tagsBlock *hclwrite.Block) *hclwrite.Block {
+	// In HCL, block keys must NOT be quoted
+	// But we need them to be, as we throw them into a map() function as strings
+	quaotedTagBlock := hclwrite.NewBlock(tagsBlock.Type(), tagsBlock.Labels())
+	for key, value := range tagsBlock.Body().Attributes() {
+		quaotedTagBlock.Body().SetAttributeRaw("\""+key+"\"", value.Expr().BuildTokens(hclwrite.Tokens{}))
+	}
+	return quaotedTagBlock
 }
 
 func getTerratagAddedKey(filname string) string {
