@@ -261,8 +261,6 @@ func buildMapExpression(tokens hclwrite.Tokens) string {
 		}
 	}
 
-	// TODO: Now what's left is to remove all nested ${ and } expressions as we're wrapping this one
-
 	return "map(" + string(tokens.Bytes()) + ")"
 }
 
