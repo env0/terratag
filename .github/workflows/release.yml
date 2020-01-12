@@ -35,8 +35,8 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           tag_name: ${{ github.ref }}
-          release_name: Release ${{ github.ref }}
-          draft: true
+          release_name: Terratag ${{ github.ref }}
+          draft: false
           prerelease: false
           
       - name: Upload Release Asset
@@ -47,5 +47,5 @@ jobs:
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }} # This pulls from the CREATE RELEASE step above, referencing it's ID to get its outputs object, which include a `upload_url`. See this blog post for more info: https://jasonet.co/posts/new-features-of-github-actions/#passing-data-to-future-steps 
           asset_path: ./terratag
-          asset_name: terratag
+          asset_name: terratag-linux
           asset_content_type: application/zip
