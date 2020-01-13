@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"github.com/bmatcuk/doublestar"
 	"github.com/hashicorp/hcl/v2"
+	"github.com/hashicorp/hcl/v2/hclsyntax"
 	"github.com/hashicorp/hcl/v2/hclwrite"
 	"github.com/mitchellh/mapstructure"
 	"github.com/thoas/go-funk"
@@ -88,8 +89,13 @@ func setFlag(flag string, defaultValue string) string {
 }
 
 func tagFileResources(path string, dir string, tags string, tfVersion int) {
+	log.Print("Processing file ", path)
 	src, err := ioutil.ReadFile(path)
 	panicOnError(err, nil)
+
+	_, filename := filepath.Split(path)
+	filename = strings.TrimSuffix(filename, filepath.Ext(path))
+	filename = strings.ReplaceAll(filename, ".", "-")
 
 	file, diagnostics := hclwrite.ParseConfig(src, path, hcl.InitialPos)
 	if diagnostics.HasErrors() {
@@ -97,7 +103,14 @@ func tagFileResources(path string, dir string, tags string, tfVersion int) {
 		log.Fatalln(hclErrors)
 	}
 
+	terratag := TerratagLocal{
+		Found: map[string]hclwrite.Tokens{},
+		Added: tags,
+	}
+
+	anyTagged := false
 	var swappedTagsStrings []string
+
 	for _, block := range file.Body().Blocks() {
 		if block.Type() == "resource" {
 			resourceType := block.Labels()[0]
@@ -106,16 +119,24 @@ func tagFileResources(path string, dir string, tags string, tfVersion int) {
 			isTaggable := isTaggable(dir, resourceType)
 
 			if isTaggable {
-				swappedTagsStrings = tagResource(block, tags, swappedTagsStrings, tfVersion)
+				swappedTagsStrings = append(swappedTagsStrings, tagResource(filename, terratag, block, tfVersion))
+				anyTagged = true
 			} else {
 				log.Print("Resource not taggable, skipping. ")
 			}
 		}
 	}
 
-	if swappedTagsStrings != nil {
+	if anyTagged {
+		file.Body().AppendNewline()
+		locals := file.Body().AppendNewBlock("locals", nil)
+		file.Body().AppendNewline()
+
+		locals.Body().SetAttributeValue(getTerratagAddedKey(filename), cty.StringVal(terratag.Added))
+
 		text := string(file.Bytes())
 
+		swappedTagsStrings = append(swappedTagsStrings, terratag.Added)
 		text = unquoteTagsAttribute(swappedTagsStrings, text)
 
 		replaceWithTerratagFile(path, text)
@@ -129,7 +150,7 @@ func panicOnError(err error, moreInfo *string) {
 		if moreInfo != nil {
 			log.Println(*moreInfo)
 		}
-		log.Fatalln(err)
+		panic(err)
 	}
 }
 
@@ -161,93 +182,148 @@ func unquoteTagsAttribute(swappedTagsStrings []string, text string) string {
 	return text
 }
 
-func tagResource(block *hclwrite.Block, tags string, swappedTagsStrings []string, tfVersion int) []string {
+func tagResource(filename string, terratag TerratagLocal, resource *hclwrite.Block, tfVersion int) string {
 	log.Print("Resource taggable, processing...")
 
-	tagsAttribute := block.Body().GetAttribute("tags")
+	hasExistingTags := moveExistingTags(filename, terratag, resource)
 
-	mergedTags := mergeTags(tagsAttribute, tags, tfVersion)
+	tagsValue := ""
+	if hasExistingTags {
+		tagsValue = "merge( " + getExistingTagsExpression(terratag.Found[getResourceExistingTagsKey(filename, resource)]) + ", local." + getTerratagAddedKey(filename) + ")"
+	} else {
+		tagsValue = "local." + getTerratagAddedKey(filename)
+	}
 
-	block.Body().SetAttributeValue("tags", cty.StringVal(mergedTags))
+	if tfVersion == 11 {
+		tagsValue = "${" + tagsValue + "}"
+	}
 
-	swappedTagsStrings = append(swappedTagsStrings, mergedTags)
-	return swappedTagsStrings
+	resource.Body().SetAttributeValue("tags", cty.StringVal(tagsValue))
+
+	return tagsValue
 }
 
-func mergeTags(tagsAttribute *hclwrite.Attribute, tags string, tfVersion int) string {
-	existingTags := ""
-	mergedTags := ""
+func getExistingTagsExpression(tokens hclwrite.Tokens) string {
+	if isHclMap(tokens) {
+		return buildMapExpression(tokens)
+	} else {
+		return stringifyExpression(tokens)
+	}
+}
+
+func isHclMap(tokens hclwrite.Tokens) bool {
+	maybeHclMap := strings.TrimSpace(string(tokens.Bytes()))
+	return strings.HasPrefix(maybeHclMap, "{") && strings.HasSuffix(maybeHclMap, "}")
+}
+
+func buildMapExpression(tokens hclwrite.Tokens) string {
+	// Need to convert to inline map expression
+
+	// First, we remove the first and last two tokens - get rid of the openning { closing } and newline
+	tokens = tokens[1:]
+	tokens = tokens[:len(tokens)-2]
+
+	// Then, we normalize the key-value paris so that they would be seperated by comma
+	// That's cause HCL supports both newline, comma or a combination of the two in seperating values
+	// This will make it easier to split the key-value pairs later
+	var tokensToRemove hclwrite.Tokens
+	for i, token := range tokens {
+		if token.Type == hclsyntax.TokenNewline {
+			// make sure there is (or was) no comma before
+			if i > 0 && tokens[i-1].Type != hclsyntax.TokenComma && !funk.Contains(tokensToRemove, tokens[i-1]) {
+				tokens[i] = &hclwrite.Token{
+					Type:         hclsyntax.TokenComma,
+					Bytes:        []byte(","),
+					SpacesBefore: 1,
+				}
+			} else { // if there is, we should remove this new line, so we'll only have the comma
+				tokensToRemove = append(tokensToRemove, token)
+			}
+		}
+	}
+
+	// Remove tall the new lines we marked for removal
+	for _, tokenToRemove := range tokensToRemove {
+		indexToRemove := funk.IndexOf(tokens, tokenToRemove)
+		tokens = append(tokens[:indexToRemove], tokens[indexToRemove+1:]...)
+	}
+
+	// At this point there should be no new lines, only a single comma seperating between key values
+	// Since the map() gets a flat set of pairs as map("key1","value1","key2","value2"),
+	// we can just replace any assignment operator (=) with comma
+	for i, token := range tokens {
+		if token.Type == hclsyntax.TokenEqual {
+			tokens[i] = &hclwrite.Token{
+				Type:         hclsyntax.TokenComma,
+				Bytes:        []byte(","),
+				SpacesBefore: token.SpacesBefore,
+			}
+		}
+	}
+
+	mapContent := string(tokens.Bytes())
+	mapContent = strings.TrimSpace(mapContent)
+	mapContent = strings.TrimSuffix(mapContent, ",") // remove any traling commas due to newline replaced
+	return "map(" + mapContent + ")"
+}
+
+func stringifyExpression(tokens hclwrite.Tokens) string {
+	expression := strings.TrimSpace(string(tokens.Bytes()))
+	// may be wrapped with ${ } in TF11
+	expression = strings.TrimPrefix(expression, "${")
+	expression = strings.TrimSuffix(expression, "${")
+
+	return expression
+}
+
+func moveExistingTags(filename string, terratag TerratagLocal, resource *hclwrite.Block) bool {
+	var existingTags hclwrite.Tokens
+
+	// First we try to find tags as attribute
+	tagsAttribute := resource.Body().GetAttribute("tags")
 
 	if tagsAttribute != nil {
-		log.Print("Preexisting tags found on resource. Merging.")
-		existingTags = string(tagsAttribute.Expr().BuildTokens(hclwrite.Tokens{}).Bytes())
-	}
-
-	switch tfVersion {
-	case 11:
-		if existingTags == "" {
-			existingTags = "map()"
+		// If attribute found, get its value
+		log.Print("Preexisting tags ATTRIBUTE found on resource. Merging.")
+		existingTags = tagsAttribute.Expr().BuildTokens(hclwrite.Tokens{})
+	} else {
+		// Otherwise, we try to get tags as block
+		tagsBlock := resource.Body().FirstMatchingBlock("tags", nil)
+		if tagsBlock != nil {
+			quaotedTagBlock := quoteBlockKeys(tagsBlock)
+			existingTags = funk.Tail(quaotedTagBlock.BuildTokens(hclwrite.Tokens{})).(hclwrite.Tokens)
+			// If we did get tags from block, we will now remove that block, as we're going to add a merged tags ATTRIBUTE
+			removeBlockResult := resource.Body().RemoveBlock(tagsBlock)
+			if removeBlockResult == false {
+				log.Fatal("Failed to remove found tags block!")
+			}
 		}
-		existingTags = convertExistingTagsToFunctionParameter(existingTags)
-
-		mergedTags = "${ merge(" + existingTags + ", " + convertHclMapToHclMapFunction(tags) + " ) }"
-		break
-	case 12:
-		if existingTags == "" {
-			existingTags = "{}"
-		}
-
-		mergedTags = "merge(" + existingTags + ", " + tags + ")"
-		break
 	}
 
-	return mergedTags
-}
-
-func convertExistingTagsToFunctionParameter(existingTags string) string {
-	existingTags = strings.TrimSpace(existingTags)
-	if isHcl1Placeholder(existingTags) {
-		existingTags = strings.TrimSuffix(strings.TrimPrefix(existingTags, "\"${"), "}\"")
-	} else if isHclMap(existingTags) {
-		existingTags = convertHclMapToHclMapFunction(existingTags)
+	if existingTags != nil {
+		terratag.Found[getResourceExistingTagsKey(filename, resource)] = existingTags
+		return true
 	}
-	return existingTags
+	return false
 }
 
-func convertHclMapToHclMapFunction(hclMap string) string {
-	hclMapFunction := "map("
-
-	hclMap = strings.TrimPrefix(hclMap, "{")
-	hclMap = strings.TrimSuffix(hclMap, "}")
-
-	keyValues := strings.Split(hclMap, ",")
-
-	var functionVariables []string
-
-	for _, keyValue := range keyValues {
-		pair := strings.Split(keyValue, "=")
-		key := strings.TrimSpace(pair[0])
-		value := strings.TrimSpace(pair[1])
-
-		if !(strings.HasPrefix(key, "\"") && strings.HasSuffix(key, "\"")) {
-			key = "\"" + key + "\""
-		}
-
-		functionVariables = append(functionVariables, key)
-		functionVariables = append(functionVariables, value)
+func quoteBlockKeys(tagsBlock *hclwrite.Block) *hclwrite.Block {
+	// In HCL, block keys must NOT be quoted
+	// But we need them to be, as we throw them into a map() function as strings
+	quaotedTagBlock := hclwrite.NewBlock(tagsBlock.Type(), tagsBlock.Labels())
+	for key, value := range tagsBlock.Body().Attributes() {
+		quaotedTagBlock.Body().SetAttributeRaw("\""+key+"\"", value.Expr().BuildTokens(hclwrite.Tokens{}))
 	}
-
-	hclMapFunction = hclMapFunction + strings.Join(functionVariables, ", ") + ")"
-
-	return hclMapFunction
+	return quaotedTagBlock
 }
 
-func isHclMap(existingTags string) bool {
-	return strings.HasPrefix(existingTags, "{") && strings.HasSuffix(existingTags, "}")
+func getTerratagAddedKey(filname string) string {
+	return "terratag_added_" + filname
 }
 
-func isHcl1Placeholder(existingTags string) bool {
-	return strings.HasPrefix(existingTags, "\"${") && strings.HasSuffix(existingTags, "}\"")
+func getResourceExistingTagsKey(filename string, resource *hclwrite.Block) string {
+	delimiter := "__"
+	return "terratag_found_" + filename + delimiter + strings.Join(resource.Labels(), delimiter)
 }
 
 func isTaggable(dir string, resourceType string) bool {
@@ -279,4 +355,9 @@ func isTaggable(dir string, resourceType string) bool {
 type TfSchemaAttribute struct {
 	Name string
 	Type string
+}
+
+type TerratagLocal struct {
+	Found map[string]hclwrite.Tokens
+	Added string
 }
