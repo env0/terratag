@@ -69,7 +69,7 @@ func initArgs() (string, string, bool) {
 	dir = setFlag("dir", ".")
 
 	if tags == "" {
-		log.Println("Usage: terratag -tags='{ some_tag = \"value\" }' [-dir=\".\"]")
+		log.Println("Usage: terratag -tags='{ \"some_tag\": \"value\" }' [-dir=\".\"]")
 		isMissingArg = true
 	}
 
@@ -105,21 +105,28 @@ func tagFileResources(path string, dir string, tags string, tfVersion int) {
 
 	terratag := TerratagLocal{
 		Found: map[string]hclwrite.Tokens{},
-		Added: tags,
+		Added: jsonToHclMap(tags),
 	}
 
 	anyTagged := false
 	var swappedTagsStrings []string
 
-	for _, block := range file.Body().Blocks() {
-		if block.Type() == "resource" {
-			resourceType := block.Labels()[0]
-			log.Print("Processing resource ", block.Labels())
+	for _, resource := range file.Body().Blocks() {
+		if resource.Type() == "resource" {
+			resourceType := resource.Labels()[0]
+			log.Print("Processing resource ", resource.Labels())
 
-			isTaggable := isTaggable(dir, resourceType)
+			isTaggable, isTaggableViaSpecialTagBlock := isTaggable(dir, resourceType)
 
 			if isTaggable {
-				swappedTagsStrings = append(swappedTagsStrings, tagResource(filename, terratag, block, tfVersion))
+				if !isTaggableViaSpecialTagBlock {
+					// for now, we count on it that if there's a single "tag" in the schema (unlike "tags" block),
+					// then no "tags" interpolation is used, but rather multiple instances of a "tag" block
+					// https://www.terraform.io/docs/providers/aws/r/autoscaling_group.html
+					swappedTagsStrings = append(swappedTagsStrings, tagResource(filename, terratag, resource, tfVersion))
+				} else {
+					appendTagBlocks(resource, tags)
+				}
 				anyTagged = true
 			} else {
 				log.Print("Resource not taggable, skipping. ")
@@ -143,6 +150,32 @@ func tagFileResources(path string, dir string, tags string, tfVersion int) {
 	} else {
 		log.Print("No taggable resources found in file ", path, " - skipping")
 	}
+}
+
+func appendTagBlocks(resource *hclwrite.Block, tags string) {
+	var tagsMap map[string]string
+	err := json.Unmarshal([]byte(tags), &tagsMap)
+	panicOnError(err, nil)
+
+	for key, value := range tagsMap {
+		resource.Body().AppendNewline()
+		tagBlock := resource.Body().AppendNewBlock("tag", nil)
+		tagBlock.Body().SetAttributeValue("key", cty.StringVal(key))
+		tagBlock.Body().SetAttributeValue("value", cty.StringVal(value))
+		tagBlock.Body().SetAttributeValue("propagate_at_launch", cty.BoolVal(true))
+	}
+}
+
+func jsonToHclMap(tags string) string {
+	var tagsMap map[string]string
+	err := json.Unmarshal([]byte(tags), &tagsMap)
+	panicOnError(err, nil)
+
+	var mapContent []string
+	for key, value := range tagsMap {
+		mapContent = append(mapContent, "\""+key+"\"="+"\""+value+"\"")
+	}
+	return "{" + strings.Join(mapContent, ",") + "}"
 }
 
 func panicOnError(err error, moreInfo *string) {
@@ -326,7 +359,7 @@ func getResourceExistingTagsKey(filename string, resource *hclwrite.Block) strin
 	return "terratag_found_" + filename + delimiter + strings.Join(resource.Labels(), delimiter)
 }
 
-func isTaggable(dir string, resourceType string) bool {
+func isTaggable(dir string, resourceType string) (bool, bool) {
 	command := exec.Command("tfschema", "resource", "show", "-format=json", resourceType)
 	command.Dir = dir
 	output, err := command.Output()
@@ -339,6 +372,8 @@ func isTaggable(dir string, resourceType string) bool {
 	panicOnError(err, nil)
 
 	isTaggable := false
+	isTaggableViaSpecialTagBlock := false
+
 	attributes := schema["attributes"].([]interface{})
 	for _, attributeMap := range attributes {
 		var attribute TfSchemaAttribute
@@ -349,7 +384,12 @@ func isTaggable(dir string, resourceType string) bool {
 			isTaggable = true
 		}
 	}
-	return isTaggable
+
+	if resourceType == "aws_autoscaling_group" {
+		isTaggableViaSpecialTagBlock = true
+	}
+
+	return isTaggable, isTaggableViaSpecialTagBlock
 }
 
 type TfSchemaAttribute struct {
