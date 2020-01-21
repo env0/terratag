@@ -26,7 +26,8 @@ jobs:
       
       - name: Build project
         run: |
-          go build
+          mkdir out
+          go build -o ./out/terratag/terratag
 
       # Setup .npmrc file to publish to GitHub Packages
       - name: Setup Node
@@ -34,17 +35,15 @@ jobs:
         with:
           node-version: '12.x'
           registry-url: 'https://npm.pkg.github.com'
-          scope: '@env0' # Defaults to the user or organization that owns the workflow file
+          # scope: '@env0' # Defaults to the user or organization that owns the workflow file
 
-      - run: yarn init -yp
-
+      - run: yarn init -yp --scope @env0
+        working-directory: ./out/terratag
+        
       - run: yarn publish --new-version ${{ github.ref }}
+        working-directory: ./out/terratag
         env:
           NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-                    
-      - name: Build Node Package
-        run: |
-          go build
           
       - name: Create Release
         id: create_release
@@ -64,6 +63,6 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }} # This pulls from the CREATE RELEASE step above, referencing it's ID to get its outputs object, which include a `upload_url`. See this blog post for more info: https://jasonet.co/posts/new-features-of-github-actions/#passing-data-to-future-steps 
-          asset_path: ./terratag
+          asset_path: ./out/terratag/terratag
           asset_name: terratag-linux
           asset_content_type: application/zip
