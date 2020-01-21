@@ -40,7 +40,7 @@ jobs:
       - run: yarn init --yes --private && npm init --yes --scope @env0 # yarn doesn't have --scope and npm doesn't have --private
         working-directory: ./out/terratag
 
-      - run: tail package.json
+      - run: cat package.json
         working-directory: ./out/terratag
         
       - run: yarn publish --new-version ${{ github.ref }}
