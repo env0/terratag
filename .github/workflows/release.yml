@@ -39,6 +39,9 @@ jobs:
 
       - run: yarn init -yp --scope @env0
         working-directory: ./out/terratag
+
+      - run: tail package.json
+        working-directory: ./out/terratag
         
       - run: yarn publish --new-version ${{ github.ref }}
         working-directory: ./out/terratag
