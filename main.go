@@ -3,24 +3,26 @@ package main
 import (
 	"encoding/json"
 	"github.com/bmatcuk/doublestar"
+	. "github.com/env0/terratag/cli"
+	. "github.com/env0/terratag/errors"
+	. "github.com/env0/terratag/terraform"
+	. "github.com/env0/terratag/tfschema"
 	"github.com/hashicorp/hcl/v2"
 	"github.com/hashicorp/hcl/v2/hclsyntax"
 	"github.com/hashicorp/hcl/v2/hclwrite"
-	"github.com/mitchellh/mapstructure"
 	"github.com/thoas/go-funk"
 	"github.com/zclconf/go-cty/cty"
 	"io/ioutil"
 	"log"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"strings"
 )
 
 func main() {
-	tags, dir, isMissingArg := initArgs()
+	tags, dir, isMissingArg := InitArgs()
 
-	tfVersion := getTeraformVersion()
+	tfVersion := GetTeraformVersion()
 
 	if isMissingArg {
 		return
@@ -29,29 +31,14 @@ func main() {
 	tagDirectoryResources(dir, tags, tfVersion)
 }
 
-func getTeraformVersion() int {
-	output, err := exec.Command("terraform", "version").Output()
-	outputAsString := strings.TrimSpace(string(output))
-	panicOnError(err, &outputAsString)
-
-	if strings.HasPrefix(outputAsString, "Terraform v0.11") {
-		return 11
-	} else if strings.HasPrefix(outputAsString, "Terraform v0.12") {
-		return 12
-	}
-
-	log.Fatalln("Terratag only supports Terraform 0.11.x and 0.12.x - your version says ", outputAsString)
-	return -1
-}
-
 func tagDirectoryResources(dir string, tags string, tfVersion int) {
 	matches, err := doublestar.Glob(dir + "/**/*.tf")
-	panicOnError(err, nil)
+	PanicOnError(err, nil)
 
 	for i, match := range matches {
 		resolvedMatch, err := filepath.EvalSymlinks(match)
 		matches[i] = resolvedMatch
-		panicOnError(err, nil)
+		PanicOnError(err, nil)
 	}
 	matches = funk.UniqString(matches)
 
@@ -60,63 +47,26 @@ func tagDirectoryResources(dir string, tags string, tfVersion int) {
 	}
 }
 
-func initArgs() (string, string, bool) {
-	var tags string
-	var dir string
-	isMissingArg := false
-
-	tags = setFlag("tags", "")
-	dir = setFlag("dir", ".")
-
-	if tags == "" {
-		log.Println("Usage: terratag -tags='{ \"some_tag\": \"value\" }' [-dir=\".\"]")
-		isMissingArg = true
-	}
-
-	return tags, dir, isMissingArg
-}
-
-func setFlag(flag string, defaultValue string) string {
-	result := defaultValue
-	prefix := "-" + flag + "="
-	for _, arg := range os.Args {
-		if strings.HasPrefix(arg, prefix) {
-			result = strings.TrimPrefix(arg, prefix)
-		}
-	}
-
-	return result
-}
-
 func tagFileResources(path string, dir string, tags string, tfVersion int) {
 	log.Print("Processing file ", path)
-	src, err := ioutil.ReadFile(path)
-	panicOnError(err, nil)
-
-	_, filename := filepath.Split(path)
-	filename = strings.TrimSuffix(filename, filepath.Ext(path))
-	filename = strings.ReplaceAll(filename, ".", "-")
-
-	file, diagnostics := hclwrite.ParseConfig(src, path, hcl.InitialPos)
-	if diagnostics.HasErrors() {
-		hclErrors := diagnostics.Errs()
-		log.Fatalln(hclErrors)
-	}
+	hcl := parseHcl(path)
 
 	terratag := TerratagLocal{
 		Found: map[string]hclwrite.Tokens{},
 		Added: jsonToHclMap(tags),
 	}
 
+	filename := getFilename(path)
+
 	anyTagged := false
 	var swappedTagsStrings []string
 
-	for _, resource := range file.Body().Blocks() {
+	for _, resource := range hcl.Body().Blocks() {
 		if resource.Type() == "resource" {
 			resourceType := resource.Labels()[0]
 			log.Print("Processing resource ", resource.Labels())
 
-			isTaggable, isTaggableViaSpecialTagBlock := isTaggable(dir, resourceType)
+			isTaggable, isTaggableViaSpecialTagBlock := IsTaggable(dir, resourceType)
 
 			if isTaggable {
 				if !isTaggableViaSpecialTagBlock {
@@ -135,13 +85,9 @@ func tagFileResources(path string, dir string, tags string, tfVersion int) {
 	}
 
 	if anyTagged {
-		file.Body().AppendNewline()
-		locals := file.Body().AppendNewBlock("locals", nil)
-		file.Body().AppendNewline()
+		appendLocalsBlock(hcl, filename, terratag)
 
-		locals.Body().SetAttributeValue(getTerratagAddedKey(filename), cty.StringVal(terratag.Added))
-
-		text := string(file.Bytes())
+		text := string(hcl.Bytes())
 
 		swappedTagsStrings = append(swappedTagsStrings, terratag.Added)
 		text = unquoteTagsAttribute(swappedTagsStrings, text)
@@ -152,10 +98,37 @@ func tagFileResources(path string, dir string, tags string, tfVersion int) {
 	}
 }
 
+func parseHcl(path string) *hclwrite.File {
+	src, err := ioutil.ReadFile(path)
+	PanicOnError(err, nil)
+
+	file, diagnostics := hclwrite.ParseConfig(src, path, hcl.InitialPos)
+	if diagnostics.HasErrors() {
+		hclErrors := diagnostics.Errs()
+		log.Fatalln(hclErrors)
+	}
+	return file
+}
+
+func getFilename(path string) string {
+	_, filename := filepath.Split(path)
+	filename = strings.TrimSuffix(filename, filepath.Ext(path))
+	filename = strings.ReplaceAll(filename, ".", "-")
+	return filename
+}
+
+func appendLocalsBlock(file *hclwrite.File, filename string, terratag TerratagLocal) {
+	file.Body().AppendNewline()
+	locals := file.Body().AppendNewBlock("locals", nil)
+	file.Body().AppendNewline()
+
+	locals.Body().SetAttributeValue(getTerratagAddedKey(filename), cty.StringVal(terratag.Added))
+}
+
 func appendTagBlocks(resource *hclwrite.Block, tags string) {
 	var tagsMap map[string]string
 	err := json.Unmarshal([]byte(tags), &tagsMap)
-	panicOnError(err, nil)
+	PanicOnError(err, nil)
 
 	for key, value := range tagsMap {
 		resource.Body().AppendNewline()
@@ -169,7 +142,7 @@ func appendTagBlocks(resource *hclwrite.Block, tags string) {
 func jsonToHclMap(tags string) string {
 	var tagsMap map[string]string
 	err := json.Unmarshal([]byte(tags), &tagsMap)
-	panicOnError(err, nil)
+	PanicOnError(err, nil)
 
 	var mapContent []string
 	for key, value := range tagsMap {
@@ -178,26 +151,17 @@ func jsonToHclMap(tags string) string {
 	return "{" + strings.Join(mapContent, ",") + "}"
 }
 
-func panicOnError(err error, moreInfo *string) {
-	if err != nil {
-		if moreInfo != nil {
-			log.Println(*moreInfo)
-		}
-		panic(err)
-	}
-}
-
 func replaceWithTerratagFile(path string, textContent string) {
 	taggedFilename := strings.TrimSuffix(path, filepath.Ext(path)) + ".terratag.tf"
 	backupFilename := path + ".bak"
 
 	log.Print("Creating file ", taggedFilename)
 	taggedFileError := ioutil.WriteFile(taggedFilename, []byte(textContent), 0644)
-	panicOnError(taggedFileError, nil)
+	PanicOnError(taggedFileError, nil)
 
 	log.Print("Renaming original file from ", path, " to ", backupFilename)
 	backupFileError := os.Rename(path, backupFilename)
-	panicOnError(backupFileError, nil)
+	PanicOnError(backupFileError, nil)
 }
 
 func unquoteTagsAttribute(swappedTagsStrings []string, text string) string {
@@ -357,44 +321,6 @@ func getTerratagAddedKey(filname string) string {
 func getResourceExistingTagsKey(filename string, resource *hclwrite.Block) string {
 	delimiter := "__"
 	return "terratag_found_" + filename + delimiter + strings.Join(resource.Labels(), delimiter)
-}
-
-func isTaggable(dir string, resourceType string) (bool, bool) {
-	command := exec.Command("tfschema", "resource", "show", "-format=json", resourceType)
-	command.Dir = dir
-	output, err := command.Output()
-	outputAsString := string(output)
-	panicOnError(err, &outputAsString)
-
-	var schema map[string]interface{}
-
-	err = json.Unmarshal(output, &schema)
-	panicOnError(err, nil)
-
-	isTaggable := false
-	isTaggableViaSpecialTagBlock := false
-
-	attributes := schema["attributes"].([]interface{})
-	for _, attributeMap := range attributes {
-		var attribute TfSchemaAttribute
-		err := mapstructure.Decode(attributeMap, &attribute)
-		panicOnError(err, nil)
-
-		if attribute.Name == "tags" {
-			isTaggable = true
-		}
-	}
-
-	if resourceType == "aws_autoscaling_group" {
-		isTaggableViaSpecialTagBlock = true
-	}
-
-	return isTaggable, isTaggableViaSpecialTagBlock
-}
-
-type TfSchemaAttribute struct {
-	Name string
-	Type string
 }
 
 type TerratagLocal struct {
