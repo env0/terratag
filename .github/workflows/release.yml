@@ -43,7 +43,7 @@ jobs:
       - run: cat package.json
         working-directory: ./out/terratag
         
-      - run: yarn publish --new-version ${{ github.ref }} ./out/terratag
+      - run: npm publish --new-version ${{ github.ref }} ./out/terratag
         env:
           NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           
