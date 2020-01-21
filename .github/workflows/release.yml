@@ -40,17 +40,10 @@ jobs:
       - run: yarn init --yes --private && npm init --yes --scope @env0 # yarn doesn't have --scope and npm doesn't have --private
         working-directory: ./out/terratag
 
-      - run: cat ~/.npmrc
-        working-directory: ./out/terratag
-
-      - run: cat ~/.yarnrc
-        working-directory: ./out/terratag
-        
       - run: cat package.json
         working-directory: ./out/terratag
         
-      - run: yarn publish --new-version ${{ github.ref }}
-        working-directory: ./out/terratag
+      - run: yarn publish --new-version ${{ github.ref }} ./out/terratag
         env:
           NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           
