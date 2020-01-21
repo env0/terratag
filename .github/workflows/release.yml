@@ -37,7 +37,7 @@ jobs:
           registry-url: 'https://npm.pkg.github.com'
           # scope: '@env0' # Defaults to the user or organization that owns the workflow file
 
-      - run: yarn init -yp --scope @env0
+      - run: yarn init --yes --private && npm init --yes --scope @env0 # yarn doesn't have --scope and npm doesn't have --private
         working-directory: ./out/terratag
 
       - run: tail package.json
