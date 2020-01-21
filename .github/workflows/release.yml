@@ -27,6 +27,24 @@ jobs:
       - name: Build project
         run: |
           go build
+
+      # Setup .npmrc file to publish to GitHub Packages
+      - name: Setup Node
+        uses: actions/setup-node@v1
+        with:
+          node-version: '12.x'
+          registry-url: 'https://npm.pkg.github.com'
+          scope: '@env0' # Defaults to the user or organization that owns the workflow file
+
+      - run: yarn init -yp
+
+      - run: yarn publish --new-version ${{ github.ref }}
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+                    
+      - name: Build Node Package
+        run: |
+          go build
           
       - name: Create Release
         id: create_release
