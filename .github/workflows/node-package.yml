@@ -48,6 +48,9 @@ jobs:
           scope: '@env0' # Defaults to the user or organization that owns the workflow file
 
       # Need to get version from release
+      - run: cat /home/runner/work/_temp/.npmrc
+
+      # Need to get version from release
       - run: npm publish ./out/terratag
         env:
           NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
