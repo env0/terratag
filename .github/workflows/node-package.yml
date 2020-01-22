@@ -48,7 +48,10 @@ jobs:
           scope: '@env0' # Defaults to the user or organization that owns the workflow file
 
       # Need to get version from release
-      - run: mv /home/runner/work/_temp/.npmrc .
+      - run: |
+          mv /home/runner/work/_temp/.npmrc ./.npmrc
+          ls
+          cat .npmrc
 
       # Need to get version from release
       - run: npm publish ./out/terratag
