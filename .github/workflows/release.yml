@@ -37,16 +37,6 @@ jobs:
           registry-url: 'https://npm.pkg.github.com'
           # scope: '@env0' # Defaults to the user or organization that owns the workflow file
 
-      - run: yarn init --yes --private && npm init --yes --scope @env0 # yarn doesn't have --scope and npm doesn't have --private
-        working-directory: ./out/terratag
-
-      - run: cat package.json
-        working-directory: ./out/terratag
-        
-      - run: npm publish --new-version ${{ github.ref }} ./out/terratag
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          
       - name: Create Release
         id: create_release
         uses: actions/create-release@v1.0.0
@@ -70,14 +60,6 @@ jobs:
           npm init --yes --scope @env0
           echo "`jq '.version="${{ github.ref }}"' package.json`" > package.json
         working-directory: ./out/terratag
-
-      # Setup .npmrc file to publish to GitHub Packages
-      - name: Setup Node again
-        uses: actions/setup-node@v1
-        with:
-          node-version: '12.x'
-          registry-url: 'https://npm.pkg.github.com'
-          scope: '@env0' # Defaults to the user or organization that owns the workflow file
 
       # Need to get version from release
       - run: npm publish ./out/terratag
