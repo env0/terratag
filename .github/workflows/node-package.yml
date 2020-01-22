@@ -49,9 +49,9 @@ jobs:
 
       # Need to get version from release
       - run: |
-          mv /home/runner/work/_temp/.npmrc ./.npmrc
+          mv /home/runner/work/_temp/.npmrc ./out/terratag/.npmrc
           ls
-          cat .npmrc
+          cat ./out/terratag/.npmrc
 
       # Need to get version from release
       - run: npm publish ./out/terratag
