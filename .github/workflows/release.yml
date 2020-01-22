@@ -57,7 +57,32 @@ jobs:
           release_name: Terratag ${{ github.ref }}
           draft: false
           prerelease: false
-          
+
+      # Setup .npmrc file to publish to GitHub Packages
+      - name: Setup Node
+        uses: actions/setup-node@v1
+        with:
+          node-version: '12.x'
+          registry-url: 'https://npm.pkg.github.com'
+          scope: '@env0'
+
+      - run: |
+          npm init --yes --scope @env0
+          echo "`jq '.version="${{ github.ref }}"' package.json`" > package.json
+        working-directory: ./out/terratag
+
+      # Setup .npmrc file to publish to GitHub Packages
+      - name: Setup Node again
+        uses: actions/setup-node@v1
+        with:
+          node-version: '12.x'
+          registry-url: 'https://npm.pkg.github.com'
+          scope: '@env0' # Defaults to the user or organization that owns the workflow file
+
+      # Need to get version from release
+      - run: npm publish ./out/terratag
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - name: Upload Release Asset
         id: upload-release-asset 
         uses: actions/upload-release-asset@v1.0.1
