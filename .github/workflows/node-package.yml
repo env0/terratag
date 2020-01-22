@@ -31,7 +31,7 @@ jobs:
         with:
           node-version: '12.x'
           registry-url: 'https://npm.pkg.github.com'
-          # scope: '@env0' # Defaults to the user or organization that owns the workflow file
+           scope: '@env0' # Defaults to the user or organization that owns the workflow file
 
       - run: yarn init --yes --private && npm init --yes --scope @env0 # yarn doesn't have --scope and npm doesn't have --private
         working-directory: ./out/terratag
@@ -48,6 +48,6 @@ jobs:
           scope: '@env0' # Defaults to the user or organization that owns the workflow file
 
       # Need to get version from release
-      - run: npm publish --new-version 0.1.0 ./out/terratag
+      - run: yarn publish --new-version 0.1.0 ./out/terratag
         env:
           NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
