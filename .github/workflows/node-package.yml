@@ -1,0 +1,53 @@
+on: [push]
+
+name: Node package
+
+jobs:
+  build:
+    name: Node Package
+    runs-on: ubuntu-latest
+    steps:
+      - name: Set up Go 1.13
+        uses: actions/setup-go@v1
+        with:
+          go-version: 1.13
+        id: go
+
+      - name: Check out code into the Go module directory
+        uses: actions/checkout@v1
+
+      - name: Get dependencies
+        run: |
+          go get -v -t -d ./...
+
+      - name: Build project
+        run: |
+          mkdir out
+          go build -o ./out/terratag/terratag
+
+      # Setup .npmrc file to publish to GitHub Packages
+      - name: Setup Node
+        uses: actions/setup-node@v1
+        with:
+          node-version: '12.x'
+          registry-url: 'https://npm.pkg.github.com'
+          # scope: '@env0' # Defaults to the user or organization that owns the workflow file
+
+      - run: yarn init --yes --private && npm init --yes --scope @env0 # yarn doesn't have --scope and npm doesn't have --private
+        working-directory: ./out/terratag
+
+      - run: cat package.json
+        working-directory: ./out/terratag
+
+      # Setup .npmrc file to publish to GitHub Packages
+      - name: Setup Node again
+        uses: actions/setup-node@v1
+        with:
+          node-version: '12.x'
+          registry-url: 'https://npm.pkg.github.com'
+          scope: '@env0' # Defaults to the user or organization that owns the workflow file
+
+      # Need to get version from release
+      - run: npm publish --new-version 0.1.0 ./out/terratag
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
