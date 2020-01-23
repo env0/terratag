@@ -58,8 +58,9 @@ jobs:
 
       - run: |
           npm init --yes --scope @env0
-          tag=${${{ github.ref }}#"refs/tags/v"}
-          echo "`jq '.version="${tag}"' package.json`" > package.json
+          ref=${{ github.ref }}
+          tag=${ref#"refs/tags/v"}
+          echo "`jq .version="${tag}" package.json`" > package.json
         working-directory: ./out/terratag
 
       # Need to get version from release
