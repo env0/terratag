@@ -5,23 +5,17 @@ Add tags to your AWS resources in both Terraform 0.11 and 0.12!
 ## Prerequisites
 - [tfschema](https://github.com/minamijoyo/tfschema) to assert which resources support `tags` in AWS Provider
 - Terraform 0.11 or 0.12
-- Go > 1.13.5
-
-## Build
-```bash
-go get
-go build
-```
 
 ## Usage
-Terratag recives two commaind line arguments:  
-- `-dir` - optional, the directory to recursively search for any `.tf` file and try to terratag it.  
-- `-tags` - tags, as valid JSON (NOT HCL)
+1. Download the latest [release binary](https://github.com/env0/terratag/releases) or install the latest [node package](https://github.com/env0/terratag/packages)
+2. ```bash    
+    terraform init # needed to initialize provider schema and pull child terraform modules
+    terratag -dir=foo/bar -tags={\"hello\": \"world\"}
+    ```
+      > Note Terratag receives two command line arguments:  
+      > - `-dir` - optional, the directory to recursively search for any `.tf` file and try to terratag it.  
+      > - `-tags` - tags, as valid JSON (NOT HCL)
 
-```bash
-terraform init # needed to initialize provider schema and pull child terraform modules
-terratag -dir=foo/bar -tags=\"hello\": \"world\"} # (or go run . -dir=... -tags=...)
-```
 
 ## Notes
 - Only AWS resources are supported (for now)
@@ -39,10 +33,30 @@ Instead, `terratag` uses HashiCorps' [`hclwrite`](https://godoc.org/github.com/h
   ```  
   `tfschema` can't find your AWS Provider schema - You probably didn't run `terraform init`
 
+## Develop
+
+### Prerequisites
+- Go > 1.13.5
+
+### Build
+```bash
+git clone https://github.com/env0/terratag
+go get
+go build
+```
+
+### Release
+```bash
+# release tags have to start with v to trigger the release workflow -
+# https://github.com/env0/terratag/blob/master/.github/workflows/release.yml
+git tag vx.x.x 
+git push --tags
+```
+
 ## TODO
 - [ ] Support for resource block nested in for loops (?)
 - [ ] Add godocs
 - [ ] Add unit tests
 - [ ] Remove `tfschema` as a prerequsite install
-- [ ] Automate and publish package release binaries
+- [x] Automate and publish package release binaries
 - [ ] Support tagging resources in `.tf.json` files (?)
