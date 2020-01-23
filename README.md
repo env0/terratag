@@ -47,7 +47,10 @@ go build
 
 ### Release
 ```bash
-git tag v0.x.x # release tags have to start with v to trigger the release workflow - https://github.com/env0/terratag/blob/master/.github/workflows/release.yml
+# release tags have to start with v to trigger the release workflow -
+# https://github.com/env0/terratag/blob/master/.github/workflows/release.yml
+git tag vx.x.x 
+git push --tags
 ```
 
 ## TODO
