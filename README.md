@@ -10,7 +10,7 @@ Add tags to your AWS resources in both Terraform 0.11 and 0.12!
 1. Download the latest [release binary](https://github.com/env0/terratag/releases) or install the latest [node package](https://github.com/env0/terratag/packages)
 2. ```bash    
     terraform init # needed to initialize provider schema and pull child terraform modules
-    terratag -dir=foo/bar -tags=\"hello\": \"world\"}
+    terratag -dir=foo/bar -tags={\"hello\": \"world\"}
     ```
       > Note Terratag recives two commaind line arguments:  
       > - `-dir` - optional, the directory to recursively search for any `.tf` file and try to terratag it.  
