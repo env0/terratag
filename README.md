@@ -7,7 +7,7 @@ Add tags to your AWS resources in both Terraform 0.11 and 0.12!
 - Terraform 0.11 or 0.12
 
 ## Usage
-1. Download the latest [release binary](https://github.com/env0/terratag/releases)
+1. Download the latest [release binary](https://github.com/env0/terratag/releases) or install the latest [node package](https://github.com/env0/terratag/packages)
 2. ```bash    
     terraform init # needed to initialize provider schema and pull child terraform modules
     terratag -dir=foo/bar -tags=\"hello\": \"world\"}
