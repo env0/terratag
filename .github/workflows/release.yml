@@ -29,14 +29,6 @@ jobs:
           mkdir out
           go build -o ./out/terratag/terratag
 
-      # Setup .npmrc file to publish to GitHub Packages
-      - name: Setup Node
-        uses: actions/setup-node@v1
-        with:
-          node-version: '12.x'
-          registry-url: 'https://npm.pkg.github.com'
-          # scope: '@env0' # Defaults to the user or organization that owns the workflow file
-
       - name: Create Release
         id: create_release
         uses: actions/create-release@v1.0.0
