@@ -27,7 +27,7 @@ jobs:
       - name: Build project
         run: |
           mkdir out
-          go build -o ./out/terratag/terratag
+          CGO_ENABLED=0 go build -a -installsuffix cgo -o ./out/terratag/terratag
 
       - name: Create Release
         id: create_release
