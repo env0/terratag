@@ -1,6 +1,7 @@
 package terraform
 
 import (
+	"github.com/env0/terratag/errors"
 	"log"
 	"os/exec"
 	"strings"
@@ -9,7 +10,7 @@ import (
 func GetTeraformVersion() int {
 	output, err := exec.Command("terraform", "version").Output()
 	outputAsString := strings.TrimSpace(string(output))
-	PanicOnError(err, &outputAsString)
+	errors.PanicOnError(err, &outputAsString)
 
 	if strings.HasPrefix(outputAsString, "Terraform v0.11") {
 		return 11
