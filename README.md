@@ -15,6 +15,7 @@ Add tags to your AWS resources in both Terraform 0.11 and 0.12!
       > Note Terratag receives two command line arguments:  
       > - `-dir` - optional, the directory to recursively search for any `.tf` file and try to terratag it.  
       > - `-tags` - tags, as valid JSON (NOT HCL)
+      > - `-skipTerratagFiles` - optional. Default to `true`. Skips any previously tagged - (files with `terratag.tf` suffix)
 
 
 ## Notes
