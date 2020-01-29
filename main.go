@@ -6,15 +6,13 @@ import (
 	. "github.com/env0/terratag/cli"
 	"github.com/env0/terratag/convert"
 	. "github.com/env0/terratag/errors"
+	"github.com/env0/terratag/file"
 	. "github.com/env0/terratag/terraform"
 	. "github.com/env0/terratag/tfschema"
-	"github.com/hashicorp/hcl/v2"
 	"github.com/hashicorp/hcl/v2/hclwrite"
 	"github.com/thoas/go-funk"
 	"github.com/zclconf/go-cty/cty"
-	"io/ioutil"
 	"log"
-	"os"
 	"path/filepath"
 	"strings"
 )
@@ -49,14 +47,14 @@ func tagDirectoryResources(dir string, tags string, tfVersion int) {
 
 func tagFileResources(path string, dir string, tags string, tfVersion int) {
 	log.Print("Processing file ", path)
-	hcl := parseHcl(path)
+	hcl := file.ReadHCLFile(path)
 
 	terratag := TerratagLocal{
 		Found: map[string]hclwrite.Tokens{},
 		Added: jsonToHclMap(tags),
 	}
 
-	filename := getFilename(path)
+	filename := file.GetFilename(path)
 
 	anyTagged := false
 	var swappedTagsStrings []string
@@ -92,29 +90,31 @@ func tagFileResources(path string, dir string, tags string, tfVersion int) {
 		swappedTagsStrings = append(swappedTagsStrings, terratag.Added)
 		text = unquoteTagsAttribute(swappedTagsStrings, text)
 
-		replaceWithTerratagFile(path, text)
+		file.ReplaceWithTerratagFile(path, text)
 	} else {
 		log.Print("No taggable resources found in file ", path, " - skipping")
 	}
 }
 
-func parseHcl(path string) *hclwrite.File {
-	src, err := ioutil.ReadFile(path)
-	PanicOnError(err, nil)
+func tagResource(filename string, terratag TerratagLocal, resource *hclwrite.Block, tfVersion int) string {
+	log.Print("Resource taggable, processing...")
 
-	file, diagnostics := hclwrite.ParseConfig(src, path, hcl.InitialPos)
-	if diagnostics.HasErrors() {
-		hclErrors := diagnostics.Errs()
-		log.Fatalln(hclErrors)
+	hasExistingTags := moveExistingTags(filename, terratag, resource)
+
+	tagsValue := ""
+	if hasExistingTags {
+		tagsValue = "merge( " + convert.GetExistingTagsExpression(terratag.Found[getResourceExistingTagsKey(filename, resource)]) + ", local." + getTerratagAddedKey(filename) + ")"
+	} else {
+		tagsValue = "local." + getTerratagAddedKey(filename)
 	}
-	return file
-}
 
-func getFilename(path string) string {
-	_, filename := filepath.Split(path)
-	filename = strings.TrimSuffix(filename, filepath.Ext(path))
-	filename = strings.ReplaceAll(filename, ".", "-")
-	return filename
+	if tfVersion == 11 {
+		tagsValue = "${" + tagsValue + "}"
+	}
+
+	resource.Body().SetAttributeValue("tags", cty.StringVal(tagsValue))
+
+	return tagsValue
 }
 
 func appendLocalsBlock(file *hclwrite.File, filename string, terratag TerratagLocal) {
@@ -151,19 +151,6 @@ func jsonToHclMap(tags string) string {
 	return "{" + strings.Join(mapContent, ",") + "}"
 }
 
-func replaceWithTerratagFile(path string, textContent string) {
-	taggedFilename := strings.TrimSuffix(path, filepath.Ext(path)) + ".terratag.tf"
-	backupFilename := path + ".bak"
-
-	log.Print("Creating file ", taggedFilename)
-	taggedFileError := ioutil.WriteFile(taggedFilename, []byte(textContent), 0644)
-	PanicOnError(taggedFileError, nil)
-
-	log.Print("Renaming original file from ", path, " to ", backupFilename)
-	backupFileError := os.Rename(path, backupFilename)
-	PanicOnError(backupFileError, nil)
-}
-
 func unquoteTagsAttribute(swappedTagsStrings []string, text string) string {
 	for _, swappedTagString := range swappedTagsStrings {
 		escapedByWriter := strings.ReplaceAll(swappedTagString, "\"", "\\\"")
@@ -177,27 +164,6 @@ func unquoteTagsAttribute(swappedTagsStrings []string, text string) string {
 		text = strings.ReplaceAll(text, escapedByWriter, swappedTagString)
 	}
 	return text
-}
-
-func tagResource(filename string, terratag TerratagLocal, resource *hclwrite.Block, tfVersion int) string {
-	log.Print("Resource taggable, processing...")
-
-	hasExistingTags := moveExistingTags(filename, terratag, resource)
-
-	tagsValue := ""
-	if hasExistingTags {
-		tagsValue = "merge( " + convert.GetExistingTagsExpression(terratag.Found[getResourceExistingTagsKey(filename, resource)]) + ", local." + getTerratagAddedKey(filename) + ")"
-	} else {
-		tagsValue = "local." + getTerratagAddedKey(filename)
-	}
-
-	if tfVersion == 11 {
-		tagsValue = "${" + tagsValue + "}"
-	}
-
-	resource.Body().SetAttributeValue("tags", cty.StringVal(tagsValue))
-
-	return tagsValue
 }
 
 func moveExistingTags(filename string, terratag TerratagLocal, resource *hclwrite.Block) bool {
