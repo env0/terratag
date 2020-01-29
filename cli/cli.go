@@ -6,20 +6,28 @@ import (
 	"strings"
 )
 
-func InitArgs() (string, string, bool) {
+func InitArgs() (string, string, bool, bool) {
 	var tags string
 	var dir string
+	var skipTerratagFiles string
+	var isSkipTerratagFiles bool
+
 	isMissingArg := false
 
 	tags = setFlag("tags", "")
 	dir = setFlag("dir", ".")
+	skipTerratagFiles = setFlag("skipTerratagFiles", "true")
 
 	if tags == "" {
 		log.Println("Usage: terratag -tags='{ \"some_tag\": \"value\" }' [-dir=\".\"]")
 		isMissingArg = true
 	}
 
-	return tags, dir, isMissingArg
+	if skipTerratagFiles == "true" {
+		isSkipTerratagFiles = true
+	}
+
+	return tags, dir, isSkipTerratagFiles, isMissingArg
 }
 
 func setFlag(flag string, defaultValue string) string {
