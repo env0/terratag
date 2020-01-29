@@ -1,8 +1,10 @@
 package cli
 
 import (
+	"github.com/env0/terratag/errors"
 	"log"
 	"os"
+	"strconv"
 	"strings"
 )
 
@@ -23,13 +25,9 @@ func InitArgs() (string, string, bool, bool) {
 		isMissingArg = true
 	}
 
-	if skipTerratagFiles == "true" {
-		isSkipTerratagFiles = true
-	} else if skipTerratagFiles == "false" {
-		isSkipTerratagFiles = false
-	} else {
-		panic("-skipTerratagFiles may only be set to true or false")
-	}
+	isSkipTerratagFiles, err := strconv.ParseBool(skipTerratagFiles)
+	errorMessage := "-skipTerratagFiles may only be set to true or false"
+	errors.PanicOnError(err, &errorMessage)
 
 	return tags, dir, isSkipTerratagFiles, isMissingArg
 }
