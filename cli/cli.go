@@ -25,6 +25,10 @@ func InitArgs() (string, string, bool, bool) {
 
 	if skipTerratagFiles == "true" {
 		isSkipTerratagFiles = true
+	} else if skipTerratagFiles == "false" {
+		isSkipTerratagFiles = false
+	} else {
+		panic("-skipTerratagFiles may only be set to true or false")
 	}
 
 	return tags, dir, isSkipTerratagFiles, isMissingArg
