@@ -19,7 +19,7 @@ import (
 )
 
 func main() {
-	tags, dir, isMissingArg := InitArgs()
+	tags, dir, isSkipTerratagFiles, isMissingArg := InitArgs()
 
 	tfVersion := GetTeraformVersion()
 
@@ -27,10 +27,10 @@ func main() {
 		return
 	}
 
-	tagDirectoryResources(dir, tags, tfVersion)
+	tagDirectoryResources(dir, tags, isSkipTerratagFiles, tfVersion)
 }
 
-func tagDirectoryResources(dir string, tags string, tfVersion int) {
+func tagDirectoryResources(dir string, tags string, isSkipTerratagFiles bool, tfVersion int) {
 	matches, err := doublestar.Glob(dir + "/**/*.tf")
 	PanicOnError(err, nil)
 
@@ -42,7 +42,11 @@ func tagDirectoryResources(dir string, tags string, tfVersion int) {
 	matches = funk.UniqString(matches)
 
 	for _, path := range matches {
-		tagFileResources(path, dir, tags, tfVersion)
+		if isSkipTerratagFiles && strings.HasSuffix(path, "terratag.tf") {
+			log.Print("Skipping file ", path, " as it's already tagged")
+		} else {
+			tagFileResources(path, dir, tags, tfVersion)
+		}
 	}
 }
 
