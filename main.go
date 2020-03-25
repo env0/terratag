@@ -7,6 +7,7 @@ import (
 	"github.com/env0/terratag/convert"
 	. "github.com/env0/terratag/errors"
 	"github.com/env0/terratag/file"
+	. "github.com/env0/terratag/providers"
 	"github.com/env0/terratag/tag_keys"
 	. "github.com/env0/terratag/terraform"
 	. "github.com/env0/terratag/tfschema"
@@ -66,10 +67,9 @@ func tagFileResources(path string, dir string, tags string, tfVersion int) {
 
 	for _, resource := range hcl.Body().Blocks() {
 		if resource.Type() == "resource" {
-			resourceType := resource.Labels()[0]
 			log.Print("Processing resource ", resource.Labels())
 
-			isTaggable, isTaggableViaSpecialTagBlock := IsTaggable(dir, resourceType)
+			isTaggable, isTaggableViaSpecialTagBlock := IsTaggable(dir, *resource)
 
 			if isTaggable {
 				if !isTaggableViaSpecialTagBlock {
@@ -117,7 +117,7 @@ func tagResource(filename string, terratag convert.TerratagLocal, resource *hclw
 		tagsValue = "${" + tagsValue + "}"
 	}
 
-	resource.Body().SetAttributeValue("tags", cty.StringVal(tagsValue))
+	resource.Body().SetAttributeValue(GetTagBlockIdByResource(*resource), cty.StringVal(tagsValue))
 
 	return tagsValue
 }
