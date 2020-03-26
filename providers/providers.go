@@ -39,7 +39,7 @@ func GetTagBlockIdByResource(resource hclwrite.Block) string {
 	return ""
 }
 
-func IsSupportedResource(resource hclwrite.Block) bool {
+func IsTaggableResource(resource hclwrite.Block) bool {
 	return isSupportedProvider(getProviderByResource(resource))
 }
 

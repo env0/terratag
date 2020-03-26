@@ -13,7 +13,7 @@ func IsTaggable(dir string, resource hclwrite.Block) (bool, bool) {
 	isTaggable := false
 	isTaggableViaSpecialTagBlock := false
 
-	if IsSupportedResource(resource) {
+	if IsTaggableResource(resource) {
 		resourceType := resource.Labels()[0]
 		command := exec.Command("tfschema", "resource", "show", "-format=json", resourceType)
 		command.Dir = dir
