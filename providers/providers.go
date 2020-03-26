@@ -21,9 +21,7 @@ func SetIsTaggableByResource(resource hclwrite.Block, attribute string, isTaggab
 	provider := getProviderByResource(resource)
 	tagBlockId := GetTagBlockIdByResource(resource)
 
-	if provider == "aws" && attribute == tagBlockId {
-		*isTaggable = true
-	} else if provider == "gcp" && attribute == tagBlockId {
+	if (provider == "aws" || provider == "gcp") && attribute == tagBlockId {
 		*isTaggable = true
 	}
 }
