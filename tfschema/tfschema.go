@@ -32,7 +32,9 @@ func IsTaggable(dir string, resource hclwrite.Block) (bool, bool) {
 			err := mapstructure.Decode(attributeMap, &attribute)
 			errors.PanicOnError(err, nil)
 
-			SetIsTaggableByResource(resource, attribute.Name, &isTaggable)
+			if IsTaggableByAttribute(resource, attribute.Name) {
+				isTaggable = true
+			}
 		}
 
 		if resourceType == "aws_autoscaling_group" {
