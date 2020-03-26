@@ -3,16 +3,18 @@ package tfschema
 import (
 	"encoding/json"
 	"github.com/env0/terratag/errors"
+	"github.com/env0/terratag/providers"
+	"github.com/hashicorp/hcl/v2/hclwrite"
 	"github.com/mitchellh/mapstructure"
 	"os/exec"
-	"strings"
 )
 
-func IsTaggable(dir string, resourceType string) (bool, bool) {
+func IsTaggable(dir string, resource hclwrite.Block) (bool, bool) {
 	isTaggable := false
 	isTaggableViaSpecialTagBlock := false
 
-	if strings.HasPrefix(resourceType, "aws_") {
+	if providers.IsTaggableResource(resource) {
+		resourceType := resource.Labels()[0]
 		command := exec.Command("tfschema", "resource", "show", "-format=json", resourceType)
 		command.Dir = dir
 		output, err := command.Output()
@@ -30,7 +32,7 @@ func IsTaggable(dir string, resourceType string) (bool, bool) {
 			err := mapstructure.Decode(attributeMap, &attribute)
 			errors.PanicOnError(err, nil)
 
-			if attribute.Name == "tags" {
+			if providers.IsTaggableByAttribute(resource, attribute.Name) {
 				isTaggable = true
 			}
 		}

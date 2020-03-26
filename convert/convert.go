@@ -3,6 +3,7 @@ package convert
 import (
 	"encoding/json"
 	"github.com/env0/terratag/errors"
+	"github.com/env0/terratag/providers"
 	"github.com/env0/terratag/tag_keys"
 	"github.com/hashicorp/hcl/v2/hclsyntax"
 	"github.com/hashicorp/hcl/v2/hclwrite"
@@ -125,8 +126,10 @@ func UnquoteTagsAttribute(swappedTagsStrings []string, text string) string {
 func MoveExistingTags(filename string, terratag TerratagLocal, resource *hclwrite.Block) bool {
 	var existingTags hclwrite.Tokens
 
+	tagBlockId := providers.GetTagBlockIdByResource(*resource)
+
 	// First we try to find tags as attribute
-	tagsAttribute := resource.Body().GetAttribute("tags")
+	tagsAttribute := resource.Body().GetAttribute(tagBlockId)
 
 	if tagsAttribute != nil {
 		// If attribute found, get its value
@@ -134,10 +137,10 @@ func MoveExistingTags(filename string, terratag TerratagLocal, resource *hclwrit
 		existingTags = tagsAttribute.Expr().BuildTokens(hclwrite.Tokens{})
 	} else {
 		// Otherwise, we try to get tags as block
-		tagsBlock := resource.Body().FirstMatchingBlock("tags", nil)
+		tagsBlock := resource.Body().FirstMatchingBlock(tagBlockId, nil)
 		if tagsBlock != nil {
-			quaotedTagBlock := quoteBlockKeys(tagsBlock)
-			existingTags = funk.Tail(quaotedTagBlock.BuildTokens(hclwrite.Tokens{})).(hclwrite.Tokens)
+			quotedTagBlock := quoteBlockKeys(tagsBlock)
+			existingTags = funk.Tail(quotedTagBlock.BuildTokens(hclwrite.Tokens{})).(hclwrite.Tokens)
 			// If we did get tags from block, we will now remove that block, as we're going to add a merged tags ATTRIBUTE
 			removeBlockResult := resource.Body().RemoveBlock(tagsBlock)
 			if removeBlockResult == false {
