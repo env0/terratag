@@ -6,7 +6,9 @@ import (
 	"github.com/env0/terratag/providers"
 	"github.com/hashicorp/hcl/v2/hclwrite"
 	"github.com/mitchellh/mapstructure"
+	"log"
 	"os/exec"
+	"strings"
 )
 
 func IsTaggable(dir string, resource hclwrite.Block) (bool, bool) {
@@ -19,7 +21,16 @@ func IsTaggable(dir string, resource hclwrite.Block) (bool, bool) {
 		command.Dir = dir
 		output, err := command.Output()
 		outputAsString := string(output)
-		errors.PanicOnError(err, &outputAsString)
+
+		if err != nil {
+			if strings.Contains(outputAsString, "Failed to find resource type") {
+				// short circuiting unfound resource due to: https://github.com/env0/terratag/issues/17
+				log.Print("Skipped ", resourceType, " as it is not YET supported")
+				return false, false
+			} else {
+				errors.PanicOnError(err, &outputAsString)
+			}
+		}
 
 		var schema map[string]interface{}
 
