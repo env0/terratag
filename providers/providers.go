@@ -12,6 +12,8 @@ func getProviderByResource(resource hclwrite.Block) Provider {
 		return "aws"
 	} else if strings.HasPrefix(resourceType, "google_") {
 		return "gcp"
+	} else if strings.HasPrefix(resourceType, "azurerm_") || strings.HasPrefix(resourceType, "azurestack_") {
+		return "azure"
 	}
 
 	return ""
@@ -21,7 +23,7 @@ func IsTaggableByAttribute(resource hclwrite.Block, attribute string) bool {
 	provider := getProviderByResource(resource)
 	tagBlockId := GetTagBlockIdByResource(resource)
 
-	if (provider == "aws" || provider == "gcp") && attribute == tagBlockId {
+	if (provider != "") && attribute == tagBlockId {
 		return true
 	}
 	return false
@@ -30,7 +32,7 @@ func IsTaggableByAttribute(resource hclwrite.Block, attribute string) bool {
 func GetTagBlockIdByResource(resource hclwrite.Block) string {
 	provider := getProviderByResource(resource)
 
-	if provider == "aws" {
+	if provider == "aws" || provider == "azure" {
 		return "tags"
 	} else if provider == "gcp" {
 		return "labels"
@@ -48,6 +50,8 @@ func isSupportedProvider(provider Provider) bool {
 	case "aws":
 		return true
 	case "gcp":
+		return true
+	case "azure":
 		return true
 	default:
 		return false
