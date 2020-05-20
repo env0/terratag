@@ -15,6 +15,7 @@ import (
 	"github.com/thoas/go-funk"
 	"github.com/zclconf/go-cty/cty"
 	"log"
+	"os"
 	"path/filepath"
 	"strings"
 )
@@ -24,11 +25,28 @@ func main() {
 
 	tfVersion := GetTeraformVersion()
 
-	if isMissingArg {
+	if isMissingArg || !isTerraformInitRun(dir) {
+		log.Print("Exiting...")
 		return
 	}
 
 	tagDirectoryResources(dir, tags, isSkipTerratagFiles, tfVersion)
+}
+
+func isTerraformInitRun(dir string) bool {
+	_, err := os.Stat(dir + "/.terraform")
+
+	if err != nil {
+		if os.IsNotExist(err) {
+			log.Print("terraform init must run before running terratag")
+			return false
+		}
+
+		message := "couldn't determine if terraform init has run"
+		PanicOnError(err, &message)
+	}
+
+	return true
 }
 
 func tagDirectoryResources(dir string, tags string, isSkipTerratagFiles bool, tfVersion int) {
