@@ -14,6 +14,7 @@ import (
 	"github.com/hashicorp/hcl/v2/hclwrite"
 	"github.com/thoas/go-funk"
 	"github.com/zclconf/go-cty/cty"
+	"io/ioutil"
 	"log"
 	"os"
 	"path/filepath"
@@ -26,11 +27,12 @@ func main() {
 	tfVersion := GetTeraformVersion()
 
 	if isMissingArg || !isTerraformInitRun(dir) {
-		log.Print("Exiting...")
 		return
 	}
 
-	tagDirectoryResources(dir, tags, isSkipTerratagFiles, tfVersion)
+	matches := getTerraformFilePaths(dir)
+
+	tagDirectoryResources(dir, matches, tags, isSkipTerratagFiles, tfVersion)
 }
 
 func isTerraformInitRun(dir string) bool {
@@ -38,7 +40,7 @@ func isTerraformInitRun(dir string) bool {
 
 	if err != nil {
 		if os.IsNotExist(err) {
-			log.Print("terraform init must run before running terratag")
+			log.Fatalln("terraform init must run before running terratag")
 			return false
 		}
 
@@ -49,17 +51,63 @@ func isTerraformInitRun(dir string) bool {
 	return true
 }
 
-func tagDirectoryResources(dir string, tags string, isSkipTerratagFiles bool, tfVersion int) {
-	matches, err := doublestar.Glob(dir + "/**/*.tf")
+func getModulesDirsPaths(dir string) []string {
+	var paths []string
+	var modulesJson TerraformModulesJson
+
+	jsonFile, err := os.Open(dir + "/.terraform/modules/modules.json")
+
+	if os.IsNotExist(err) {
+		closeErr := jsonFile.Close()
+		PanicOnError(closeErr, nil)
+
+		return paths
+	}
 	PanicOnError(err, nil)
 
-	for i, match := range matches {
-		resolvedMatch, err := filepath.EvalSymlinks(match)
-		matches[i] = resolvedMatch
-		PanicOnError(err, nil)
-	}
-	matches = funk.UniqString(matches)
+	byteValue, _ := ioutil.ReadAll(jsonFile)
+	err = json.Unmarshal(byteValue, &modulesJson)
+	PanicOnError(err, nil)
 
+	for _, module := range modulesJson.Modules {
+		modulePath, err := filepath.EvalSymlinks(dir + "/" + module.Dir)
+		PanicOnError(err, nil)
+
+		paths = append(paths, modulePath)
+	}
+
+	err = jsonFile.Close()
+	PanicOnError(err, nil)
+
+	return paths
+}
+
+func getTerraformFilePaths(rootDir string) []string {
+	const tfFileMatcher = "/**/*.tf"
+
+	tfFiles, err := doublestar.Glob(rootDir + tfFileMatcher)
+	PanicOnError(err, nil)
+
+	modulesDirs := getModulesDirsPaths(rootDir)
+
+	for _, moduleDir := range modulesDirs {
+		matches, err := doublestar.Glob(moduleDir + tfFileMatcher)
+		PanicOnError(err, nil)
+
+		tfFiles = append(tfFiles, matches...)
+	}
+
+	for i, tfFile := range tfFiles {
+		resolvedTfFile, err := filepath.EvalSymlinks(tfFile)
+		PanicOnError(err, nil)
+
+		tfFiles[i] = resolvedTfFile
+	}
+
+	return funk.UniqString(tfFiles)
+}
+
+func tagDirectoryResources(dir string, matches []string, tags string, isSkipTerratagFiles bool, tfVersion int) {
 	for _, path := range matches {
 		if isSkipTerratagFiles && strings.HasSuffix(path, "terratag.tf") {
 			log.Print("Skipping file ", path, " as it's already tagged")
@@ -150,4 +198,14 @@ func jsonToHclMap(tags string) string {
 		mapContent = append(mapContent, "\""+key+"\"="+"\""+value+"\"")
 	}
 	return "{" + strings.Join(mapContent, ",") + "}"
+}
+
+type TerraformModulesJson struct {
+	Modules []TerraformModuleMetadata `json:"Modules"`
+}
+
+type TerraformModuleMetadata struct {
+	Key    string `json:"Key"`
+	Source string `json:"Source"`
+	Dir    string `json:"Dir"`
 }
