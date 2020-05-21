@@ -76,9 +76,6 @@ func getTerraformModulesDirPaths(dir string) []string {
 	jsonFile, err := os.Open(dir + "/.terraform/modules/modules.json")
 
 	if os.IsNotExist(err) {
-		closeErr := jsonFile.Close()
-		errors.PanicOnError(closeErr, nil)
-
 		return paths
 	}
 	errors.PanicOnError(err, nil)
