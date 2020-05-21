@@ -28,6 +28,22 @@ func GetTerraformVersion() int {
 	return -1
 }
 
+func IsTerraformInitRun(dir string) bool {
+	_, err := os.Stat(dir + "/.terraform")
+
+	if err != nil {
+		if os.IsNotExist(err) {
+			log.Fatalln("terraform init must run before running terratag")
+			return false
+		}
+
+		message := "couldn't determine if terraform init has run"
+		errors.PanicOnError(err, &message)
+	}
+
+	return true
+}
+
 func GetTerraformFilePaths(rootDir string) []string {
 	const tfFileMatcher = "/**/*.tf"
 

@@ -13,7 +13,6 @@ import (
 	"github.com/hashicorp/hcl/v2/hclwrite"
 	"github.com/zclconf/go-cty/cty"
 	"log"
-	"os"
 	"strings"
 )
 
@@ -22,29 +21,13 @@ func main() {
 
 	tfVersion := GetTerraformVersion()
 
-	if isMissingArg || !isTerraformInitRun(dir) {
+	if isMissingArg || !IsTerraformInitRun(dir) {
 		return
 	}
 
 	matches := GetTerraformFilePaths(dir)
 
 	tagDirectoryResources(dir, matches, tags, isSkipTerratagFiles, tfVersion)
-}
-
-func isTerraformInitRun(dir string) bool {
-	_, err := os.Stat(dir + "/.terraform")
-
-	if err != nil {
-		if os.IsNotExist(err) {
-			log.Fatalln("terraform init must run before running terratag")
-			return false
-		}
-
-		message := "couldn't determine if terraform init has run"
-		PanicOnError(err, &message)
-	}
-
-	return true
 }
 
 func tagDirectoryResources(dir string, matches []string, tags string, isSkipTerratagFiles bool, tfVersion int) {
