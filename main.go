@@ -2,7 +2,6 @@ package main
 
 import (
 	"encoding/json"
-	"github.com/bmatcuk/doublestar"
 	. "github.com/env0/terratag/cli"
 	"github.com/env0/terratag/convert"
 	. "github.com/env0/terratag/errors"
@@ -12,36 +11,26 @@ import (
 	. "github.com/env0/terratag/terraform"
 	. "github.com/env0/terratag/tfschema"
 	"github.com/hashicorp/hcl/v2/hclwrite"
-	"github.com/thoas/go-funk"
 	"github.com/zclconf/go-cty/cty"
 	"log"
-	"path/filepath"
 	"strings"
 )
 
 func main() {
 	tags, dir, isSkipTerratagFiles, isMissingArg := InitArgs()
 
-	tfVersion := GetTeraformVersion()
+	tfVersion := GetTerraformVersion()
 
-	if isMissingArg {
+	if isMissingArg || !IsTerraformInitRun(dir) {
 		return
 	}
 
-	tagDirectoryResources(dir, tags, isSkipTerratagFiles, tfVersion)
+	matches := GetTerraformFilePaths(dir)
+
+	tagDirectoryResources(dir, matches, tags, isSkipTerratagFiles, tfVersion)
 }
 
-func tagDirectoryResources(dir string, tags string, isSkipTerratagFiles bool, tfVersion int) {
-	matches, err := doublestar.Glob(dir + "/**/*.tf")
-	PanicOnError(err, nil)
-
-	for i, match := range matches {
-		resolvedMatch, err := filepath.EvalSymlinks(match)
-		matches[i] = resolvedMatch
-		PanicOnError(err, nil)
-	}
-	matches = funk.UniqString(matches)
-
+func tagDirectoryResources(dir string, matches []string, tags string, isSkipTerratagFiles bool, tfVersion int) {
 	for _, path := range matches {
 		if isSkipTerratagFiles && strings.HasSuffix(path, "terratag.tf") {
 			log.Print("Skipping file ", path, " as it's already tagged")
