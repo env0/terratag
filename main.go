@@ -20,7 +20,7 @@ import (
 func main() {
 	tags, dir, isSkipTerratagFiles, isMissingArg := InitArgs()
 
-	tfVersion := GetTeraformVersion()
+	tfVersion := GetTerraformVersion()
 
 	if isMissingArg || !isTerraformInitRun(dir) {
 		return

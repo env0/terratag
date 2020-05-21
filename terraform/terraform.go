@@ -13,7 +13,7 @@ import (
 	"strings"
 )
 
-func GetTeraformVersion() int {
+func GetTerraformVersion() int {
 	output, err := exec.Command("terraform", "version").Output()
 	outputAsString := strings.TrimSpace(string(output))
 	errors.PanicOnError(err, &outputAsString)
