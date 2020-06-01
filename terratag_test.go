@@ -5,6 +5,7 @@ import (
 	"github.com/bmatcuk/doublestar"
 	. "github.com/env0/terratag"
 	. "github.com/onsi/ginkgo"
+	"github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
 	"github.com/otiai10/copy"
 	"io/ioutil"
@@ -23,9 +24,9 @@ var _ = Describe("Terratag", func() {
 		describeTerraform("11")
 	})
 
-	Describe("Terraform 11", func() {
-		describeTerraform("12")
-	})
+	//Describe("Terraform 12", func() {
+	//	describeTerraform("12")
+	//})
 })
 
 func describeTerraform(version string) {
@@ -36,13 +37,60 @@ func describeTerraform(version string) {
 
 	const entryFilesMatcher = "/**/out/**/main.tf"
 	entryFiles, _ := doublestar.Glob(rootDir + terraformDir + entryFilesMatcher)
+	var testEntries []table.TableEntry
 	for _, entryFile := range entryFiles {
 		entryDir := strings.TrimSuffix(entryFile, "/main.tf")
 		suite := strings.Split(strings.Split(entryFile, terraformDir)[1], "/")[1]
 		suiteDir := strings.Split(entryFile, terraformDir)[0] + terraformDir + "/" + suite
 
-		describeSuite(entryDir, suiteDir)
+		testEntries = append(testEntries, table.Entry(suite, entryDir, suiteDir))
 	}
+
+	Describe("prerequesites", func() {
+		table.DescribeTable("Terraform Init",
+			func(entryDir string, suiteDir string) {
+				err := terraform(entryDir, "init")
+				Expect(err).To(BeNil())
+			}, testEntries...,
+		)
+
+		table.DescribeTable("Run Terratag",
+			func(entryDir string, suiteDir string) {
+				err := terratag(entryDir)
+				Expect(err).To(BeNil())
+			}, testEntries...,
+		)
+	})
+
+	Describe("output validation", func() {
+		table.DescribeTable("Terraform Validate",
+			func(entryDir string, suiteDir string) {
+				err := terraform(entryDir, "validate")
+				Expect(err).To(BeNil())
+			}, testEntries...,
+		)
+
+		table.DescribeTable("Terratag Output Files",
+			func(entryDir string, suiteDir string) {
+				expectedPattern := suiteDir + "/expected/**/*.terratag.tf"
+				var expectedTerratag []string
+				var actualTerratag []string
+				expectedTerratag, _ = doublestar.Glob(expectedPattern)
+				actualTerratag, _ = doublestar.Glob(suiteDir + "/out/**/*.terratag.tf")
+				actualTerratag = filterSymlink(actualTerratag)
+
+				Expect(len(actualTerratag)).To(BeEquivalentTo(len(expectedTerratag)))
+				for _, expectedTerratagFile := range expectedTerratag {
+					expectedFile, _ := os.Open(expectedTerratagFile)
+					expectedContent, _ := ioutil.ReadAll(expectedFile)
+					actualTerratagFile := strings.ReplaceAll(expectedTerratagFile, "/expected/", "/out/")
+					actualFile, _ := os.Open(actualTerratagFile)
+					actualContent, _ := ioutil.ReadAll(actualFile)
+					Expect(string(expectedContent)).To(BeEquivalentTo(string(actualContent)))
+				}
+			}, testEntries...,
+		)
+	})
 }
 
 func cloneOutput(inputDirs []string) {
@@ -51,52 +99,6 @@ func cloneOutput(inputDirs []string) {
 		os.RemoveAll(outputDir)
 		copy.Copy(inputDir, outputDir)
 	}
-}
-
-func describeSuite(entryDir string, suiteDir string) {
-	Describe("prerequesites", func() {
-		It("should terraform init", func() {
-			err := terraform(entryDir, "init")
-			Expect(err).To(BeNil())
-		})
-
-		It("should run terratag", func() {
-			err := terratag(entryDir)
-			Expect(err).To(BeNil())
-		})
-	})
-
-	It("should pass terraform validation", func() {
-		err := terraform(entryDir, "validate")
-		Expect(err).To(BeNil())
-	})
-
-	Describe("the terratag output", func() {
-		expectedPattern := suiteDir + "/expected/**/*.terratag.tf"
-		var expectedTerratag []string
-		var actualTerratag []string
-
-		BeforeEach(func() {
-			expectedTerratag, _ = doublestar.Glob(expectedPattern)
-			actualTerratag, _ = doublestar.Glob(suiteDir + "/out/**/*.terratag.tf")
-			actualTerratag = filterSymlink(actualTerratag)
-		})
-
-		It("should have exactly "+string(len(expectedTerratag))+" files tagged", func() {
-			Expect(len(actualTerratag)).To(BeEquivalentTo(len(expectedTerratag)))
-		})
-
-		It("should have terratag files match expected", func() {
-			for _, expectedTerratagFile := range expectedTerratag {
-				expectedFile, _ := os.Open(expectedTerratagFile)
-				expectedContent, _ := ioutil.ReadAll(expectedFile)
-				actualTerratagFile := strings.ReplaceAll(expectedTerratagFile, "/expected/", "/out/")
-				actualFile, _ := os.Open(actualTerratagFile)
-				actualContent, _ := ioutil.ReadAll(actualFile)
-				Expect(string(expectedContent)).To(BeEquivalentTo(string(actualContent)))
-			}
-		})
-	})
 }
 
 func terratag(entryDir string) (err interface{}) {
