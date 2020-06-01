@@ -18,33 +18,17 @@ import (
 var cleanArgs = append(os.Args)
 var args = append(os.Args, "-tags={\"env0_environment_id\":\"40907eff-cf7c-419a-8694-e1c6bf1d1168\",\"env0_project_id\":\"43fd4ff1-8d37-4d9d-ac97-295bd850bf94\"}")
 var rootDir = "test/fixture"
+var terraform11Entries = getEntries("11")
+
+//terraform12Entries := getEntries("12")
 
 var _ = Describe("Terratag", func() {
 	Describe("Terraform 11", func() {
-		describeTerraform("11")
+		describeTerraform(terraform11Entries)
 	})
-
-	//Describe("Terraform 12", func() {
-	//	describeTerraform("12")
-	//})
 })
 
-func describeTerraform(version string) {
-	terraformDir := "/terraform_" + version
-	const inputDirsMatcher = "/**/input/"
-	inputDirs, _ := doublestar.Glob(rootDir + terraformDir + inputDirsMatcher)
-	cloneOutput(inputDirs)
-
-	const entryFilesMatcher = "/**/out/**/main.tf"
-	entryFiles, _ := doublestar.Glob(rootDir + terraformDir + entryFilesMatcher)
-	var testEntries []table.TableEntry
-	for _, entryFile := range entryFiles {
-		entryDir := strings.TrimSuffix(entryFile, "/main.tf")
-		suite := strings.Split(strings.Split(entryFile, terraformDir)[1], "/")[1]
-		suiteDir := strings.Split(entryFile, terraformDir)[0] + terraformDir + "/" + suite
-
-		testEntries = append(testEntries, table.Entry(suite, entryDir, suiteDir))
-	}
+func describeTerraform(testEntries []table.TableEntry) {
 
 	Describe("prerequesites", func() {
 		table.DescribeTable("Terraform Init",
@@ -91,6 +75,25 @@ func describeTerraform(version string) {
 			}, testEntries...,
 		)
 	})
+}
+
+func getEntries(version string) []table.TableEntry {
+	terraformDir := "/terraform_" + version
+	const inputDirsMatcher = "/**/input/"
+	inputDirs, _ := doublestar.Glob(rootDir + terraformDir + inputDirsMatcher)
+	cloneOutput(inputDirs)
+
+	const entryFilesMatcher = "/**/out/**/main.tf"
+	entryFiles, _ := doublestar.Glob(rootDir + terraformDir + entryFilesMatcher)
+	var testEntries []table.TableEntry
+	for _, entryFile := range entryFiles {
+		entryDir := strings.TrimSuffix(entryFile, "/main.tf")
+		suite := strings.Split(strings.Split(entryFile, terraformDir)[1], "/")[1]
+		suiteDir := strings.Split(entryFile, terraformDir)[0] + terraformDir + "/" + suite
+
+		testEntries = append(testEntries, table.Entry(suite, entryDir, suiteDir))
+	}
+	return testEntries
 }
 
 func cloneOutput(inputDirs []string) {
