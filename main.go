@@ -17,6 +17,10 @@ import (
 )
 
 func main() {
+	Terratag()
+}
+
+func Terratag() {
 	tags, dir, isSkipTerratagFiles, isMissingArg := InitArgs()
 
 	tfVersion := GetTerraformVersion()
