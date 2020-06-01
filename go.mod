@@ -6,6 +6,7 @@ require (
 	github.com/agext/levenshtein v1.2.2 // indirect
 	github.com/bmatcuk/doublestar v1.2.2
 	github.com/hashicorp/hcl/v2 v2.5.1
+	github.com/mickep76/mapslice-json v0.0.0-20200219143743-9f118f7dce45
 	github.com/mitchellh/go-wordwrap v1.0.0 // indirect
 	github.com/mitchellh/mapstructure v1.1.2
 	github.com/onsi/ginkgo v1.12.2

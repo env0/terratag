@@ -15,15 +15,31 @@ import (
 	"strings"
 )
 
+const rootDir = "test/fixture"
+
 var cleanArgs = append(os.Args)
-var args = append(os.Args, "-tags={\"env0_environment_id\":\"40907eff-cf7c-419a-8694-e1c6bf1d1168\",\"env0_project_id\":\"43fd4ff1-8d37-4d9d-ac97-295bd850bf94\"}")
-var rootDir = "test/fixture"
-var terraform11Entries = getEntries("11")
 
 //terraform12Entries := getEntries("12")
 
 var _ = Describe("Terratag", func() {
-	describeTerraform(terraform11Entries, "11")
+	SynchronizedBeforeSuite(func() []byte {
+		var entryFiles = getEntries("11")
+
+		return []byte(strings.Join(entryFiles, "|"))
+	}, func(joinedEntries []byte) {
+		entryFiles := strings.Split(string(joinedEntries), "|")
+
+		var testEntries []table.TableEntry
+		terraformDir := terraformDir("11")
+		for _, entryFile := range entryFiles {
+			entryDir := strings.TrimSuffix(entryFile, "/main.tf")
+			suite := strings.Split(strings.Split(entryFile, terraformDir)[1], "/")[1]
+			suiteDir := strings.Split(entryFile, terraformDir)[0] + terraformDir + "/" + suite
+
+			testEntries = append(testEntries, table.Entry(suite, entryDir, suiteDir))
+		}
+		describeTerraform(testEntries, "11")
+	})
 })
 
 func describeTerraform(testEntries []table.TableEntry, version string) {
@@ -71,23 +87,20 @@ func itShouldTerraformInit(entryDir string) {
 	Expect(err).To(BeNil())
 }
 
-func getEntries(version string) []table.TableEntry {
-	terraformDir := "/terraform_" + version
+func getEntries(version string) []string {
+	terraformDir := terraformDir(version)
 	const inputDirsMatcher = "/**/input/"
 	inputDirs, _ := doublestar.Glob(rootDir + terraformDir + inputDirsMatcher)
 	cloneOutput(inputDirs)
 
 	const entryFilesMatcher = "/**/out/**/main.tf"
 	entryFiles, _ := doublestar.Glob(rootDir + terraformDir + entryFilesMatcher)
-	var testEntries []table.TableEntry
-	for _, entryFile := range entryFiles {
-		entryDir := strings.TrimSuffix(entryFile, "/main.tf")
-		suite := strings.Split(strings.Split(entryFile, terraformDir)[1], "/")[1]
-		suiteDir := strings.Split(entryFile, terraformDir)[0] + terraformDir + "/" + suite
 
-		testEntries = append(testEntries, table.Entry(suite, entryDir, suiteDir))
-	}
-	return testEntries
+	return entryFiles
+}
+
+func terraformDir(version string) string {
+	return "/terraform_" + version
 }
 
 func cloneOutput(inputDirs []string) {
@@ -105,7 +118,8 @@ func terratag(entryDir string) (err interface{}) {
 			err = innerErr
 		}
 	}()
-	os.Args = append(args, "-dir="+entryDir)
+	var args = append(cleanArgs, "-tags={\"env0_environment_id\":\"40907eff-cf7c-419a-8694-e1c6bf1d1168\",\"env0_project_id\":\"43fd4ff1-8d37-4d9d-ac97-295bd850bf94\"}", "-dir="+entryDir)
+	os.Args = args
 	Terratag()
 	os.Args = cleanArgs
 
