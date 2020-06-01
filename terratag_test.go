@@ -4,8 +4,6 @@ import (
 	"fmt"
 	"github.com/bmatcuk/doublestar"
 	. "github.com/env0/terratag"
-	. "github.com/onsi/ginkgo"
-	"github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
 	"github.com/otiai10/copy"
 	"io/ioutil"
@@ -13,47 +11,39 @@ import (
 	"os/exec"
 	"path/filepath"
 	"strings"
+	"testing"
 )
 
-const rootDir = "test/fixture"
-
 var cleanArgs = append(os.Args)
+var args = append(os.Args, "-tags={\"env0_environment_id\":\"40907eff-cf7c-419a-8694-e1c6bf1d1168\",\"env0_project_id\":\"43fd4ff1-8d37-4d9d-ac97-295bd850bf94\"}")
+var rootDir = "test/fixture"
+var terraform11Entries = getEntries("11")
 
 //terraform12Entries := getEntries("12")
-
-var _ = Describe("Terratag", func() {
-	SynchronizedBeforeSuite(func() []byte {
-		var entryFiles = getEntries("11")
-
-		return []byte(strings.Join(entryFiles, "|"))
-	}, func(joinedEntries []byte) {
-		entryFiles := strings.Split(string(joinedEntries), "|")
-
-		var testEntries []table.TableEntry
-		terraformDir := terraformDir("11")
-		for _, entryFile := range entryFiles {
-			entryDir := strings.TrimSuffix(entryFile, "/main.tf")
-			suite := strings.Split(strings.Split(entryFile, terraformDir)[1], "/")[1]
-			suiteDir := strings.Split(entryFile, terraformDir)[0] + terraformDir + "/" + suite
-
-			testEntries = append(testEntries, table.Entry(suite, entryDir, suiteDir))
-		}
-		describeTerraform(testEntries, "11")
-	})
-})
-
-func describeTerraform(testEntries []table.TableEntry, version string) {
-	table.DescribeTable("Terraform "+version,
-		func(entryDir string, suiteDir string) {
-			itShouldTerraformInit(entryDir)
-			itShouldRunTerratag(entryDir)
-			itShouldRunTerraformValidate(entryDir)
-			itShouldGenerateExpectedTerratagFiles(suiteDir)
-		}, testEntries...,
-	)
+type TestCase struct {
+	suite    string
+	suiteDir string
+	entryDir string
 }
 
-func itShouldGenerateExpectedTerratagFiles(suiteDir string) {
+func TestTLog(t *testing.T) {
+	t.Parallel() // marks TLog as capable of running in parallel with other tests
+	var tests []TestCase
+
+	for _, tt := range tests {
+		tt := tt // NOTE: https://github.com/golang/go/wiki/CommonMistakes#using-goroutines-on-loop-iterator-variables
+		t.Run(tt.suite, func(t *testing.T) {
+			t.Parallel() // marks each test case as capable of running in parallel with each other
+			g := NewGomegaWithT(t)
+			itShouldTerraformInit(tt.entryDir, g)
+			itShouldRunTerratag(tt.entryDir, g)
+			itShouldRunTerraformValidate(tt.entryDir, g)
+			itShouldGenerateExpectedTerratagFiles(tt.suiteDir, g)
+		})
+	}
+}
+
+func itShouldGenerateExpectedTerratagFiles(suiteDir string, g *GomegaWithT) {
 	expectedPattern := suiteDir + "/expected/**/*.terratag.tf"
 	var expectedTerratag []string
 	var actualTerratag []string
@@ -61,46 +51,54 @@ func itShouldGenerateExpectedTerratagFiles(suiteDir string) {
 	actualTerratag, _ = doublestar.Glob(suiteDir + "/out/**/*.terratag.tf")
 	actualTerratag = filterSymlink(actualTerratag)
 
-	Expect(len(actualTerratag)).To(BeEquivalentTo(len(expectedTerratag)))
+	g.Expect(len(actualTerratag)).To(BeEquivalentTo(len(expectedTerratag)))
 	for _, expectedTerratagFile := range expectedTerratag {
 		expectedFile, _ := os.Open(expectedTerratagFile)
 		expectedContent, _ := ioutil.ReadAll(expectedFile)
 		actualTerratagFile := strings.ReplaceAll(expectedTerratagFile, "/expected/", "/out/")
 		actualFile, _ := os.Open(actualTerratagFile)
 		actualContent, _ := ioutil.ReadAll(actualFile)
-		Expect(string(expectedContent)).To(BeEquivalentTo(string(actualContent)))
+		g.Expect(string(expectedContent)).To(BeEquivalentTo(string(actualContent)))
 	}
 }
 
-func itShouldRunTerraformValidate(entryDir string) {
+func itShouldRunTerraformValidate(entryDir string, g *GomegaWithT) {
 	err := terraform(entryDir, "validate")
-	Expect(err).To(BeNil())
+	g.Expect(err).To(BeNil())
 }
 
-func itShouldRunTerratag(entryDir string) {
+func itShouldRunTerratag(entryDir string, g *GomegaWithT) {
 	err := terratag(entryDir)
-	Expect(err).To(BeNil())
+	g.Expect(err).To(BeNil())
 }
 
-func itShouldTerraformInit(entryDir string) {
+func itShouldTerraformInit(entryDir string, g *GomegaWithT) {
 	err := terraform(entryDir, "init")
-	Expect(err).To(BeNil())
+	g.Expect(err).To(BeNil())
 }
 
-func getEntries(version string) []string {
-	terraformDir := terraformDir(version)
+func getEntries(version string) []TestCase {
+	terraformDir := "/terraform_" + version
 	const inputDirsMatcher = "/**/input/"
 	inputDirs, _ := doublestar.Glob(rootDir + terraformDir + inputDirsMatcher)
 	cloneOutput(inputDirs)
 
 	const entryFilesMatcher = "/**/out/**/main.tf"
 	entryFiles, _ := doublestar.Glob(rootDir + terraformDir + entryFilesMatcher)
+	var testEntries []TestCase
+	for _, entryFile := range entryFiles {
+		entryDir := strings.TrimSuffix(entryFile, "/main.tf")
+		suite := strings.Split(strings.Split(entryFile, terraformDir)[1], "/")[1]
+		suiteDir := strings.Split(entryFile, terraformDir)[0] + terraformDir + "/" + suite
 
-	return entryFiles
-}
+		testEntries = append(testEntries, TestCase{
+			suite:    suite,
+			suiteDir: suiteDir,
+			entryDir: entryDir,
+		})
+	}
 
-func terraformDir(version string) string {
-	return "/terraform_" + version
+	return testEntries
 }
 
 func cloneOutput(inputDirs []string) {
@@ -118,8 +116,7 @@ func terratag(entryDir string) (err interface{}) {
 			err = innerErr
 		}
 	}()
-	var args = append(cleanArgs, "-tags={\"env0_environment_id\":\"40907eff-cf7c-419a-8694-e1c6bf1d1168\",\"env0_project_id\":\"43fd4ff1-8d37-4d9d-ac97-295bd850bf94\"}", "-dir="+entryDir)
-	os.Args = args
+	os.Args = append(args, "-dir="+entryDir)
 	Terratag()
 	os.Args = cleanArgs
 
