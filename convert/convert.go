@@ -5,6 +5,7 @@ import (
 	"github.com/env0/terratag/errors"
 	"github.com/env0/terratag/providers"
 	"github.com/env0/terratag/tag_keys"
+	"github.com/env0/terratag/utils"
 	"github.com/hashicorp/hcl/v2/hclsyntax"
 	"github.com/hashicorp/hcl/v2/hclwrite"
 	"github.com/thoas/go-funk"
@@ -98,7 +99,7 @@ func AppendTagBlocks(resource *hclwrite.Block, tags string) {
 	var tagsMap map[string]string
 	err := json.Unmarshal([]byte(tags), &tagsMap)
 	errors.PanicOnError(err, nil)
-
+	utils.SortMap(tagsMap)
 	for key, value := range tagsMap {
 		resource.Body().AppendNewline()
 		tagBlock := resource.Body().AppendNewBlock("tag", nil)

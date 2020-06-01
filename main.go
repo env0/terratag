@@ -10,6 +10,7 @@ import (
 	"github.com/env0/terratag/tag_keys"
 	. "github.com/env0/terratag/terraform"
 	. "github.com/env0/terratag/tfschema"
+	"github.com/env0/terratag/utils"
 	"github.com/hashicorp/hcl/v2/hclwrite"
 	"github.com/zclconf/go-cty/cty"
 	"log"
@@ -119,7 +120,7 @@ func jsonToHclMap(tags string) string {
 	var tagsMap map[string]string
 	err := json.Unmarshal([]byte(tags), &tagsMap)
 	PanicOnError(err, nil)
-
+	utils.SortMap(tagsMap)
 	var mapContent []string
 	for key, value := range tagsMap {
 		mapContent = append(mapContent, "\""+key+"\"="+"\""+value+"\"")
