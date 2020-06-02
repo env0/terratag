@@ -10,6 +10,7 @@ import (
 	"github.com/env0/terratag/tag_keys"
 	. "github.com/env0/terratag/terraform"
 	. "github.com/env0/terratag/tfschema"
+	"github.com/env0/terratag/utils"
 	"github.com/hashicorp/hcl/v2/hclwrite"
 	"github.com/zclconf/go-cty/cty"
 	"log"
@@ -17,6 +18,10 @@ import (
 )
 
 func main() {
+	Terratag()
+}
+
+func Terratag() {
 	tags, dir, isSkipTerratagFiles, isMissingArg := InitArgs()
 
 	tfVersion := GetTerraformVersion()
@@ -116,9 +121,11 @@ func jsonToHclMap(tags string) string {
 	err := json.Unmarshal([]byte(tags), &tagsMap)
 	PanicOnError(err, nil)
 
+	keys := utils.SortObjectKeys(tagsMap)
+
 	var mapContent []string
-	for key, value := range tagsMap {
-		mapContent = append(mapContent, "\""+key+"\"="+"\""+value+"\"")
+	for _, key := range keys {
+		mapContent = append(mapContent, "\""+key+"\"="+"\""+tagsMap[key]+"\"")
 	}
 	return "{" + strings.Join(mapContent, ",") + "}"
 }
