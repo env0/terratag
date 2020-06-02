@@ -7,7 +7,6 @@ import (
 	. "github.com/onsi/gomega"
 	"github.com/otiai10/copy"
 	"io/ioutil"
-	"log"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -18,7 +17,6 @@ import (
 var cleanArgs = append(os.Args)
 var args = append(os.Args, "-tags={\"env0_environment_id\":\"40907eff-cf7c-419a-8694-e1c6bf1d1168\",\"env0_project_id\":\"43fd4ff1-8d37-4d9d-ac97-295bd850bf94\"}")
 var rootDir = "test/fixture"
-var terraform11Entries = getEntries("11")
 
 //terraform12Entries := getEntries("12")
 type TestCase struct {
@@ -27,17 +25,16 @@ type TestCase struct {
 	entryDir string
 }
 
-func TestTerratag(t *testing.T) {
-	t.Parallel() // marks TLog as capable of running in parallel with other tests
-	println("installing terraform")
+func TestTerraform11(t *testing.T) {
+	testTerraform(t, "11")
+}
 
-	command := exec.Command("./.tfenv/bin/tfenv install latest:^0.11 ")
-	output, err := command.Output()
-	println(string(output))
-	if err != nil {
-		log.Fatal(err.Error())
-	}
-	for _, tt := range terraform11Entries {
+func TestTerraform12(t *testing.T) {
+	testTerraform(t, "12")
+}
+
+func testTerraform(t *testing.T, version string) {
+	for _, tt := range getEntries(version) {
 		tt := tt // NOTE: https://github.com/golang/go/wiki/CommonMistakes#using-goroutines-on-loop-iterator-variables
 		t.Run(tt.suite, func(t *testing.T) {
 			t.Parallel() // marks each test case as capable of running in parallel with each other

@@ -7,8 +7,12 @@ jobs:
   test:
     name: test
     runs-on: ubuntu-latest
-    steps:
+    strategy:
+      fail-fast: false
+      matrix:
+        terraform_version: [11,12]
 
+    steps:
       - name: Set up Go 1.x
         uses: actions/setup-go@v2
         with:
@@ -35,5 +39,9 @@ jobs:
           echo "::add-path::$GITHUB_WORKSPACE/.tfenv/bin/"
           echo "::add-path::$GITHUB_WORKSPACE/.tfenv/bin/*"
 
+      - name: Install terraform
+        run: |
+          tfenv install latest:^0.${{ terraform_version }}
+
       - name: Test
-        run: go test -v .
+        run: go test -v TestTerraform${{ terraform_version }}
