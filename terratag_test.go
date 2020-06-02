@@ -28,6 +28,8 @@ type TestCase struct {
 
 func TestTerratag(t *testing.T) {
 	t.Parallel() // marks TLog as capable of running in parallel with other tests
+	println("installing terraform")
+
 	command := exec.Command("tfenv install latest:^0.11 ")
 	output, _ := command.Output()
 	println(string(output))
