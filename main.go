@@ -120,10 +120,12 @@ func jsonToHclMap(tags string) string {
 	var tagsMap map[string]string
 	err := json.Unmarshal([]byte(tags), &tagsMap)
 	PanicOnError(err, nil)
-	utils.SortMap(tagsMap)
+
+	keys := utils.SortObjectKeys(tagsMap)
+
 	var mapContent []string
-	for key, value := range tagsMap {
-		mapContent = append(mapContent, "\""+key+"\"="+"\""+value+"\"")
+	for _, key := range keys {
+		mapContent = append(mapContent, "\""+key+"\"="+"\""+tagsMap[key]+"\"")
 	}
 	return "{" + strings.Join(mapContent, ",") + "}"
 }

@@ -1,10 +1,12 @@
 package utils
 
-import "encoding/json"
+import "sort"
 
-func SortMap(tagsMap map[string]string) {
-	// json.Marshal sorts the map by its keys lexicography
-	// https://golang.org/pkg/encoding/json/#Marshal
-	marshal, _ := json.Marshal(tagsMap)
-	json.Unmarshal(marshal, &tagsMap)
+func SortObjectKeys(tagsMap map[string]string) []string {
+	var keys []string
+	for key, _ := range tagsMap {
+		keys = append(keys, key)
+	}
+	sort.Strings(keys)
+	return keys
 }

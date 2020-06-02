@@ -99,12 +99,12 @@ func AppendTagBlocks(resource *hclwrite.Block, tags string) {
 	var tagsMap map[string]string
 	err := json.Unmarshal([]byte(tags), &tagsMap)
 	errors.PanicOnError(err, nil)
-	utils.SortMap(tagsMap)
-	for key, value := range tagsMap {
+	keys := utils.SortObjectKeys(tagsMap)
+	for _, key := range keys {
 		resource.Body().AppendNewline()
 		tagBlock := resource.Body().AppendNewBlock("tag", nil)
 		tagBlock.Body().SetAttributeValue("key", cty.StringVal(key))
-		tagBlock.Body().SetAttributeValue("value", cty.StringVal(value))
+		tagBlock.Body().SetAttributeValue("value", cty.StringVal(tagsMap[key]))
 		tagBlock.Body().SetAttributeValue("propagate_at_launch", cty.BoolVal(true))
 	}
 }
