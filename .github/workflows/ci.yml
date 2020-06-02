@@ -31,12 +31,12 @@ jobs:
           wget https://github.com/minamijoyo/tfschema/releases/download/v0.3.0/tfschema_0.3.0_linux_amd64.tar.gz
           mkdir $GITHUB_WORKSPACE/.tfschema
           tar -xvf tfschema_0.3.0_linux_amd64.tar.gz -C $GITHUB_WORKSPACE/.tfschema
-          echo "::add-path::$GITHUB_WORKSPACE/.tfschema/"
+          echo "::add-path::$GITHUB_WORKSPACE/.tfschema"
 
       - name: Install tfenv
         run: |
           git clone https://github.com/tfutils/tfenv.git $GITHUB_WORKSPACE/.tfenv
-          echo "::add-path::$GITHUB_WORKSPACE/.tfenv/bin/"
+          echo "::add-path::$GITHUB_WORKSPACE/.tfenv/bin"
 
       - name: Install terraform
         working-directory: test/fixture/terraform_${{ matrix.terraform_version }}
