@@ -40,8 +40,9 @@ jobs:
           echo "::add-path::$GITHUB_WORKSPACE/.tfenv/bin/*"
 
       - name: Install terraform
+        working-directory: test/fixture/terraform_${{ matrix.terraform_version }}
         run: |
-          tfenv install latest:^0.${{ matrix.terraform_version }}
+          tfenv install
           tfenv use
 
       - name: Print Terraform version
