@@ -46,6 +46,30 @@ go get
 go build
 ```
 
+### Test
+
+#### Structure
+The test suite will look for fixtures under `test/fixtures/terraform_xx`.  
+Each fixture placed there should have the following directory structure:  
+```
+my_fixture
+|+ input
+  ...            // any depth under /input
+     |- main.tf  // this is where we will run all terraform/terratag commands
+|- expected
+```
+
+- `input` is where you should place the terraform files of your fixture.  
+All commands will be executed wherever down the heirarchy where `main.tf` is located.  
+We do that to allow cases where complex nested submodule resolution may take place, and one would like to test how a directory higher up the heirarchy is resolved.  
+- `expected` is a directory in which all `.terratag.tf` files will be matched with the output directory
+
+#### Running Tests
+Focus on a praticular Terraform version:
+```
+go test -run TestTerraformXX
+``` 
+
 ### Release
 ```bash
 # release tags have to start with v to trigger the release workflow -
