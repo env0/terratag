@@ -31,7 +31,7 @@ func TestTerratag(t *testing.T) {
 	t.Parallel() // marks TLog as capable of running in parallel with other tests
 	println("installing terraform")
 
-	command := exec.Command(".tfenv/bin/tfenv install latest:^0.11 ")
+	command := exec.Command("./.tfenv/bin/tfenv install latest:^0.11 ")
 	output, err := command.Output()
 	println(string(output))
 	if err != nil {
