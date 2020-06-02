@@ -18,7 +18,6 @@ var cleanArgs = append(os.Args)
 var args = append(os.Args, "-tags={\"env0_environment_id\":\"40907eff-cf7c-419a-8694-e1c6bf1d1168\",\"env0_project_id\":\"43fd4ff1-8d37-4d9d-ac97-295bd850bf94\"}")
 var rootDir = "test/fixture"
 
-//terraform12Entries := getEntries("12")
 type TestCase struct {
 	suite    string
 	suiteDir string
