@@ -18,4 +18,5 @@ require (
 	golang.org/x/net v0.0.0-20200528225125-3c3fba18258b // indirect
 	golang.org/x/sys v0.0.0-20200523222454-059865788121 // indirect
 	google.golang.org/protobuf v1.24.0 // indirect
+	gotest.tools/gotestsum v0.4.2 // indirect
 )

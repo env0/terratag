@@ -26,7 +26,7 @@ type TestCase struct {
 	entryDir string
 }
 
-func TestTLog(t *testing.T) {
+func TestTerratag(t *testing.T) {
 	t.Parallel() // marks TLog as capable of running in parallel with other tests
 
 	for _, tt := range terraform11Entries {
