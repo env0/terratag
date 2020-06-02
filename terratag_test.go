@@ -54,30 +54,30 @@ func itShouldGenerateExpectedTerratagFiles(suiteDir string, g *GomegaWithT) {
 	actualTerratag, _ = doublestar.Glob(suiteDir + "/out/**/*.terratag.tf")
 	actualTerratag = filterSymlink(actualTerratag)
 
-	g.Expect(len(actualTerratag)).To(BeEquivalentTo(len(expectedTerratag)))
+	g.Expect(len(actualTerratag)).To(BeEquivalentTo(len(expectedTerratag)), "it should generate the same number of terratag files as expected")
 	for _, expectedTerratagFile := range expectedTerratag {
 		expectedFile, _ := os.Open(expectedTerratagFile)
 		expectedContent, _ := ioutil.ReadAll(expectedFile)
 		actualTerratagFile := strings.ReplaceAll(expectedTerratagFile, "/expected/", "/out/")
 		actualFile, _ := os.Open(actualTerratagFile)
 		actualContent, _ := ioutil.ReadAll(actualFile)
-		g.Expect(string(expectedContent)).To(BeEquivalentTo(string(actualContent)))
+		g.Expect(string(expectedContent)).To(BeEquivalentTo(string(actualContent)), actualTerratagFile+" does not match "+expectedTerratagFile)
 	}
 }
 
 func itShouldRunTerraformValidate(entryDir string, g *GomegaWithT) {
 	err := terraform(entryDir, "validate")
-	g.Expect(err).To(BeNil())
+	g.Expect(err).To(BeNil(), "terraform validate failed")
 }
 
 func itShouldRunTerratag(entryDir string, g *GomegaWithT) {
 	err := terratag(entryDir)
-	g.Expect(err).To(BeNil())
+	g.Expect(err).To(BeNil(), "terratag failed")
 }
 
 func itShouldTerraformInit(entryDir string, g *GomegaWithT) {
 	err := terraform(entryDir, "init")
-	g.Expect(err).To(BeNil())
+	g.Expect(err).To(BeNil(), "terraform init failed")
 }
 
 func getEntries(version string) []TestCase {
