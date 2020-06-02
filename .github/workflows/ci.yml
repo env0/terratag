@@ -32,7 +32,7 @@ jobs:
       - name: Install tfenv
         run: |
           git clone https://github.com/tfutils/tfenv.git $GITHUB_WORKSPACE/.tfenv
-          echo "::add-path::$GITHUB_WORKSPACE/.tfenv/bin"
+          echo "::add-path::$GITHUB_WORKSPACE/.tfenv/bin/"
           echo "::add-path::$GITHUB_WORKSPACE/.tfenv/bin/*"
 
       - name: Test
