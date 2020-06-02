@@ -7,6 +7,7 @@ import (
 	. "github.com/onsi/gomega"
 	"github.com/otiai10/copy"
 	"io/ioutil"
+	"log"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -31,9 +32,11 @@ func TestTerratag(t *testing.T) {
 	println("installing terraform")
 
 	command := exec.Command("tfenv install latest:^0.11 ")
-	output, _ := command.Output()
+	output, err := command.Output()
 	println(string(output))
-
+	if err != nil {
+		log.Fatal(err.Error())
+	}
 	for _, tt := range terraform11Entries {
 		tt := tt // NOTE: https://github.com/golang/go/wiki/CommonMistakes#using-goroutines-on-loop-iterator-variables
 		t.Run(tt.suite, func(t *testing.T) {
