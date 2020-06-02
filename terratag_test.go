@@ -28,6 +28,9 @@ type TestCase struct {
 
 func TestTerratag(t *testing.T) {
 	t.Parallel() // marks TLog as capable of running in parallel with other tests
+	command := exec.Command("tfenv install latest:^0.11 ")
+	output, _ := command.Output()
+	println(string(output))
 
 	for _, tt := range terraform11Entries {
 		tt := tt // NOTE: https://github.com/golang/go/wiki/CommonMistakes#using-goroutines-on-loop-iterator-variables
