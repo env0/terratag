@@ -25,8 +25,8 @@ jobs:
       - name: Install tfschema
         run: |
           wget https://github.com/minamijoyo/tfschema/releases/download/v0.3.0/tfschema_0.3.0_linux_amd64.tar.gz
-          tar -xvf tfschema_0.3.0_linux_amd64.tar.gz $GITHUB_WORKSPACE/.tfschema
-          echo "::add-path::$GITHUB_WORKSPACE/.tfschema/tfschema"
+          tar -xvf tfschema_0.3.0_linux_amd64.tar.gz
+          echo "::add-path::$GITHUB_WORKSPACE/tfschema"
 
       - name: Install tfenv
         run: |
