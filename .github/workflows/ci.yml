@@ -41,7 +41,8 @@ jobs:
 
       - name: Install terraform
         run: |
-          tfenv install latest:^0.${{ matrix.terraform_version }}
+          tfenv install ^0.${{ matrix.terraform_version }}
+          tfenv use
 
       - name: Print Terraform version
         run: |
