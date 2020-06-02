@@ -44,4 +44,4 @@ jobs:
           tfenv install latest:^0.${{ matrix.terraform_version }}
 
       - name: Test
-        run: go test -v TestTerraform${{ matrix.terraform_version }}
+        run: go test -v -run TestTerraform${{ matrix.terraform_version }}
