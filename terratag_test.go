@@ -68,7 +68,15 @@ func itShouldGenerateExpectedTerratagFiles(suiteDir string, g *GomegaWithT) {
 
 func itShouldRunTerraformValidate(entryDir string, g *GomegaWithT) {
 	err := terraform(entryDir, "validate")
-	g.Expect(err).To(BeNil())
+	assertNoArror(g, err)
+}
+
+func assertNoArror(g *GomegaWithT, err error) {
+	var message string
+	if err != nil {
+		message = err.Error()
+	}
+	g.Expect(message).To(BeNil())
 }
 
 func itShouldRunTerratag(entryDir string, g *GomegaWithT) {
