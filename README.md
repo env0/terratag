@@ -64,6 +64,14 @@ All commands will be executed wherever down the heirarchy where `main.tf` is loc
 We do that to allow cases where complex nested submodule resolution may take place, and one would like to test how a directory higher up the heirarchy is resolved.  
 - `expected` is a directory in which all `.terratag.tf` files will be matched with the output directory
 
+#### What's being tested?
+Each test will run:
+- `terraform init`
+- `terratag`
+- `terraform validate`  
+
+And finally, will compare the results in `out` with the `expected` directory 
+
 #### Running Tests
 Focus on a praticular Terraform version:
 ```
