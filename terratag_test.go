@@ -91,8 +91,11 @@ func getEntries(version string) []TestCase {
 	var testEntries []TestCase
 	for _, entryFile := range entryFiles {
 		entryDir := strings.TrimSuffix(entryFile, "/main.tf")
-		suite := strings.Split(strings.Split(entryFile, terraformDir)[1], "/")[1]
-		suiteDir := strings.Split(entryFile, terraformDir)[0] + terraformDir + "/" + suite
+		terraformPathSplit := strings.Split(entryFile, terraformDir)
+		pathAfterTerraformDir := terraformPathSplit[1]
+		suite := strings.Split(pathAfterTerraformDir, "/")[1]
+		pathBeforeTerraformDir := terraformPathSplit[0]
+		suiteDir := pathBeforeTerraformDir + terraformDir + "/" + suite
 
 		testEntries = append(testEntries, TestCase{
 			suite:    suite,
