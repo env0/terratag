@@ -135,7 +135,7 @@ func MoveExistingTags(filename string, terratag TerratagLocal, resource *hclwrit
 	if tagsAttribute != nil {
 		// If attribute found, get its value
 		log.Print("Preexisting tags ATTRIBUTE found on resource. Merging.")
-		existingTags = tagsAttribute.Expr().BuildTokens(hclwrite.Tokens{})
+		existingTags = quoteAttributeKeys(tagsAttribute)
 	} else {
 		// Otherwise, we try to get tags as block
 		tagsBlock := resource.Body().FirstMatchingBlock(tagBlockId, nil)
@@ -160,11 +160,46 @@ func MoveExistingTags(filename string, terratag TerratagLocal, resource *hclwrit
 func quoteBlockKeys(tagsBlock *hclwrite.Block) *hclwrite.Block {
 	// In HCL, block keys must NOT be quoted
 	// But we need them to be, as we throw them into a map() function as strings
-	quaotedTagBlock := hclwrite.NewBlock(tagsBlock.Type(), tagsBlock.Labels())
+	quotedTagBlock := hclwrite.NewBlock(tagsBlock.Type(), tagsBlock.Labels())
 	for key, value := range tagsBlock.Body().Attributes() {
-		quaotedTagBlock.Body().SetAttributeRaw("\""+key+"\"", value.Expr().BuildTokens(hclwrite.Tokens{}))
+		quotedTagBlock.Body().SetAttributeRaw("\""+key+"\"", value.Expr().BuildTokens(hclwrite.Tokens{}))
 	}
-	return quaotedTagBlock
+	return quotedTagBlock
+}
+
+func isTagKeyUnquoted(tags hclwrite.Tokens, index int) bool {
+	return tags[index].Type == hclsyntax.TokenIdent && tags[index+1].Type == hclsyntax.TokenEqual
+}
+
+func quoteAttributeKeys(tagsAttribute *hclwrite.Attribute) hclwrite.Tokens {
+	var newTags hclwrite.Tokens
+	tags := tagsAttribute.Expr().BuildTokens(hclwrite.Tokens{})
+
+	for i, token := range tags {
+		if isTagKeyUnquoted(tags, i) {
+			openQuote := &hclwrite.Token{
+				Type:  hclsyntax.TokenOQuote,
+				Bytes: []byte("\""),
+				// open quote should have the token ident spaces
+				SpacesBefore: token.SpacesBefore,
+			}
+
+			closeQuote := &hclwrite.Token{
+				Type:         hclsyntax.TokenCQuote,
+				Bytes:        []byte("\""),
+				SpacesBefore: 0,
+			}
+
+			// token ident spaces are now zero since we add an opening quote
+			token.SpacesBefore = 0
+
+			newTags = append(newTags, openQuote, token, closeQuote)
+		} else {
+			newTags = append(newTags, token)
+		}
+	}
+
+	return newTags
 }
 
 type TerratagLocal struct {
