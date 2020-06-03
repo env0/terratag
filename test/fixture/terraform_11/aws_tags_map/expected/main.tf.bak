@@ -8,6 +8,16 @@ resource "aws_s3_bucket" "b" {
   acl    = "private"
 
   tags = {
-    "Name"        = "My bucket"
+    "Name"                    = "My bucket"
+    Unquoted1                 = "I wanna be quoted"
+    "AnotherName"             = "Yo"
+    Unquoted2                 = "I really wanna be quoted"
+    Unquoted3                 = "I really really wanna be quoted and I got a comma",
+    "${max(1, 2)}"            = "Test function"
+    "${local.localTagKey}"    = "Test expression"
   }
+}
+
+locals {
+  localTagKey = "localTagKey"
 }
