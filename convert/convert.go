@@ -111,11 +111,14 @@ func AppendTagBlocks(resource *hclwrite.Block, tags string) {
 
 func UnquoteTagsAttribute(swappedTagsStrings []string, text string) string {
 	for _, swappedTagString := range swappedTagsStrings {
+		// treat quotes
 		escapedByWriter := strings.ReplaceAll(swappedTagString, "\"", "\\\"")
 
-		if strings.HasPrefix(swappedTagString, "${") && strings.HasSuffix(swappedTagString, "}") {
-			escapedByWriter = strings.ReplaceAll(escapedByWriter, "${", "$${")
-		} else {
+		// treat variables
+		escapedByWriter = strings.ReplaceAll(escapedByWriter, "${", "$${")
+
+		// add quotes if string isn't wrapped with ${}
+		if !(strings.HasPrefix(swappedTagString, "${") && strings.HasSuffix(swappedTagString, "}")) {
 			escapedByWriter = "\"" + escapedByWriter + "\""
 		}
 
