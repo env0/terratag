@@ -178,6 +178,11 @@ func quoteAttributeKeys(tagsAttribute *hclwrite.Attribute) hclwrite.Tokens {
 	var newTags hclwrite.Tokens
 	tags := tagsAttribute.Expr().BuildTokens(hclwrite.Tokens{})
 
+	// if attribute is a variable
+	if !(isHclMap(tags)) {
+		return tags
+	}
+
 	for i, token := range tags {
 		if isTagKeyUnquoted(tags, i) {
 			openQuote := &hclwrite.Token{
