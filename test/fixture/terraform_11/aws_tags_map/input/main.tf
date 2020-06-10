@@ -22,7 +22,18 @@ resource "aws_s3_bucket" "b" {
   }
 }
 
+resource "aws_s3_bucket" "a" {
+  bucket = "my-another-tf-test-bucket"
+  acl    = "private"
+
+  tags = "${local.localMap}"
+}
+
+
 locals {
   localTagKey = "localTagKey"
   localTagKey2 = "localTagKey2"
+  localMap = {
+    key = "value"
+  }
 }
