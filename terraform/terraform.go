@@ -107,7 +107,7 @@ func getNestedBlock(parent *hclwrite.Block, typeName string) *hclwrite.Block {
 }
 
 // TODO move to a declarative approach with config as param and recursive logic that runs through it
-func GetNestedTaggableBlocks(resource *hclwrite.Block) []*hclwrite.Block {
+func GetTaggableNestedBlocks(resource *hclwrite.Block) []*hclwrite.Block {
 	var nestedBlocks []*hclwrite.Block
 	const nodeConfigId = "node_config"
 	const nodePoolId = "node_pool"
