@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"github.com/env0/terratag/errors"
 	"github.com/env0/terratag/providers"
+	"github.com/env0/terratag/terraform"
 	"github.com/hashicorp/hcl/v2/hclwrite"
 	"github.com/mitchellh/mapstructure"
 	"log"
@@ -15,8 +16,9 @@ func IsTaggable(dir string, resource hclwrite.Block) (bool, bool) {
 	isTaggable := false
 	isTaggableViaSpecialTagBlock := false
 
-	if providers.IsTaggableResource(resource) {
-		resourceType := resource.Labels()[0]
+	resourceType := terraform.GetResourceType(resource)
+
+	if providers.IsTaggableResource(resourceType) {
 		command := exec.Command("tfschema", "resource", "show", "-format=json", resourceType)
 		command.Dir = dir
 		output, err := command.Output()
@@ -43,7 +45,7 @@ func IsTaggable(dir string, resource hclwrite.Block) (bool, bool) {
 			err := mapstructure.Decode(attributeMap, &attribute)
 			errors.PanicOnError(err, nil)
 
-			if providers.IsTaggableByAttribute(resource, attribute.Name) {
+			if providers.IsTaggableByAttribute(resourceType, attribute.Name) {
 				isTaggable = true
 			}
 		}
