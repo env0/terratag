@@ -117,7 +117,7 @@ func GetTaggableNestedBlocks(resource *hclwrite.Block) []*hclwrite.Block {
 
 		nodeConfig := getNestedBlock(resource, nodeConfigId)
 		if nodeConfig != nil {
-			log.Print("Found taggable nested " + nodeConfigId + " block in resource " + resourceType)
+			log.Print("Found taggable nested " + nodeConfigId + " block, processing...")
 			nestedBlocks = append(nestedBlocks, nodeConfig)
 		}
 
@@ -125,7 +125,7 @@ func GetTaggableNestedBlocks(resource *hclwrite.Block) []*hclwrite.Block {
 		if nodePool != nil {
 			nodeConfig = getNestedBlock(nodePool, nodeConfigId)
 			if nodeConfig != nil {
-				log.Print("Found taggable nested " + nodeConfigId + " block inside a " + nodePoolId + " block in resource " + resourceType)
+				log.Print("Found taggable nested " + nodePoolId + "/" + nodeConfigId + " block, processing...")
 				nestedBlocks = append(nestedBlocks, nodeConfig)
 			}
 		}

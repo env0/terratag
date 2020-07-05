@@ -134,7 +134,7 @@ func MoveExistingTags(filename string, terratag TerratagLocal, block *hclwrite.B
 
 	if tagsAttribute != nil {
 		// If attribute found, get its value
-		log.Print("Preexisting tags ATTRIBUTE found on resource. Merging.")
+		log.Print("Pre-existing " + tagId + " ATTRIBUTE found on resource. Merging.")
 		existingTags = quoteAttributeKeys(tagsAttribute)
 	} else {
 		// Otherwise, we try to get tags as block
