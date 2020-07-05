@@ -3,7 +3,6 @@ package convert
 import (
 	"encoding/json"
 	"github.com/env0/terratag/errors"
-	"github.com/env0/terratag/providers"
 	"github.com/env0/terratag/tag_keys"
 	"github.com/env0/terratag/utils"
 	"github.com/hashicorp/hcl/v2/hclsyntax"
@@ -127,13 +126,11 @@ func UnquoteTagsAttribute(swappedTagsStrings []string, text string) string {
 	return text
 }
 
-func MoveExistingTags(filename string, terratag TerratagLocal, resource *hclwrite.Block) bool {
+func MoveExistingTags(filename string, terratag TerratagLocal, block *hclwrite.Block, tagBlockId string) bool {
 	var existingTags hclwrite.Tokens
 
-	tagBlockId := providers.GetTagBlockIdByResource(*resource)
-
 	// First we try to find tags as attribute
-	tagsAttribute := resource.Body().GetAttribute(tagBlockId)
+	tagsAttribute := block.Body().GetAttribute(tagBlockId)
 
 	if tagsAttribute != nil {
 		// If attribute found, get its value
@@ -141,12 +138,12 @@ func MoveExistingTags(filename string, terratag TerratagLocal, resource *hclwrit
 		existingTags = quoteAttributeKeys(tagsAttribute)
 	} else {
 		// Otherwise, we try to get tags as block
-		tagsBlock := resource.Body().FirstMatchingBlock(tagBlockId, nil)
+		tagsBlock := block.Body().FirstMatchingBlock(tagBlockId, nil)
 		if tagsBlock != nil {
 			quotedTagBlock := quoteBlockKeys(tagsBlock)
 			existingTags = funk.Tail(quotedTagBlock.BuildTokens(hclwrite.Tokens{})).(hclwrite.Tokens)
 			// If we did get tags from block, we will now remove that block, as we're going to add a merged tags ATTRIBUTE
-			removeBlockResult := resource.Body().RemoveBlock(tagsBlock)
+			removeBlockResult := block.Body().RemoveBlock(tagsBlock)
 			if removeBlockResult == false {
 				log.Fatal("Failed to remove found tags block!")
 			}
@@ -154,7 +151,7 @@ func MoveExistingTags(filename string, terratag TerratagLocal, resource *hclwrit
 	}
 
 	if existingTags != nil {
-		terratag.Found[tag_keys.GetResourceExistingTagsKey(filename, resource)] = existingTags
+		terratag.Found[tag_keys.GetResourceExistingTagsKey(filename, block)] = existingTags
 		return true
 	}
 	return false
