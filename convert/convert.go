@@ -126,11 +126,11 @@ func UnquoteTagsAttribute(swappedTagsStrings []string, text string) string {
 	return text
 }
 
-func MoveExistingTags(filename string, terratag TerratagLocal, block *hclwrite.Block, tagBlockId string) bool {
+func MoveExistingTags(filename string, terratag TerratagLocal, block *hclwrite.Block, tagId string) bool {
 	var existingTags hclwrite.Tokens
 
 	// First we try to find tags as attribute
-	tagsAttribute := block.Body().GetAttribute(tagBlockId)
+	tagsAttribute := block.Body().GetAttribute(tagId)
 
 	if tagsAttribute != nil {
 		// If attribute found, get its value
@@ -138,7 +138,7 @@ func MoveExistingTags(filename string, terratag TerratagLocal, block *hclwrite.B
 		existingTags = quoteAttributeKeys(tagsAttribute)
 	} else {
 		// Otherwise, we try to get tags as block
-		tagsBlock := block.Body().FirstMatchingBlock(tagBlockId, nil)
+		tagsBlock := block.Body().FirstMatchingBlock(tagId, nil)
 		if tagsBlock != nil {
 			quotedTagBlock := quoteBlockKeys(tagsBlock)
 			existingTags = funk.Tail(quotedTagBlock.BuildTokens(hclwrite.Tokens{})).(hclwrite.Tokens)
