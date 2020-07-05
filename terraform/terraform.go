@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"github.com/bmatcuk/doublestar"
 	"github.com/env0/terratag/errors"
+	"github.com/hashicorp/hcl/v2/hclwrite"
 	"github.com/thoas/go-funk"
 	"io/ioutil"
 	"log"
@@ -26,6 +27,10 @@ func GetTerraformVersion() int {
 
 	log.Fatalln("Terratag only supports Terraform 0.11.x and 0.12.x - your version says ", outputAsString)
 	return -1
+}
+
+func GetResourceType(resource hclwrite.Block) string {
+	return resource.Labels()[0]
 }
 
 func IsTerraformInitRun(dir string) bool {
@@ -95,6 +100,38 @@ func getTerraformModulesDirPaths(dir string) []string {
 	errors.PanicOnError(err, nil)
 
 	return paths
+}
+
+func getNestedBlock(parent *hclwrite.Block, typeName string) *hclwrite.Block {
+	return parent.Body().FirstMatchingBlock(typeName, nil)
+}
+
+// TODO move to a declarative approach with config as param and recursive logic that runs through it
+func GetNestedTaggableBlocks(resource *hclwrite.Block) []*hclwrite.Block {
+	var nestedBlocks []*hclwrite.Block
+	const nodeConfigId = "node_config"
+	const nodePoolId = "node_pool"
+
+	resourceType := GetResourceType(*resource)
+	if resourceType == "google_container_cluster" || resourceType == "google_container_node_pool" {
+
+		nodeConfig := getNestedBlock(resource, nodeConfigId)
+		if nodeConfig != nil {
+			log.Print("Found taggable nested " + nodeConfigId + " block in resource " + resourceType)
+			nestedBlocks = append(nestedBlocks, nodeConfig)
+		}
+
+		nodePool := getNestedBlock(resource, nodePoolId)
+		if nodePool != nil {
+			nodeConfig = getNestedBlock(nodePool, nodeConfigId)
+			if nodeConfig != nil {
+				log.Print("Found taggable nested " + nodeConfigId + " block inside a " + nodePoolId + " block in resource " + resourceType)
+				nestedBlocks = append(nestedBlocks, nodeConfig)
+			}
+		}
+	}
+
+	return nestedBlocks
 }
 
 type ModulesJson struct {
