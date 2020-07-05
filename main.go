@@ -59,23 +59,36 @@ func tagFileResources(path string, dir string, tags string, tfVersion int) {
 	anyTagged := false
 	var swappedTagsStrings []string
 
-	for _, resource := range hcl.Body().Blocks() {
-		if resource.Type() == "resource" {
-			log.Print("Processing resource ", resource.Labels())
+	for _, topLevelBlock := range hcl.Body().Blocks() {
+		if topLevelBlock.Type() == "resource" {
+			log.Print("Processing resource ", topLevelBlock.Labels())
 
-			isTaggable, isTaggableViaSpecialTagBlock := IsTaggable(dir, *resource)
+			resourceType := GetResourceType(*topLevelBlock)
+			tagBlockId := GetTagBlockIdByResource(resourceType, false)
+
+			isTaggable, isTaggableViaSpecialTagBlock := IsTaggable(dir, *topLevelBlock)
 
 			if isTaggable {
 				if !isTaggableViaSpecialTagBlock {
 					// for now, we count on it that if there's a single "tag" in the schema (unlike "tags" block),
 					// then no "tags" interpolation is used, but rather multiple instances of a "tag" block
 					// https://www.terraform.io/docs/providers/aws/r/autoscaling_group.html
-					swappedTagsStrings = append(swappedTagsStrings, tagResource(filename, terratag, resource, tfVersion))
+					swappedTagsStrings = append(swappedTagsStrings, tagBlock(filename, terratag, topLevelBlock, tfVersion, tagBlockId, false))
 				} else {
-					convert.AppendTagBlocks(resource, tags)
+					convert.AppendTagBlocks(topLevelBlock, tags)
 				}
 				anyTagged = true
-			} else {
+			}
+
+			// handle nested taggable blocks
+			nestedBlocks := GetNestedTaggableBlocks(topLevelBlock)
+			tagBlockId = GetTagBlockIdByResource(resourceType, true)
+
+			for _, block := range nestedBlocks {
+				swappedTagsStrings = append(swappedTagsStrings, tagBlock(filename, terratag, block, tfVersion, tagBlockId, true))
+			}
+
+			if len(nestedBlocks) == 0 && !isTaggable {
 				log.Print("Resource not taggable, skipping. ")
 			}
 		}
@@ -95,14 +108,16 @@ func tagFileResources(path string, dir string, tags string, tfVersion int) {
 	}
 }
 
-func tagResource(filename string, terratag convert.TerratagLocal, resource *hclwrite.Block, tfVersion int) string {
-	log.Print("Resource taggable, processing...")
+func tagBlock(filename string, terratag convert.TerratagLocal, block *hclwrite.Block, tfVersion int, tagBlockId string, isNested bool) string {
+	if !isNested {
+		log.Print("Resource taggable, processing...")
+	}
 
-	hasExistingTags := convert.MoveExistingTags(filename, terratag, resource)
+	hasExistingTags := convert.MoveExistingTags(filename, terratag, block, tagBlockId)
 
 	tagsValue := ""
 	if hasExistingTags {
-		tagsValue = "merge( " + convert.GetExistingTagsExpression(terratag.Found[tag_keys.GetResourceExistingTagsKey(filename, resource)]) + ", local." + tag_keys.GetTerratagAddedKey(filename) + ")"
+		tagsValue = "merge( " + convert.GetExistingTagsExpression(terratag.Found[tag_keys.GetResourceExistingTagsKey(filename, block)]) + ", local." + tag_keys.GetTerratagAddedKey(filename) + ")"
 	} else {
 		tagsValue = "local." + tag_keys.GetTerratagAddedKey(filename)
 	}
@@ -111,7 +126,7 @@ func tagResource(filename string, terratag convert.TerratagLocal, resource *hclw
 		tagsValue = "${" + tagsValue + "}"
 	}
 
-	resource.Body().SetAttributeValue(GetTagBlockIdByResource(*resource), cty.StringVal(tagsValue))
+	block.Body().SetAttributeValue(tagBlockId, cty.StringVal(tagsValue))
 
 	return tagsValue
 }
