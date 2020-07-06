@@ -8,7 +8,7 @@ resource "google_container_cluster" "no-labels-cluster" {
   }
 
   node_pool {
-    node_config {ll
+    node_config {
       machine_type = "n1-standard-1"
       labels       = local.terratag_added_main
     }
