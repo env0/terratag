@@ -59,14 +59,14 @@ func tagFileResources(path string, dir string, tags string, tfVersion int) {
 	anyTagged := false
 	var swappedTagsStrings []string
 
-	for _, topLevelBlock := range hcl.Body().Blocks() {
-		if topLevelBlock.Type() == "resource" {
-			log.Print("Processing resource ", topLevelBlock.Labels())
+	for _, resource := range hcl.Body().Blocks() {
+		if resource.Type() == "resource" {
+			log.Print("Processing resource ", resource.Labels())
 
-			resourceType := GetResourceType(*topLevelBlock)
+			resourceType := GetResourceType(*resource)
 			tagId := GetTagIdByResource(resourceType, false)
 
-			isTaggable, isTaggableViaSpecialTagBlock := IsTaggable(dir, *topLevelBlock)
+			isTaggable, isTaggableViaSpecialTagBlock := IsTaggable(dir, *resource)
 
 			if isTaggable {
 				log.Print("Resource taggable, processing...")
@@ -74,15 +74,15 @@ func tagFileResources(path string, dir string, tags string, tfVersion int) {
 					// for now, we count on it that if there's a single "tag" in the schema (unlike "tags" block),
 					// then no "tags" interpolation is used, but rather multiple instances of a "tag" block
 					// https://www.terraform.io/docs/providers/aws/r/autoscaling_group.html
-					swappedTagsStrings = append(swappedTagsStrings, tagBlock(filename, terratag, topLevelBlock, tfVersion, tagId))
+					swappedTagsStrings = append(swappedTagsStrings, tagBlock(filename, terratag, resource, tfVersion, tagId))
 				} else {
-					convert.AppendTagBlocks(topLevelBlock, tags)
+					convert.AppendTagBlocks(resource, tags)
 				}
 				anyTagged = true
 			}
 
 			// handle nested taggable blocks
-			nestedBlocks := GetTaggableNestedBlocks(topLevelBlock)
+			nestedBlocks := GetTaggableNestedBlocks(resource)
 			tagId = GetTagIdByResource(resourceType, true)
 
 			for _, block := range nestedBlocks {
