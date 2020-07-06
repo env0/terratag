@@ -18,7 +18,7 @@ func getProviderByResource(resourceType string) Provider {
 
 func IsTaggableByAttribute(resourceType string, attribute string) bool {
 	provider := getProviderByResource(resourceType)
-	tagBlockId := GetTagIdByResource(resourceType, false)
+	tagBlockId := GetTagIdByResource(resourceType)
 
 	if (provider != "") && attribute == tagBlockId {
 		return true
@@ -26,15 +26,12 @@ func IsTaggableByAttribute(resourceType string, attribute string) bool {
 	return false
 }
 
-func GetTagIdByResource(resourceType string, isNested bool) string {
+func GetTagIdByResource(resourceType string) string {
 	provider := getProviderByResource(resourceType)
 
 	if provider == "aws" || provider == "azure" {
 		return "tags"
 	} else if provider == "gcp" {
-		if !isNested && resourceType == "google_container_cluster" {
-			return "resource_labels"
-		}
 		return "labels"
 	}
 
