@@ -14,12 +14,8 @@ import (
 )
 
 func IsTaggable(dir string, resource hclwrite.Block) bool {
+	var isTaggable bool
 	resourceType := terraform.GetResourceType(resource)
-
-	// short-circuit if resource type is known to have a custom tagging function
-	if tagging.HasResourceTagFn(resourceType) {
-		return true
-	}
 
 	if providers.IsSupportedResource(resourceType) {
 		command := exec.Command("tfschema", "resource", "show", "-format=json", resourceType)
@@ -49,12 +45,16 @@ func IsTaggable(dir string, resource hclwrite.Block) bool {
 			errors.PanicOnError(err, nil)
 
 			if providers.IsTaggableByAttribute(resourceType, attribute.Name) {
-				return true
+				isTaggable = true
 			}
+		}
+
+		if tagging.HasResourceTagFn(resourceType) {
+			isTaggable = true
 		}
 	}
 
-	return false
+	return isTaggable
 }
 
 type TfSchemaAttribute struct {
