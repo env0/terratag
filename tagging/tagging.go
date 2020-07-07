@@ -33,15 +33,6 @@ func TagBlock(args TagBlockArgs) string {
 	return tagsValue
 }
 
-type TagBlockArgs struct {
-	Filename  string
-	Block     *hclwrite.Block
-	Tags      string
-	Terratag  convert.TerratagLocal
-	TagId     string
-	TfVersion int
-}
-
 func HasResourceTagFn(resourceType string) bool {
 	return resourceTypeToFnMap[resourceType] != nil
 }
@@ -65,6 +56,15 @@ var resourceTypeToFnMap = map[string]TagResourceFn{
 	"aws_autoscaling_group":      tagAutoscalingGroup,
 	"google_container_cluster":   tagContainerCluster,
 	"google_container_node_pool": tagContainerNodePool,
+}
+
+type TagBlockArgs struct {
+	Filename  string
+	Block     *hclwrite.Block
+	Tags      string
+	Terratag  convert.TerratagLocal
+	TagId     string
+	TfVersion int
 }
 
 type TagResourceFn func(args TagBlockArgs) Result
