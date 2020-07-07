@@ -8,7 +8,7 @@ import (
 	"github.com/zclconf/go-cty/cty"
 )
 
-func DefaultTaggingFn(args TagBlockArgs) Result {
+func defaultTaggingFn(args TagBlockArgs) Result {
 	return Result{
 		SwappedTagsStrings: []string{TagBlock(args)},
 	}
@@ -55,7 +55,7 @@ func GetTaggingResult(args TagBlockArgs) Result {
 	if customTaggingFn != nil {
 		result = customTaggingFn(args)
 	} else {
-		result = DefaultTaggingFn(args)
+		result = defaultTaggingFn(args)
 	}
 
 	return result
