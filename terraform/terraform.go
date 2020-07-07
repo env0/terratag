@@ -102,16 +102,6 @@ func getTerraformModulesDirPaths(dir string) []string {
 	return paths
 }
 
-func GetNestedBlock(parent *hclwrite.Block, typeNames ...string) *hclwrite.Block {
-	block := parent.Body().FirstMatchingBlock(typeNames[0], nil)
-
-	if len(typeNames) == 1 {
-		return block
-	} else {
-		return GetNestedBlock(block, typeNames[1:]...)
-	}
-}
-
 type ModulesJson struct {
 	Modules []ModuleMetadata `json:"Modules"`
 }
