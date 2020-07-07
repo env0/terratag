@@ -21,7 +21,7 @@ func IsTaggable(dir string, resource hclwrite.Block) bool {
 		return true
 	}
 
-	if providers.IsTaggableResource(resourceType) {
+	if providers.IsSupportedResource(resourceType) {
 		command := exec.Command("tfschema", "resource", "show", "-format=json", resourceType)
 		command.Dir = dir
 		output, err := command.Output()

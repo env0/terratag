@@ -38,7 +38,7 @@ func GetTagIdByResource(resourceType string) string {
 	return ""
 }
 
-func IsTaggableResource(resourceType string) bool {
+func IsSupportedResource(resourceType string) bool {
 	return isSupportedProvider(getProviderByResource(resourceType))
 }
 
