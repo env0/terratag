@@ -61,7 +61,7 @@ func tagFileResources(path string, dir string, tags string, tfVersion int) {
 
 			if IsTaggable(dir, *resource) {
 				log.Print("Resource taggable, processing...")
-				result := tagging.GetTaggingResult(tagging.TagBlockArgs{
+				result := tagging.TagResource(tagging.TagBlockArgs{
 					Filename:  filename,
 					Block:     resource,
 					Tags:      tags,

@@ -37,7 +37,7 @@ func HasResourceTagFn(resourceType string) bool {
 	return resourceTypeToFnMap[resourceType] != nil
 }
 
-func GetTaggingResult(args TagBlockArgs) Result {
+func TagResource(args TagBlockArgs) Result {
 	var result Result
 	resourceType := terraform.GetResourceType(*args.Block)
 
