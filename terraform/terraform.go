@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"github.com/bmatcuk/doublestar"
 	"github.com/env0/terratag/errors"
+	"github.com/hashicorp/hcl/v2/hclwrite"
 	"github.com/thoas/go-funk"
 	"io/ioutil"
 	"log"
@@ -26,6 +27,10 @@ func GetTerraformVersion() int {
 
 	log.Fatalln("Terratag only supports Terraform 0.11.x and 0.12.x - your version says ", outputAsString)
 	return -1
+}
+
+func GetResourceType(resource hclwrite.Block) string {
+	return resource.Labels()[0]
 }
 
 func IsTerraformInitRun(dir string) bool {

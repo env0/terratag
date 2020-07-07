@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"github.com/env0/terratag/errors"
 	"github.com/env0/terratag/providers"
+	"github.com/env0/terratag/tagging"
+	"github.com/env0/terratag/terraform"
 	"github.com/hashicorp/hcl/v2/hclwrite"
 	"github.com/mitchellh/mapstructure"
 	"log"
@@ -11,12 +13,11 @@ import (
 	"strings"
 )
 
-func IsTaggable(dir string, resource hclwrite.Block) (bool, bool) {
-	isTaggable := false
-	isTaggableViaSpecialTagBlock := false
+func IsTaggable(dir string, resource hclwrite.Block) bool {
+	var isTaggable bool
+	resourceType := terraform.GetResourceType(resource)
 
-	if providers.IsTaggableResource(resource) {
-		resourceType := resource.Labels()[0]
+	if providers.IsSupportedResource(resourceType) {
 		command := exec.Command("tfschema", "resource", "show", "-format=json", resourceType)
 		command.Dir = dir
 		output, err := command.Output()
@@ -26,7 +27,7 @@ func IsTaggable(dir string, resource hclwrite.Block) (bool, bool) {
 			if strings.Contains(outputAsString, "Failed to find resource type") {
 				// short circuiting unfound resource due to: https://github.com/env0/terratag/issues/17
 				log.Print("Skipped ", resourceType, " as it is not YET supported")
-				return false, false
+				return false
 			} else {
 				errors.PanicOnError(err, &outputAsString)
 			}
@@ -43,17 +44,17 @@ func IsTaggable(dir string, resource hclwrite.Block) (bool, bool) {
 			err := mapstructure.Decode(attributeMap, &attribute)
 			errors.PanicOnError(err, nil)
 
-			if providers.IsTaggableByAttribute(resource, attribute.Name) {
+			if providers.IsTaggableByAttribute(resourceType, attribute.Name) {
 				isTaggable = true
 			}
 		}
 
-		if resourceType == "aws_autoscaling_group" {
-			isTaggableViaSpecialTagBlock = true
+		if tagging.HasResourceTagFn(resourceType) {
+			isTaggable = true
 		}
 	}
 
-	return isTaggable, isTaggableViaSpecialTagBlock
+	return isTaggable
 }
 
 type TfSchemaAttribute struct {

@@ -1,13 +1,10 @@
 package providers
 
 import (
-	"github.com/hashicorp/hcl/v2/hclwrite"
 	"strings"
 )
 
-func getProviderByResource(resource hclwrite.Block) Provider {
-	resourceType := resource.Labels()[0]
-
+func getProviderByResource(resourceType string) Provider {
 	if strings.HasPrefix(resourceType, "aws_") {
 		return "aws"
 	} else if strings.HasPrefix(resourceType, "google_") {
@@ -19,9 +16,9 @@ func getProviderByResource(resource hclwrite.Block) Provider {
 	return ""
 }
 
-func IsTaggableByAttribute(resource hclwrite.Block, attribute string) bool {
-	provider := getProviderByResource(resource)
-	tagBlockId := GetTagBlockIdByResource(resource)
+func IsTaggableByAttribute(resourceType string, attribute string) bool {
+	provider := getProviderByResource(resourceType)
+	tagBlockId := GetTagIdByResource(resourceType)
 
 	if (provider != "") && attribute == tagBlockId {
 		return true
@@ -29,8 +26,8 @@ func IsTaggableByAttribute(resource hclwrite.Block, attribute string) bool {
 	return false
 }
 
-func GetTagBlockIdByResource(resource hclwrite.Block) string {
-	provider := getProviderByResource(resource)
+func GetTagIdByResource(resourceType string) string {
+	provider := getProviderByResource(resourceType)
 
 	if provider == "aws" || provider == "azure" {
 		return "tags"
@@ -41,8 +38,8 @@ func GetTagBlockIdByResource(resource hclwrite.Block) string {
 	return ""
 }
 
-func IsTaggableResource(resource hclwrite.Block) bool {
-	return isSupportedProvider(getProviderByResource(resource))
+func IsSupportedResource(resourceType string) bool {
+	return isSupportedProvider(getProviderByResource(resourceType))
 }
 
 func isSupportedProvider(provider Provider) bool {
