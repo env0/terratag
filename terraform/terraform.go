@@ -102,17 +102,13 @@ func getTerraformModulesDirPaths(dir string) []string {
 	return paths
 }
 
-func GetSingleNestedBlock(parent *hclwrite.Block, typeName string) *hclwrite.Block {
-	return parent.Body().FirstMatchingBlock(typeName, nil)
-}
-
-func GetNestedBlock(parent *hclwrite.Block, typeNames []string) *hclwrite.Block {
-	block := GetSingleNestedBlock(parent, typeNames[0])
+func GetNestedBlock(parent *hclwrite.Block, typeNames ...string) *hclwrite.Block {
+	block := parent.Body().FirstMatchingBlock(typeNames[0], nil)
 
 	if len(typeNames) == 1 {
 		return block
 	} else {
-		return GetNestedBlock(block, typeNames[1:])
+		return GetNestedBlock(block, typeNames[1:]...)
 	}
 }
 

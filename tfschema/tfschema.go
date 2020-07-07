@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"github.com/env0/terratag/errors"
 	"github.com/env0/terratag/providers"
-	"github.com/env0/terratag/resources"
+	"github.com/env0/terratag/tagging"
 	"github.com/env0/terratag/terraform"
 	"github.com/hashicorp/hcl/v2/hclwrite"
 	"github.com/mitchellh/mapstructure"
@@ -17,7 +17,7 @@ func IsTaggable(dir string, resource hclwrite.Block) bool {
 	resourceType := terraform.GetResourceType(resource)
 
 	// short-circuit if resource type is known to have a custom tagging function
-	if resources.HasResourceTagFunc(resourceType) {
+	if tagging.HasResourceTagFn(resourceType) {
 		return true
 	}
 

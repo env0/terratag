@@ -7,7 +7,6 @@ import (
 	. "github.com/env0/terratag/errors"
 	"github.com/env0/terratag/file"
 	. "github.com/env0/terratag/providers"
-	"github.com/env0/terratag/resources"
 	"github.com/env0/terratag/tagging"
 	. "github.com/env0/terratag/terraform"
 	. "github.com/env0/terratag/tfschema"
@@ -62,14 +61,16 @@ func tagFileResources(path string, dir string, tags string, tfVersion int) {
 
 			if IsTaggable(dir, *resource) {
 				log.Print("Resource taggable, processing...")
-				swappedTagsStrings = append(swappedTagsStrings, resources.TagBlockAndGetTagStrings(tagging.TagBlockArgs{
+				result := tagging.GetTaggingResult(tagging.TagBlockArgs{
 					Filename:  filename,
 					Block:     resource,
 					Tags:      tags,
 					Terratag:  terratag,
 					TagId:     GetTagIdByResource(GetResourceType(*resource)),
 					TfVersion: tfVersion,
-				})...)
+				})
+
+				swappedTagsStrings = append(swappedTagsStrings, result.SwappedTagsStrings...)
 			} else {
 				log.Print("Resource not taggable, skipping. ")
 			}
