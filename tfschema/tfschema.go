@@ -2,12 +2,13 @@ package tfschema
 
 import (
 	"encoding/json"
+	"fmt"
 	"github.com/env0/terratag/errors"
 	"github.com/env0/terratag/providers"
 	"github.com/env0/terratag/tagging"
 	"github.com/env0/terratag/terraform"
 	"github.com/hashicorp/hcl/v2/hclwrite"
-	"github.com/mitchellh/mapstructure"
+	"github.com/minamijoyo/tfschema/tfschema"
 	"log"
 	"os/exec"
 	"strings"
@@ -38,13 +39,12 @@ func IsTaggable(dir string, resource hclwrite.Block) bool {
 		err = json.Unmarshal(output, &schema)
 		errors.PanicOnError(err, nil)
 
-		attributes := schema["attributes"].([]interface{})
-		for _, attributeMap := range attributes {
-			var attribute TfSchemaAttribute
-			err := mapstructure.Decode(attributeMap, &attribute)
-			errors.PanicOnError(err, nil)
-
-			if providers.IsTaggableByAttribute(resourceType, attribute.Name) {
+		providerName, _ := detectProviderName(resourceType)
+		client, _ := tfschema.NewClient(providerName)
+		typeSchema, _ := client.GetResourceTypeSchema(resourceType)
+		attributes := typeSchema.Attributes
+		for attribute := range attributes {
+			if providers.IsTaggableByAttribute(resourceType, attribute) {
 				isTaggable = true
 			}
 		}
@@ -60,4 +60,14 @@ func IsTaggable(dir string, resource hclwrite.Block) bool {
 type TfSchemaAttribute struct {
 	Name string
 	Type string
+}
+
+// shamefully copied from
+// https://github.com/minamijoyo/tfschema/blob/8e65902597e0eb9ce7d5ac2b56bf948a1bf17429/command/meta.go#L20
+func detectProviderName(name string) (string, error) {
+	s := strings.SplitN(name, "_", 2)
+	if len(s) < 2 {
+		return "", fmt.Errorf("Failed to detect a provider name: %s", name)
+	}
+	return s[0], nil
 }
