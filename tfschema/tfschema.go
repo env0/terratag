@@ -1,7 +1,6 @@
 package tfschema
 
 import (
-	"encoding/json"
 	"fmt"
 	"github.com/env0/terratag/errors"
 	"github.com/env0/terratag/providers"
@@ -34,14 +33,12 @@ func IsTaggable(dir string, resource hclwrite.Block) bool {
 			}
 		}
 
-		var schema map[string]interface{}
-
-		err = json.Unmarshal(output, &schema)
+		providerName, _ := detectProviderName(resourceType)
+		client, err := tfschema.NewClient(providerName)
+		errors.PanicOnError(err, nil)
+		typeSchema, err := client.GetResourceTypeSchema(resourceType)
 		errors.PanicOnError(err, nil)
 
-		providerName, _ := detectProviderName(resourceType)
-		client, _ := tfschema.NewClient(providerName)
-		typeSchema, _ := client.GetResourceTypeSchema(resourceType)
 		attributes := typeSchema.Attributes
 		for attribute := range attributes {
 			if providers.IsTaggableByAttribute(resourceType, attribute) {
