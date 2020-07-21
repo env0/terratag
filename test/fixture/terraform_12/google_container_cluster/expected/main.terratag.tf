@@ -4,13 +4,11 @@ resource "google_container_cluster" "no-labels-cluster" {
 
   node_config {
     machine_type = "n1-standard-1"
-    labels       = local.terratag_added_main
   }
 
   node_pool {
     node_config {
       machine_type = "n1-standard-1"
-      labels       = local.terratag_added_main
     }
   }
   resource_labels = local.terratag_added_main
@@ -21,7 +19,6 @@ resource "google_container_node_pool" "no-labels-pool" {
 
   node_config {
     machine_type = "n1-standard-1"
-    labels       = local.terratag_added_main
   }
 }
 
@@ -33,13 +30,17 @@ resource "google_container_cluster" "existing-labels-cluster" {
 
   node_config {
     machine_type = "n1-standard-1"
-    labels       = merge( map("foo" , "bar"), local.terratag_added_main)
+    labels = {
+      foo = "bar"
+    }
   }
 
   node_pool {
     node_config {
       machine_type = "n1-standard-1"
-      labels       = merge( map("foo" , "bar"), local.terratag_added_main)
+      labels = {
+        foo = "bar"
+      }
     }
   }
 }
@@ -49,7 +50,9 @@ resource "google_container_node_pool" "existing-labels-pool" {
 
   node_config {
     machine_type = "n1-standard-1"
-    labels       = merge( map("foo" , "bar"), local.terratag_added_main)
+    labels = {
+      foo = "bar"
+    }
   }
 }
 locals {
