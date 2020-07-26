@@ -15,3 +15,5 @@ require (
 	golang.org/x/sys v0.0.0-20200523222454-059865788121 // indirect
 	google.golang.org/protobuf v1.24.0 // indirect
 )
+
+replace github.com/minamijoyo/tfschema => github.com/env0/tfschema v0.3.1-0.20200726141535-d161300e087f

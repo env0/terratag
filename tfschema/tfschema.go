@@ -34,7 +34,7 @@ func IsTaggable(dir string, resource hclwrite.Block) bool {
 		}
 
 		providerName, _ := detectProviderName(resourceType)
-		client, err := tfschema.NewClient(providerName)
+		client, err := tfschema.NewClient(providerName, []string{dir})
 		errors.PanicOnError(err, nil)
 		typeSchema, err := client.GetResourceTypeSchema(resourceType)
 		errors.PanicOnError(err, nil)

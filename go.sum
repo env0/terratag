@@ -89,6 +89,9 @@ github.com/dnaeon/go-vcr v0.0.0-20180920040454-5637cf3d8a31/go.mod h1:aBB1+wY4s9
 github.com/dustin/go-humanize v1.0.0/go.mod h1:HtrtbFcZ19U5GC7JDqmcUSB87Iq5E25KnS6fMYU6eOk=
 github.com/dylanmei/iso8601 v0.1.0/go.mod h1:w9KhXSgIyROl1DefbMYIE7UVSIvELTbMrCfx+QkYnoQ=
 github.com/dylanmei/winrmtest v0.0.0-20190225150635-99b7fe2fddf1/go.mod h1:lcy9/2gH1jn/VCLouHA6tOEwLoNVd4GW6zhuKLmHC2Y=
+github.com/env0/tfschema v0.3.1-0.20200726141535-d161300e087f h1:Ks45XC1aKTtIoDlYxO12TpLDWHi7UfNIAjfMTiyKdoU=
+github.com/env0/tfschema v0.3.1-0.20200726141535-d161300e087f/go.mod h1:6Zuhgp4anExvB/JgjHyZNWDV690Jixmu41OuiWvg+7U=
+github.com/env0/tfschema v0.3.1-0.20200726142210-5353f2f77fbd/go.mod h1:aDRqBuPbk/zl4Qj9NdvmDmZxcDwRCIMh3uqcXjFWhqk=
 github.com/envoyproxy/go-control-plane v0.9.1-0.20191026205805-5f8ba28d4473/go.mod h1:YTl/9mNaCwkRvm6d1a2C3ymFceY/DCBVvsKhRF0iEA4=
 github.com/envoyproxy/protoc-gen-validate v0.1.0/go.mod h1:iSmxcyjqTsJpI2R4NaDN7+kN2VEUnK/pcBlmesArF7c=
 github.com/fatih/color v1.7.0 h1:DkWD4oS2D8LGGgTQ6IvwJJXSL5Vp2ffcQg58nFV38Ys=
