@@ -9,7 +9,6 @@ import (
 	"github.com/hashicorp/hcl/v2/hclwrite"
 	"github.com/minamijoyo/tfschema/tfschema"
 	"log"
-	"os/exec"
 	"path"
 	"runtime"
 	"strings"
@@ -20,27 +19,20 @@ func IsTaggable(dir string, resource hclwrite.Block) bool {
 	resourceType := terraform.GetResourceType(resource)
 
 	if providers.IsSupportedResource(resourceType) {
-		command := exec.Command("tfschema", "resource", "show", "-format=json", resourceType)
-		command.Dir = dir
-		output, err := command.Output()
-		outputAsString := string(output)
-
-		if err != nil {
-			if strings.Contains(outputAsString, "Failed to find resource type") {
-				// short circuiting unfound resource due to: https://github.com/env0/terratag/issues/17
-				log.Print("Skipped ", resourceType, " as it is not YET supported")
-				return false
-			} else {
-				errors.PanicOnError(err, &outputAsString)
-			}
-		}
-
 		providerName, _ := detectProviderName(resourceType)
 		pluginsDir := path.Join(dir, ".terraform", "plugins", runtime.GOOS+"_"+runtime.GOARCH)
 		client, err := tfschema.NewClient(providerName, []string{pluginsDir})
 		errors.PanicOnError(err, nil)
 		typeSchema, err := client.GetResourceTypeSchema(resourceType)
-		errors.PanicOnError(err, nil)
+		if err != nil {
+			if strings.Contains(err.Error(), "Failed to find resource type") {
+				// short circuiting unfound resource due to: https://github.com/env0/terratag/issues/17
+				log.Print("Skipped ", resourceType, " as it is not YET supported")
+				return false
+			} else {
+				errors.PanicOnError(err, nil)
+			}
+		}
 
 		attributes := typeSchema.Attributes
 		for attribute := range attributes {
