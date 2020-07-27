@@ -3,7 +3,6 @@
 Add tags to your AWS resources in both Terraform 0.11 and 0.12!
 
 ## Prerequisites
-- [tfschema](https://github.com/minamijoyo/tfschema) to assert which resources support `tags` in AWS Provider
 - Terraform 0.11 or 0.12
 
 ## Usage
@@ -27,12 +26,6 @@ Add tags to your AWS resources in both Terraform 0.11 and 0.12!
 - `terratag.js` relies on HCL to JSON translation to traverse and manipulate the HCL.    
 Such conversion is [unsafe](https://github.com/hashicorp/terraform/issues/9354#issuecomment-512624185), and becomes even more fragile and difficult in HCL2 (introduced in Terraform 12).  
 Instead, `terratag` uses HashiCorps' [`hclwrite`](https://godoc.org/github.com/hashicorp/terraform/vendor/github.com/hashicorp/hcl/v2/hclwrite) to surgically manipulate the tags attribute directrly in HCL 2.   
-
-## Common Errors
-- ```
-  Failed to NewClient: Failed to find plugin: aws. Plugin binary was not found in any of the following directories
-  ```  
-  `tfschema` can't find your AWS Provider schema - You probably didn't run `terraform init`
 
 ## Develop
 
@@ -89,7 +82,4 @@ git push --tags
 ## TODO
 - [ ] Support for resource block nested in for loops (?)
 - [ ] Add godocs
-- [ ] Add unit tests
-- [ ] Remove `tfschema` as a prerequsite install
-- [x] Automate and publish package release binaries
 - [ ] Support tagging resources in `.tf.json` files (?)

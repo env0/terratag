@@ -3,11 +3,9 @@ module github.com/env0/terratag
 go 1.13
 
 require (
-	github.com/agext/levenshtein v1.2.2 // indirect
 	github.com/bmatcuk/doublestar v1.2.2
 	github.com/hashicorp/hcl/v2 v2.5.1
-	github.com/jstemmer/go-junit-report v0.9.1 // indirect
-	github.com/mitchellh/go-wordwrap v1.0.0 // indirect
+	github.com/minamijoyo/tfschema v0.3.0
 	github.com/mitchellh/mapstructure v1.1.2
 	github.com/onsi/gomega v1.10.1
 	github.com/otiai10/copy v1.2.0
@@ -17,3 +15,5 @@ require (
 	golang.org/x/sys v0.0.0-20200523222454-059865788121 // indirect
 	google.golang.org/protobuf v1.24.0 // indirect
 )
+
+replace github.com/minamijoyo/tfschema => github.com/env0/tfschema v0.3.1-0.20200726141535-d161300e087f
