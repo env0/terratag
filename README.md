@@ -6,7 +6,6 @@ Terratag is a CLI tool allowing for tags or labels to be applied across an entir
 > <sub>Terratag is brought to you with ❤️ by [env0](https://env0.com) -   
 > [<img src="logo.svg" width="200">](https://env0.com)  
 > Let your team manage their own environment in AWS, Azure and Google. Governed by your policies and with complete visibility and cost management.      
-  <sub>
 
 ## Prerequisites
 - Terraform 0.11 or 0.12
