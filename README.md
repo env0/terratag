@@ -23,7 +23,7 @@ Terratag will apply tags or labels to any AWS, GCP and Azure resources.
     ```
 1. Run Terratag  
       ```bash    
-       terratag -dir=foo/bar -tags={\"hello\": \"world\"}
+       terratag -dir=foo/bar -tags={\"environment_id\": \"prod\"}
    ```    
    
    Terratag supports the following arguments:  
@@ -31,6 +31,108 @@ Terratag will apply tags or labels to any AWS, GCP and Azure resources.
    - `-tags` - tags, as valid JSON (NOT HCL)
    - `-skipTerratagFiles` - optional. Default to `true`. Skips any previously tagged - (files with `terratag.tf` suffix)
 
+### Before Terratag
+```
+|- aws.tf
+|- gcp.tf
+```
+
+```hcl
+# aws.tf
+provider "aws" {
+  version = "~> 2.0"
+  region  = "us-east-1"
+}
+
+resource "aws_s3_bucket" "b" {
+  bucket = "my-tf-test-bucket"
+  acl    = "private"
+
+  tags {
+    Name        = "My bucket"
+  }
+}
+```
+```hcl
+#gcp.tf
+resource "google_storage_bucket" "static-site" {
+  name          = "image-store.com"
+  location      = "EU"
+  force_destroy = true
+
+  bucket_policy_only = true
+
+  website {
+    main_page_suffix = "index.html"
+    not_found_page   = "404.html"
+  }
+  cors {
+    origin          = ["http://image-store.com"]
+    method          = ["GET", "HEAD", "PUT", "POST", "DELETE"]
+    response_header = ["*"]
+    max_age_seconds = 3600
+  }
+  labels = {
+    "foo" = "bar"
+  }
+}
+
+```
+
+### After Terratag
+Running `terratag -tags={\"env0_environment_id\":\"dev\",\"env0_project_id\":\"clientA\"}` will output:
+
+```
+|- aws.terratag.tf
+|- gcp.terratag.tf
+|- aws.tf.bak
+|- gcp.tf.bak
+```
+
+```hcl
+# aws.terratag.tf
+provider "aws" {
+  version = "~> 2.0"
+  region  = "us-east-1"
+}
+
+resource "aws_s3_bucket" "b" {
+  bucket = "my-tf-test-bucket"
+  acl    = "private"
+
+  tags = merge( map("Name", "My bucket" ), local.terratag_added_main)
+}
+locals {
+  terratag_added_main = {"env0_environment_id"="dev","env0_project_id"="clientA"}
+}
+```
+```hcl
+# gcp.terratag.tf
+resource "google_storage_bucket" "static-site" {
+  name          = "image-store.com"
+  location      = "EU"
+  force_destroy = true
+
+  bucket_policy_only = true
+
+  website {
+    main_page_suffix = "index.html"
+    not_found_page   = "404.html"
+  }
+  cors {
+    origin          = ["http://image-store.com"]
+    method          = ["GET", "HEAD", "PUT", "POST", "DELETE"]
+    response_header = ["*"]
+    max_age_seconds = 3600
+  }
+  labels = merge( map("foo" , "bar"), local.terratag_added_main)
+}
+locals {
+  terratag_added_main = {"env0_environment_id"="dev","env0_project_id"="clientA"}
+}
+```
+
+> See more samples [here](https://github.com/env0/terratag/tree/master/test/fixture)
 
 ## Notes
 - Resources already having the exact same tag as the one being appeneded will be overridden
