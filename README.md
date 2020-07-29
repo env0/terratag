@@ -3,6 +3,10 @@
 # Terratag by env0
 Terratag is a CLI tool allowing for tags or labels to be applied across an entire set of targeted Terraform files directory.  
 
+It enables you to easily add dynamic tags to your existing IaC and benefit from some of the cross-resource tag applications you wish you had thought of when you had just started writing your Terraform, saving you tons of time and making future updates easy.  
+
+Terratag will apply tags or labels to any AWS, GCP and Azure resources.  
+
 > <sub>Terratag is brought to you with ❤️ by   
 > [<img src="logo.svg" width="150">](https://env0.com)  
 > Let your team manage their own environment in AWS, Azure and Google. Governed by your policies and with complete visibility and cost management.      
