@@ -132,7 +132,7 @@ locals {
 }
 ```
 
-> See more samples [here](https://github.com/env0/terratag/tree/master/test/fixture)
+##### See more samples [here](https://github.com/env0/terratag/tree/master/test/fixture)
 
 ## Notes
 - Resources already having the exact same tag as the one being appeneded will be overridden
