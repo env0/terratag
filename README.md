@@ -181,12 +181,3 @@ Focus on a praticular Terraform version:
 ```
 go test -run TestTerraformXX
 ``` 
-
-### Release
-```bash
-# release tags have to start with v to trigger the release workflow -
-# https://github.com/env0/terratag/blob/master/.github/workflows/release.yml
-git tag vx.x.x 
-git push --tags
-```
-
