@@ -1,34 +1,144 @@
+[![ci](https://github.com/env0/terratag/workflows/ci/badge.svg)](https://github.com/env0/terratag/actions?query=workflow%3Aci+branch%3Amaster)
 [![FOSSA Status](https://app.fossa.com/api/projects/git%2Bgithub.com%2Fenv0%2Fterratag.svg?type=small)](https://app.fossa.com/projects/git%2Bgithub.com%2Fenv0%2Fterratag?ref=badge_small)
+# Terratag by env0
+Terratag is a CLI tool allowing for tags or labels to be applied across an entire set of targeted Terraform files directory.  
 
-# Terratag
-Add tags to your AWS resources in both Terraform 0.11 and 0.12!
+It enables you to easily add dynamic tags to your existing IaC and benefit from some of the cross-resource tag applications you wish you had thought of when you had just started writing your Terraform, saving you tons of time and making future updates easy.  
+
+Terratag will apply tags or labels to any AWS, GCP and Azure resources.  
+
+> <sub>Terratag is brought to you with ❤️ by   
+> [<img src="logo.svg" width="150">](https://env0.com)  
+> Let your team manage their own environment in AWS, Azure and Google. Governed by your policies and with complete visibility and cost management.      
 
 ## Prerequisites
 - Terraform 0.11 or 0.12
 
 ## Usage
-1. Download the latest [release binary](https://github.com/env0/terratag/releases) or install the latest [node package](https://github.com/env0/terratag/packages)
-2. ```bash    
-    terraform init # needed to initialize provider schema and pull child terraform modules
-    terratag -dir=foo/bar -tags={\"hello\": \"world\"}
-    ```
-      > Note Terratag receives two command line arguments:  
-      > - `-dir` - optional, the directory to recursively search for any `.tf` file and try to terratag it.  
-      > - `-tags` - tags, as valid JSON (NOT HCL)
-      > - `-skipTerratagFiles` - optional. Default to `true`. Skips any previously tagged - (files with `terratag.tf` suffix)
+1. Download the latest [release binary](https://github.com/env0/terratag/releases) or install the latest [node package](https://github.com/env0/terratag/packages)  
 
+1. Initialize Terraform modules to get provider schema and pull child modules:
+   ```bash    
+    terraform init  
+    ```
+1. Run Terratag  
+      ```bash    
+       terratag -dir=foo/bar -tags={\"environment_id\": \"prod\"}
+   ```    
+   
+   Terratag supports the following arguments:  
+   - `-dir` - optional, the directory to recursively search for any `.tf` file and try to terratag it.  
+   - `-tags` - tags, as valid JSON (NOT HCL)
+   - `-skipTerratagFiles` - optional. Default to `true`. Skips any previously tagged - (files with `terratag.tf` suffix)
+
+### Before Terratag
+```
+|- aws.tf
+|- gcp.tf
+```
+
+```hcl
+# aws.tf
+provider "aws" {
+  version = "~> 2.0"
+  region  = "us-east-1"
+}
+
+resource "aws_s3_bucket" "b" {
+  bucket = "my-tf-test-bucket"
+  acl    = "private"
+
+  tags {
+    Name        = "My bucket"
+  }
+}
+```
+```hcl
+#gcp.tf
+resource "google_storage_bucket" "static-site" {
+  name          = "image-store.com"
+  location      = "EU"
+  force_destroy = true
+
+  bucket_policy_only = true
+
+  website {
+    main_page_suffix = "index.html"
+    not_found_page   = "404.html"
+  }
+  cors {
+    origin          = ["http://image-store.com"]
+    method          = ["GET", "HEAD", "PUT", "POST", "DELETE"]
+    response_header = ["*"]
+    max_age_seconds = 3600
+  }
+  labels = {
+    "foo" = "bar"
+  }
+}
+
+```
+
+### After Terratag
+Running `terratag -tags={\"env0_environment_id\":\"dev\",\"env0_project_id\":\"clientA\"}` will output:
+
+```
+|- aws.terratag.tf
+|- gcp.terratag.tf
+|- aws.tf.bak
+|- gcp.tf.bak
+```
+
+```hcl
+# aws.terratag.tf
+provider "aws" {
+  version = "~> 2.0"
+  region  = "us-east-1"
+}
+
+resource "aws_s3_bucket" "b" {
+  bucket = "my-tf-test-bucket"
+  acl    = "private"
+
+  tags = merge( map("Name", "My bucket" ), local.terratag_added_main)
+}
+locals {
+  terratag_added_main = {"env0_environment_id"="dev","env0_project_id"="clientA"}
+}
+```
+```hcl
+# gcp.terratag.tf
+resource "google_storage_bucket" "static-site" {
+  name          = "image-store.com"
+  location      = "EU"
+  force_destroy = true
+
+  bucket_policy_only = true
+
+  website {
+    main_page_suffix = "index.html"
+    not_found_page   = "404.html"
+  }
+  cors {
+    origin          = ["http://image-store.com"]
+    method          = ["GET", "HEAD", "PUT", "POST", "DELETE"]
+    response_header = ["*"]
+    max_age_seconds = 3600
+  }
+  labels = merge( map("foo" , "bar"), local.terratag_added_main)
+}
+locals {
+  terratag_added_main = {"env0_environment_id"="dev","env0_project_id"="clientA"}
+}
+```
+
+##### See more samples [here](https://github.com/env0/terratag/tree/master/test/fixture)
 
 ## Notes
-- Only AWS resources are supported (for now)
 - Resources already having the exact same tag as the one being appeneded will be overridden
 
-## How's it different from [env0/terratag.js](https://github.com/env0/terratag.js)?
-- Multi version support! Terratag works on Terraform 0.11 as well as 0.12
-- `terratag.js` relies on HCL to JSON translation to traverse and manipulate the HCL.    
-Such conversion is [unsafe](https://github.com/hashicorp/terraform/issues/9354#issuecomment-512624185), and becomes even more fragile and difficult in HCL2 (introduced in Terraform 12).  
-Instead, `terratag` uses HashiCorps' [`hclwrite`](https://godoc.org/github.com/hashicorp/terraform/vendor/github.com/hashicorp/hcl/v2/hclwrite) to surgically manipulate the tags attribute directrly in HCL 2.   
-
 ## Develop
+Issues and Pull Requests are very welcome!  
 
 ### Prerequisites
 - Go > 1.13.5
@@ -71,16 +181,3 @@ Focus on a praticular Terraform version:
 ```
 go test -run TestTerraformXX
 ``` 
-
-### Release
-```bash
-# release tags have to start with v to trigger the release workflow -
-# https://github.com/env0/terratag/blob/master/.github/workflows/release.yml
-git tag vx.x.x 
-git push --tags
-```
-
-## TODO
-- [ ] Support for resource block nested in for loops (?)
-- [ ] Add godocs
-- [ ] Support tagging resources in `.tf.json` files (?)
