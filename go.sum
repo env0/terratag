@@ -153,6 +153,8 @@ github.com/env0/tfschema v0.4.2-0.20200830163410-fe87ccd1acf0 h1:Qx/QBlVSu/ZUsPx
 github.com/env0/tfschema v0.4.2-0.20200830163410-fe87ccd1acf0/go.mod h1:rL/i9z2yOadXs74KcZay3wuD0l4d8ShbQpC7uAuFOS4=
 github.com/env0/tfschema v0.4.2-0.20200831101540-6e1bb6162348 h1:y+hhvM7neOx9Zs6LurEPQnf9HLx4EvWpvxA6qi6WoKU=
 github.com/env0/tfschema v0.4.2-0.20200831101540-6e1bb6162348/go.mod h1:rL/i9z2yOadXs74KcZay3wuD0l4d8ShbQpC7uAuFOS4=
+github.com/env0/tfschema v0.4.2-0.20200831150439-495c3db8e4bd h1:9CYIH/wo4tIOo27vnG/oNvJNsQexgZ5DS2/wXgh66Ro=
+github.com/env0/tfschema v0.4.2-0.20200831150439-495c3db8e4bd/go.mod h1:rL/i9z2yOadXs74KcZay3wuD0l4d8ShbQpC7uAuFOS4=
 github.com/envoyproxy/go-control-plane v0.9.1-0.20191026205805-5f8ba28d4473/go.mod h1:YTl/9mNaCwkRvm6d1a2C3ymFceY/DCBVvsKhRF0iEA4=
 github.com/envoyproxy/protoc-gen-validate v0.1.0/go.mod h1:iSmxcyjqTsJpI2R4NaDN7+kN2VEUnK/pcBlmesArF7c=
 github.com/evanphx/json-patch v0.0.0-20190203023257-5858425f7550/go.mod h1:50XU6AFN0ol/bzJsmQLiYLvXMP4fmwYFNcr97nuDLSk=

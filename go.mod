@@ -15,4 +15,4 @@ require (
 	google.golang.org/protobuf v1.24.0 // indirect
 )
 
-replace github.com/minamijoyo/tfschema => github.com/env0/tfschema v0.4.2-0.20200831101540-6e1bb6162348
+replace github.com/minamijoyo/tfschema => github.com/env0/tfschema v0.4.2-0.20200831150439-495c3db8e4bd
