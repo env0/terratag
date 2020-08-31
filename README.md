@@ -1,20 +1,20 @@
-[![ci](https://github.com/env0/terratag/workflows/ci/badge.svg)](https://github.com/env0/terratag/actions?query=workflow%3Aci+branch%3Amaster)
-[![FOSSA Status](https://app.fossa.com/api/projects/git%2Bgithub.com%2Fenv0%2Fterratag.svg?type=small)](https://app.fossa.com/projects/git%2Bgithub.com%2Fenv0%2Fterratag?ref=badge_small)
-# Terratag by env0
-Terratag is a CLI tool allowing for tags or labels to be applied across an entire set of targeted Terraform files directory.  
-
-It enables you to easily add dynamic tags to your existing IaC and benefit from some of the cross-resource tag applications you wish you had thought of when you had just started writing your Terraform, saving you tons of time and making future updates easy.  
-
-Terratag will apply tags or labels to any AWS, GCP and Azure resources.  
+# Terratag by env0 [![ci](https://github.com/env0/terratag/workflows/ci/badge.svg)](https://github.com/env0/terratag/actions?query=workflow%3Aci+branch%3Amaster) [![FOSSA Status](https://app.fossa.com/api/projects/git%2Bgithub.com%2Fenv0%2Fterratag.svg?type=small)](https://app.fossa.com/projects/git%2Bgithub.com%2Fenv0%2Fterratag?ref=badge_small)
 
 > <sub>Terratag is brought to you with ❤️ by   
-> [<img src="logo.svg" width="150">](https://env0.com)  
+>[<img src="logo.svg" width="150">](https://env0.com)  
 > Let your team manage their own environment in AWS, Azure and Google. Governed by your policies and with complete visibility and cost management.      
 
-## Prerequisites
+## What?
+Terratag is a CLI tool allowing for tags or labels to be applied across an entire set of targeted Terraform files directory. Terratag will apply tags or labels to any AWS, GCP and Azure resources.   
+
+## Why?
+Terratag enables you to easily add dynamic tags to your existing IaC and benefit from some cross-resource tag applications you wish you had thought of when you had just started writing your Terraform, saving you tons of time and making future updates easy. [Read more](https://d1.awsstatic.com/whitepapers/aws-tagging-best-practices.pdf) on why tagging is important.
+
+## How?
+### Prerequisites
 - Terraform 0.11 or 0.12
 
-## Usage
+### Usage
 1. Download the latest [release binary](https://github.com/env0/terratag/releases) or install the latest [node package](https://github.com/env0/terratag/packages)  
 
 1. Initialize Terraform modules to get provider schema and pull child modules:
@@ -31,7 +31,8 @@ Terratag will apply tags or labels to any AWS, GCP and Azure resources.
    - `-tags` - tags, as valid JSON (NOT HCL)
    - `-skipTerratagFiles` - optional. Default to `true`. Skips any previously tagged - (files with `terratag.tf` suffix)
 
-### Before Terratag
+### Example Output
+#### Before Terratag
 ```
 |- aws.tf
 |- gcp.tf
@@ -79,7 +80,7 @@ resource "google_storage_bucket" "static-site" {
 
 ```
 
-### After Terratag
+#### After Terratag
 Running `terratag -tags={\"env0_environment_id\":\"dev\",\"env0_project_id\":\"clientA\"}` will output:
 
 ```
@@ -135,7 +136,7 @@ locals {
 ##### See more samples [here](https://github.com/env0/terratag/tree/master/test/fixture)
 
 ## Notes
-- Resources already having the exact same tag as the one being appeneded will be overridden
+- Resources already having the exact same tag as the one being appended will be overridden
 
 ## Develop
 Issues and Pull Requests are very welcome!  
@@ -164,8 +165,8 @@ my_fixture
 ```
 
 - `input` is where you should place the terraform files of your fixture.  
-All commands will be executed wherever down the heirarchy where `main.tf` is located.  
-We do that to allow cases where complex nested submodule resolution may take place, and one would like to test how a directory higher up the heirarchy is resolved.  
+All commands will be executed wherever down the hierarchy where `main.tf` is located.  
+We do that to allow cases where complex nested submodule resolution may take place, and one would like to test how a directory higher up the hierarchy gets resolved.  
 - `expected` is a directory in which all `.terratag.tf` files will be matched with the output directory
 
 #### What's being tested?
@@ -177,7 +178,7 @@ Each test will run:
 And finally, will compare the results in `out` with the `expected` directory 
 
 #### Running Tests
-Focus on a praticular Terraform version:
+Focus on a particular Terraform version:
 ```
 go test -run TestTerraformXX
 ``` 
