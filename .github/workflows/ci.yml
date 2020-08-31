@@ -10,7 +10,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        terraform_version: [11,12]
+        terraform_version: [11,12,13]
 
     steps:
       - name: Set up Go 1.x

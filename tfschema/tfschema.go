@@ -9,8 +9,6 @@ import (
 	"github.com/hashicorp/hcl/v2/hclwrite"
 	"github.com/minamijoyo/tfschema/tfschema"
 	"log"
-	"path"
-	"runtime"
 	"strings"
 )
 
@@ -20,8 +18,7 @@ func IsTaggable(dir string, resource hclwrite.Block) bool {
 
 	if providers.IsSupportedResource(resourceType) {
 		providerName, _ := detectProviderName(resourceType)
-		pluginsDir := path.Join(dir, ".terraform", "plugins", runtime.GOOS+"_"+runtime.GOARCH)
-		client, err := tfschema.NewClient(providerName, []string{pluginsDir})
+		client, err := tfschema.NewClient(providerName, dir)
 		errors.PanicOnError(err, nil)
 		typeSchema, err := client.GetResourceTypeSchema(resourceType)
 		if err != nil {
