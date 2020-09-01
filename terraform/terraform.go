@@ -23,9 +23,11 @@ func GetTerraformVersion() int {
 		return 11
 	} else if strings.HasPrefix(outputAsString, "Terraform v0.12") {
 		return 12
+	} else if strings.HasPrefix(outputAsString, "Terraform v0.13") {
+		return 13
 	}
 
-	log.Fatalln("Terratag only supports Terraform 0.11.x and 0.12.x - your version says ", outputAsString)
+	log.Fatalln("Terratag only supports Terraform 0.11.x, 0.12.x and 0.13.x - your version says ", outputAsString)
 	return -1
 }
 
