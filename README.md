@@ -2,7 +2,8 @@
 
 > <sub>Terratag is brought to you with&nbsp;❤️&nbsp; by   
 >[<img src="logo.svg" width="150">](https://env0.com)  
-> Let your team manage their own environment in AWS, Azure and Google. Governed by your policies and with complete visibility and cost management.      
+> Let your team manage their own environment in AWS, Azure and Google. <br/> 
+> Governed by your policies and with complete visibility and cost management.      
 
 ## What?
 Terratag is a CLI tool allowing for tags or labels to be applied across an entire set of Terraform files. Terratag will apply tags or labels to any AWS, GCP and Azure resources.   
