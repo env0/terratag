@@ -1,14 +1,14 @@
 # Terratag by env0 [![ci](https://github.com/env0/terratag/workflows/ci/badge.svg)](https://github.com/env0/terratag/actions?query=workflow%3Aci+branch%3Amaster) [![FOSSA Status](https://app.fossa.com/api/projects/git%2Bgithub.com%2Fenv0%2Fterratag.svg?type=small)](https://app.fossa.com/projects/git%2Bgithub.com%2Fenv0%2Fterratag?ref=badge_small)
 
-> <sub>Terratag is brought to you with ❤️ by   
+> <sub>Terratag is brought to you with ❤️  by   
 >[<img src="logo.svg" width="150">](https://env0.com)  
 > Let your team manage their own environment in AWS, Azure and Google. Governed by your policies and with complete visibility and cost management.      
 
 ## What?
-Terratag is a CLI tool allowing for tags or labels to be applied across an entire set of targeted Terraform files directory. Terratag will apply tags or labels to any AWS, GCP and Azure resources.   
+Terratag is a CLI tool allowing for tags or labels to be applied across an entire set of Terraform files. Terratag will apply tags or labels to any AWS, GCP and Azure resources.   
 
 ## Why?
-Terratag enables you to easily add dynamic tags to your existing IaC and benefit from some cross-resource tag applications you wish you had thought of when you had just started writing your Terraform, saving you tons of time and making future updates easy. [Read more](https://d1.awsstatic.com/whitepapers/aws-tagging-best-practices.pdf) on why tagging is important.
+Maintaining tags across your application is hard, especially when done manually. Terratag enables you to easily add tags to your existing IaC and benefit from some cross-resource tag applications you wish you had thought of when you had just started writing your Terraform, saving you tons of time and making future updates easy. [Read more](https://d1.awsstatic.com/whitepapers/aws-tagging-best-practices.pdf) on why tagging is important.
 
 ## How?
 ### Prerequisites
