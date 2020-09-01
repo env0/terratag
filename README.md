@@ -12,7 +12,7 @@ Terratag enables you to easily add dynamic tags to your existing IaC and benefit
 
 ## How?
 ### Prerequisites
-- Terraform 0.11 or 0.12
+- Terraform 0.11, 0.12 or 0.13
 
 ### Usage
 1. Download the latest [release binary](https://github.com/env0/terratag/releases) or install the latest [node package](https://github.com/env0/terratag/packages)  
