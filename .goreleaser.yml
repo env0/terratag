@@ -12,7 +12,7 @@ release:
 brews:
   - tap:
       owner: env0
-      name: homebrew-terratag
+      name: terratag-homebrew
       token: "{{ .Env.HOMEBREW_TAP_GITHUB_TOKEN }}"
     commit_author:
       name: "env0"
