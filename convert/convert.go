@@ -26,12 +26,34 @@ func isHclMap(tokens hclwrite.Tokens) bool {
 	return strings.HasPrefix(maybeHclMap, "{") && strings.HasSuffix(maybeHclMap, "}")
 }
 
+func trimTokens(tokens hclwrite.Tokens) hclwrite.Tokens {
+	tokenTypesToRemove := []hclsyntax.TokenType{hclsyntax.TokenOBrace, hclsyntax.TokenNewline, hclsyntax.TokenCBrace}
+
+	var startIndex int
+	var endIndex int
+
+	for index, token := range tokens {
+		if !funk.Contains(tokenTypesToRemove, token.Type) {
+			startIndex = index
+			break
+		}
+	}
+
+	for index, token := range funk.Reverse(tokens).([]*hclwrite.Token) {
+		if !funk.Contains(tokenTypesToRemove, token.Type) {
+			endIndex = index
+			break
+		}
+	}
+
+	return tokens[startIndex : len(tokens)-endIndex]
+}
+
 func buildMapExpression(tokens hclwrite.Tokens) string {
 	// Need to convert to inline map expression
 
-	// First, we remove the first and last two tokens - get rid of the openning { closing } and newline
-	tokens = tokens[1:]
-	tokens = tokens[:len(tokens)-2]
+	// First, we get rid of the opening/closing newlines and {}
+	tokens = trimTokens(tokens)
 
 	// Then, we normalize the key-value paris so that they would be seperated by comma
 	// That's cause HCL supports both newline, comma or a combination of the two in seperating values
