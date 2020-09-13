@@ -16,7 +16,11 @@ Maintaining tags across your application is hard, especially when done manually.
 - Terraform 0.11, 0.12 or 0.13
 
 ### Usage
-1. Download the latest [release binary](https://github.com/env0/terratag/releases) or install the latest [node package](https://github.com/env0/terratag/packages)  
+1. Install from homebrew:
+    ```
+    ➜ brew install env0/terratag/terratag
+    ```
+    Or download the latest [release binary](https://github.com/env0/terratag/releases) .
 
 1. Initialize Terraform modules to get provider schema and pull child modules:
    ```bash    
