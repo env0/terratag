@@ -94,8 +94,8 @@ func buildMapExpression(tokens hclwrite.Tokens) string {
 	}
 
 	mapContent := string(tokens.Bytes())
-	mapContent = strings.TrimSpace(mapContent)
-	mapContent = strings.TrimSuffix(mapContent, ",") // remove any traling commas due to newline replaced
+	mapContent = strings.Replace(mapContent, " ", "", -1) // trim spaces
+	mapContent = strings.TrimSuffix(mapContent, ",")      // remove any traling commas due to newline replaced
 	return "map(" + mapContent + ")"
 }
 
