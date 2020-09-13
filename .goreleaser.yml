@@ -1,0 +1,24 @@
+builds:
+  - binary: terratag
+    goos:
+      - darwin
+      - linux
+      - windows
+    goarch:
+      - amd64
+release:
+  prerelease: auto
+
+brews:
+  - tap:
+      owner: env0
+      name: homebrew-terratag
+      token: "{{ .Env.HOMEBREW_TAP_GITHUB_TOKEN }}"
+    commit_author:
+      name: "env0"
+      email: contact@env0.com
+    homepage: https://github.com/env0/terratag
+    description: "Automatically create and maintain tags across their entire set of AWS, Azure, and GCP resources on Terraform"
+    skip_upload: auto
+    install: |
+      bin.install "terratag"
