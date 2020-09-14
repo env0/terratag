@@ -1,7 +1,7 @@
 builds:
   - binary: terratag
     env:
-      - CGO_ENABLED=0
+      - CGO_ENABLED=1
     flags:
       - -installsuffix=cgo
       - -a
@@ -9,8 +9,8 @@ builds:
       - darwin
       - linux
       - windows
-#    goarch:
-#      - amd64
+    goarch:
+      - amd64
 release:
   prerelease: auto
 
