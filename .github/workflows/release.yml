@@ -23,5 +23,6 @@ jobs:
         version: latest
         args: release --rm-dist
       env:
+        CGO_ENABLED: 0
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         HOMEBREW_TAP_GITHUB_TOKEN: ${{ secrets.HOMEBREW_TAP_GITHUB_TOKEN }}
