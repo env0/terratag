@@ -2,6 +2,8 @@ builds:
   - binary: terratag
     env:
       - CGO_ENABLED=0
+    flags:
+      - -installsuffix cgo
     goos:
       - darwin
       - linux
