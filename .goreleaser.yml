@@ -3,7 +3,7 @@ builds:
     env:
       - CGO_ENABLED=0
     flags:
-      - -installsuffix cgo
+      - -installsuffix=cgo
     goos:
       - darwin
       - linux
