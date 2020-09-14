@@ -9,7 +9,8 @@ builds:
       - darwin
       - linux
       - windows
-
+    goarch:
+      - amd64
 release:
   prerelease: auto
 
