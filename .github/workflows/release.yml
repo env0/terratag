@@ -31,7 +31,7 @@ jobs:
         go get -v -t -d ./...
         mkdir out
         CGO_ENABLED=0 go build -a -installsuffix cgo -o ./out/terratag/terratag
-        tar -cvzf ./out/terratag/terratag.tar.gz ./out/terratag/terratag
+        tar -cvzf ./out/terratag/terratag.tar.gz -C ./out/terratag terratag
     - name: Extract tag name
       id: tag
       uses: actions/github-script@v3
