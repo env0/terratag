@@ -52,7 +52,7 @@ jobs:
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
-        upload_url: https://uploads.github.com/repos/${{ github.repository }}/releases/${{ steps.latest_release.outputs.data.id }}/assets{?name,label}
+        upload_url: https://uploads.github.com/repos/${{ github.repository }}/releases/${{ fromJson(steps.latest_release.outputs.data).id }}/assets{?name,label}
         asset_path: ./out/terratag/terratag
         asset_name: terratag_${{ steps.tag.outputs.result }}_linux_amd64.tar.gz
         asset_content_type: application/zip
