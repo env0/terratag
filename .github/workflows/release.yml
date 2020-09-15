@@ -31,18 +31,25 @@ jobs:
     needs: [goreleaser]
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout
-        uses: actions/checkout@v2
-      - name: Set up Go
+      - name: Set up Go 1.13
         uses: actions/setup-go@v1
         with:
           go-version: 1.13
-      - name: Build with CGO disabled for Alpine Linux
+        id: go
+
+      - name: Check out code into the Go module directory
+        uses: actions/checkout@v1
+
+      - name: Get dependencies
         run: |
           go get -v -t -d ./...
+
+      - name: Build project
+        run: |
           mkdir out
           CGO_ENABLED=0 go build -a -installsuffix cgo -o ./out/terratag/terratag
           tar -cvzf ./out/terratag/terratag.tar.gz -C ./out/terratag terratag
+
       - name: Extract tag name
         id: tag
         uses: actions/github-script@v3
