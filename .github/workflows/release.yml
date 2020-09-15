@@ -37,7 +37,7 @@ jobs:
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
-        upload_url: https://github.com/env0/terratag/releases/tag/${{ event.payload.ref.replace('refs/tags/', '') }}
+        upload_url: https://github.com/env0/terratag/releases/tag/${{ github.event.payload.ref.replace('refs/tags/', '') }}
         asset_path: ./out/terratag/terratag
-        asset_name: terratag_${{ event.payload.ref.replace('refs/tags/', '') }}_linux_amd64.tar.gz
+        asset_name: terratag_${{ github.event.payload.ref.replace('refs/tags/', '') }}_linux_amd64.tar.gz
         asset_content_type: application/zip
