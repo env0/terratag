@@ -31,20 +31,13 @@ jobs:
         go get -v -t -d ./...
         mkdir out
         CGO_ENABLED=0 go build -a -installsuffix cgo -o ./out/terratag/terratag
-    - name: Extract tag name
-      id: tag
-      uses: actions/github-script@0.2.0
-      with:
-        github-token: ${{ secrets.GITHUB_TOKEN }}
-        script: |
-          return context.payload.ref.replace('refs/tags/', '');
     - name: Upload linux build
       id: upload-release-asset
       uses: actions/upload-release-asset@v1
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
-        upload_url: ${{ join(['https://github.com/env0/terratag/releases/tag/', steps.tag.outputs.result]) }}
+        upload_url: https://github.com/env0/terratag/releases/tag/${{ context.payload.ref.replace('refs/tags/', '') }}
         asset_path: ./out/terratag/terratag
-        asset_name: ${{ join(['terratag_', steps.tag.outputs.result, '_linux_amd64.tar.gz']) }}
+        asset_name: terratag_${{ context.payload.ref.replace('refs/tags/', '') }}_linux_amd64.tar.gz
         asset_content_type: application/zip
