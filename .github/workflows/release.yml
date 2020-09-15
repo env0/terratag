@@ -44,7 +44,7 @@ jobs:
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
-        upload_url: ${{ join(['https://github.com/env0/terratag/releases/tag/', steps.tag.outputs.result])
+        upload_url: ${{ join(['https://github.com/env0/terratag/releases/tag/', steps.tag.outputs.result]) }}
         asset_path: ./out/terratag/terratag
-        asset_name: ${{ join(['terratag_', steps.tag.outputs.result, '_linux_amd64.tar.gz'])
+        asset_name: ${{ join(['terratag_', steps.tag.outputs.result, '_linux_amd64.tar.gz']) }}
         asset_content_type: application/zip
