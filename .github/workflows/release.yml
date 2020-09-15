@@ -48,8 +48,8 @@ jobs:
         run: |
           mkdir out
           CGO_ENABLED=0 go build -a -installsuffix cgo -o ./out/terratag/terratag
-          chmod +x /out/terratag
-          /out/terratag
+          chmod +x out/terratag
+          out/terratag
           tar -cvzf ./out/terratag/terratag.tar.gz -C ./out/terratag terratag
 
       - name: Extract tag name
