@@ -66,6 +66,3 @@ resource "azurerm_kubernetes_cluster" "existing_tags_cluster" {
     existing = "tag"
   }
 }
-
-
-
