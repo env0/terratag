@@ -12,16 +12,15 @@ import (
 	"strings"
 )
 
+var providerToClientMap = map[string]tfschema.Client{}
+
 func IsTaggable(dir string, resource hclwrite.Block) bool {
 	var isTaggable bool
 	resourceType := terraform.GetResourceType(resource)
 
 	if providers.IsSupportedResource(resourceType) {
 		providerName, _ := detectProviderName(resourceType)
-
-		client, err := tfschema.NewClient(providerName, tfschema.Option{RootDir: dir})
-		errors.PanicOnError(err, nil)
-
+		client := getClient(providerName, dir)
 		typeSchema, err := client.GetResourceTypeSchema(resourceType)
 		if err != nil {
 			if strings.Contains(err.Error(), "Failed to find resource type") {
@@ -61,4 +60,17 @@ func detectProviderName(name string) (string, error) {
 		return "", fmt.Errorf("Failed to detect a provider name: %s", name)
 	}
 	return s[0], nil
+}
+
+func getClient(providerName string, dir string) tfschema.Client {
+	client, exists := providerToClientMap[providerName]
+	if exists {
+		return client
+	} else {
+		newClient, err := tfschema.NewClient(providerName, tfschema.Option{RootDir: dir})
+		errors.PanicOnError(err, nil)
+
+		providerToClientMap[providerName] = newClient
+		return newClient
+	}
 }
