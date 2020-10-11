@@ -49,21 +49,30 @@ func Terratag(args Args) {
 
 	matches := GetTerraformFilePaths(args.Dir)
 
-	tagDirectoryResources(args.Dir, matches, args.Tags, args.IsSkipTerratagFiles, tfVersion, args.Rename)
+	counters := tagDirectoryResources(args.Dir, matches, args.Tags, args.IsSkipTerratagFiles, tfVersion, args.Rename)
+	log.Print("[INFO] Summary:")
+	log.Print("[INFO] Tagged ", counters.taggedResources, " resource/s (out of ", counters.totalResources, " resource/s processed)")
+	log.Print("[INFO] In ", counters.taggedFiles, " file/s (out of ", counters.totalFiles, " file/s processed)")
 }
 
-func tagDirectoryResources(dir string, matches []string, tags string, isSkipTerratagFiles bool, tfVersion int, rename bool) {
+func tagDirectoryResources(dir string, matches []string, tags string, isSkipTerratagFiles bool, tfVersion int, rename bool) counters {
+	var total counters
 	for _, path := range matches {
 		if isSkipTerratagFiles && strings.HasSuffix(path, "terratag.tf") {
-			log.Print("Skipping file ", path, " as it's already tagged")
+			log.Print("[INFO] Skipping file ", path, " as it's already tagged")
 		} else {
-			tagFileResources(path, dir, tags, tfVersion, rename)
+			perFile := tagFileResources(path, dir, tags, tfVersion, rename)
+			total.Add(perFile)
 		}
 	}
+	return total
 }
 
-func tagFileResources(path string, dir string, tags string, tfVersion int, rename bool) {
-	log.Print("Processing file ", path)
+func tagFileResources(path string, dir string, tags string, tfVersion int, rename bool) counters {
+	perFileCounters := counters{
+		totalFiles: 1,
+	}
+	log.Print("[INFO] Processing file ", path)
 	var swappedTagsStrings []string
 
 	hcl := file.ReadHCLFile(path)
@@ -75,10 +84,12 @@ func tagFileResources(path string, dir string, tags string, tfVersion int, renam
 
 	for _, resource := range hcl.Body().Blocks() {
 		if resource.Type() == "resource" {
-			log.Print("Processing resource ", resource.Labels())
+			log.Print("[INFO] Processing resource ", resource.Labels())
+			perFileCounters.totalResources += 1
 
 			if IsTaggable(dir, *resource) {
-				log.Print("Resource taggable, processing...")
+				log.Print("[INFO] Resource taggable, processing...", resource.Labels())
+				perFileCounters.taggedResources += 1
 				result := tagging.TagResource(tagging.TagBlockArgs{
 					Filename:  filename,
 					Block:     resource,
@@ -90,7 +101,7 @@ func tagFileResources(path string, dir string, tags string, tfVersion int, renam
 
 				swappedTagsStrings = append(swappedTagsStrings, result.SwappedTagsStrings...)
 			} else {
-				log.Print("Resource not taggable, skipping. ")
+				log.Print("[INFO] Resource not taggable, skipping.", resource.Labels())
 			}
 		}
 	}
@@ -104,9 +115,11 @@ func tagFileResources(path string, dir string, tags string, tfVersion int, renam
 		text = convert.UnquoteTagsAttribute(swappedTagsStrings, text)
 
 		file.ReplaceWithTerratagFile(path, text, rename)
+		perFileCounters.taggedFiles = 1
 	} else {
-		log.Print("No taggable resources found in file ", path, " - skipping")
+		log.Print("[INFO] No taggable resources found in file ", path, " - skipping")
 	}
+	return perFileCounters
 }
 
 func jsonToHclMap(tags string) string {
