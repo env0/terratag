@@ -1,17 +1,20 @@
 package main_test
 
 import (
+	"errors"
 	"fmt"
-	"github.com/bmatcuk/doublestar"
-	. "github.com/env0/terratag"
-	. "github.com/onsi/gomega"
-	"github.com/otiai10/copy"
 	"io/ioutil"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"strings"
 	"testing"
+
+	"github.com/bmatcuk/doublestar"
+	. "github.com/env0/terratag"
+	"github.com/env0/terratag/cli"
+	. "github.com/onsi/gomega"
+	"github.com/otiai10/copy"
 )
 
 var cleanArgs = append(os.Args)
@@ -127,7 +130,11 @@ func terratag(entryDir string) (err interface{}) {
 		}
 	}()
 	os.Args = append(args, "-dir="+entryDir)
-	Terratag()
+	args, isMissingArg := cli.InitArgs()
+	if isMissingArg {
+		return errors.New("Missing arg")
+	}
+	Terratag(args)
 	os.Args = cleanArgs
 
 	return nil
