@@ -49,20 +49,20 @@ func Terratag(args Args) {
 
 	matches := GetTerraformFilePaths(args.Dir)
 
-	tagDirectoryResources(args.Dir, matches, args.Tags, args.IsSkipTerratagFiles, tfVersion)
+	tagDirectoryResources(args.Dir, matches, args.Tags, args.IsSkipTerratagFiles, tfVersion, args.Rename)
 }
 
-func tagDirectoryResources(dir string, matches []string, tags string, isSkipTerratagFiles bool, tfVersion int) {
+func tagDirectoryResources(dir string, matches []string, tags string, isSkipTerratagFiles bool, tfVersion int, rename bool) {
 	for _, path := range matches {
 		if isSkipTerratagFiles && strings.HasSuffix(path, "terratag.tf") {
 			log.Print("Skipping file ", path, " as it's already tagged")
 		} else {
-			tagFileResources(path, dir, tags, tfVersion)
+			tagFileResources(path, dir, tags, tfVersion, rename)
 		}
 	}
 }
 
-func tagFileResources(path string, dir string, tags string, tfVersion int) {
+func tagFileResources(path string, dir string, tags string, tfVersion int, rename bool) {
 	log.Print("Processing file ", path)
 	var swappedTagsStrings []string
 
@@ -103,7 +103,7 @@ func tagFileResources(path string, dir string, tags string, tfVersion int) {
 		swappedTagsStrings = append(swappedTagsStrings, terratag.Added)
 		text = convert.UnquoteTagsAttribute(swappedTagsStrings, text)
 
-		file.ReplaceWithTerratagFile(path, text)
+		file.ReplaceWithTerratagFile(path, text, rename)
 	} else {
 		log.Print("No taggable resources found in file ", path, " - skipping")
 	}

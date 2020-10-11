@@ -1,27 +1,36 @@
 package file
 
 import (
-	"github.com/env0/terratag/errors"
-	"github.com/hashicorp/hcl/v2"
-	"github.com/hashicorp/hcl/v2/hclwrite"
 	"io/ioutil"
 	"log"
 	"os"
 	"path/filepath"
 	"strings"
+
+	"github.com/env0/terratag/errors"
+	"github.com/hashicorp/hcl/v2"
+	"github.com/hashicorp/hcl/v2/hclwrite"
 )
 
-func ReplaceWithTerratagFile(path string, textContent string) {
-	taggedFilename := strings.TrimSuffix(path, filepath.Ext(path)) + ".terratag.tf"
+func ReplaceWithTerratagFile(path string, textContent string, rename bool) {
 	backupFilename := path + ".bak"
 
-	log.Print("Creating file ", taggedFilename)
-	taggedFileError := ioutil.WriteFile(taggedFilename, []byte(textContent), 0644)
-	errors.PanicOnError(taggedFileError, nil)
+	if rename {
+		taggedFilename := strings.TrimSuffix(path, filepath.Ext(path)) + ".terratag.tf"
+		log.Print("Creating file ", taggedFilename)
+		taggedFileError := ioutil.WriteFile(taggedFilename, []byte(textContent), 0644)
+		errors.PanicOnError(taggedFileError, nil)
+	}
 
 	log.Print("Renaming original file from ", path, " to ", backupFilename)
 	backupFileError := os.Rename(path, backupFilename)
 	errors.PanicOnError(backupFileError, nil)
+
+	if !rename {
+		log.Print("Creating file ", path)
+		taggedFileError := ioutil.WriteFile(path, []byte(textContent), 0644)
+		errors.PanicOnError(taggedFileError, nil)
+	}
 }
 
 func GetFilename(path string) string {

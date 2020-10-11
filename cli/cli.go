@@ -1,6 +1,7 @@
 package cli
 
 import (
+	"fmt"
 	"log"
 	"os"
 	"strconv"
@@ -15,6 +16,7 @@ type Args struct {
 	SkipTerratagFiles   string
 	IsSkipTerratagFiles bool
 	Verbose             bool
+	Rename              bool
 }
 
 func InitArgs() (Args, bool) {
@@ -23,22 +25,14 @@ func InitArgs() (Args, bool) {
 
 	args.Tags = setFlag("tags", "")
 	args.Dir = setFlag("dir", ".")
-	skipTerratagFiles := setFlag("skipTerratagFiles", "true")
-	verbose := setFlag("verbose", "false")
+	args.IsSkipTerratagFiles = booleanFlag("skipTerratagFiles", true)
+	args.Verbose = booleanFlag("verbose", false)
+	args.Rename = booleanFlag("rename", true)
 
 	if args.Tags == "" {
 		log.Println("Usage: terratag -tags='{ \"some_tag\": \"value\" }' [-dir=\".\"]")
 		isMissingArg = true
 	}
-
-	var err error
-	args.IsSkipTerratagFiles, err = strconv.ParseBool(skipTerratagFiles)
-	errorMessage := "-skipTerratagFiles may only be set to true or false"
-	errors.PanicOnError(err, &errorMessage)
-
-	args.Verbose, err = strconv.ParseBool(verbose)
-	errorMessage2 := "-verbose may only be set to true or false"
-	errors.PanicOnError(err, &errorMessage2)
 
 	return args, isMissingArg
 }
@@ -53,4 +47,16 @@ func setFlag(flag string, defaultValue string) string {
 	}
 
 	return result
+}
+
+func booleanFlag(flag string, defaultValue bool) bool {
+	defaultString := "false"
+	if defaultValue {
+		defaultString = "true"
+	}
+	stringValue := setFlag(flag, defaultString)
+	value, err := strconv.ParseBool(stringValue)
+	errorMessage := fmt.Sprint("-", flag, " may only be set to true or false")
+	errors.PanicOnError(err, &errorMessage)
+	return value
 }
