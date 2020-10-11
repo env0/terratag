@@ -1,35 +1,46 @@
 package cli
 
 import (
-	"github.com/env0/terratag/errors"
 	"log"
 	"os"
 	"strconv"
 	"strings"
+
+	"github.com/env0/terratag/errors"
 )
 
-func InitArgs() (string, string, bool, bool) {
-	var tags string
-	var dir string
-	var skipTerratagFiles string
-	var isSkipTerratagFiles bool
+type Args struct {
+	Tags                string
+	Dir                 string
+	SkipTerratagFiles   string
+	IsSkipTerratagFiles bool
+	Verbose             bool
+}
 
+func InitArgs() (Args, bool) {
+	args := Args{}
 	isMissingArg := false
 
-	tags = setFlag("tags", "")
-	dir = setFlag("dir", ".")
-	skipTerratagFiles = setFlag("skipTerratagFiles", "true")
+	args.Tags = setFlag("tags", "")
+	args.Dir = setFlag("dir", ".")
+	skipTerratagFiles := setFlag("skipTerratagFiles", "true")
+	verbose := setFlag("verbose", "false")
 
-	if tags == "" {
+	if args.Tags == "" {
 		log.Println("Usage: terratag -tags='{ \"some_tag\": \"value\" }' [-dir=\".\"]")
 		isMissingArg = true
 	}
 
-	isSkipTerratagFiles, err := strconv.ParseBool(skipTerratagFiles)
+	var err error
+	args.IsSkipTerratagFiles, err = strconv.ParseBool(skipTerratagFiles)
 	errorMessage := "-skipTerratagFiles may only be set to true or false"
 	errors.PanicOnError(err, &errorMessage)
 
-	return tags, dir, isSkipTerratagFiles, isMissingArg
+	args.Verbose, err = strconv.ParseBool(verbose)
+	errorMessage2 := "-verbose may only be set to true or false"
+	errors.PanicOnError(err, &errorMessage2)
+
+	return args, isMissingArg
 }
 
 func setFlag(flag string, defaultValue string) string {

@@ -2,6 +2,10 @@ package main
 
 import (
 	"encoding/json"
+	"log"
+	"os"
+	"strings"
+
 	. "github.com/env0/terratag/cli"
 	"github.com/env0/terratag/convert"
 	. "github.com/env0/terratag/errors"
@@ -11,27 +15,41 @@ import (
 	. "github.com/env0/terratag/terraform"
 	. "github.com/env0/terratag/tfschema"
 	"github.com/env0/terratag/utils"
+
+	"github.com/hashicorp/go-hclog"
 	"github.com/hashicorp/hcl/v2/hclwrite"
-	"log"
-	"strings"
+	"github.com/hashicorp/logutils"
 )
 
 func main() {
-	Terratag()
+	args, isMissingArg := InitArgs()
+	if isMissingArg {
+		return
+	}
+	filter := &logutils.LevelFilter{
+		Levels:   []logutils.LogLevel{"DEBUG", "TRACE", "INFO", "WARN", "ERROR"},
+		MinLevel: logutils.LogLevel("INFO"),
+		Writer:   os.Stderr,
+	}
+	if args.Verbose {
+		filter.MinLevel = logutils.LogLevel("DEBUG")
+	}
+	log.SetOutput(filter)
+	hclog.DefaultOutput = filter
+
+	Terratag(args)
 }
 
-func Terratag() {
-	tags, dir, isSkipTerratagFiles, isMissingArg := InitArgs()
-
+func Terratag(args Args) {
 	tfVersion := GetTerraformVersion()
 
-	if isMissingArg || !IsTerraformInitRun(dir) {
+	if !IsTerraformInitRun(args.Dir) {
 		return
 	}
 
-	matches := GetTerraformFilePaths(dir)
+	matches := GetTerraformFilePaths(args.Dir)
 
-	tagDirectoryResources(dir, matches, tags, isSkipTerratagFiles, tfVersion)
+	tagDirectoryResources(args.Dir, matches, args.Tags, args.IsSkipTerratagFiles, tfVersion)
 }
 
 func tagDirectoryResources(dir string, matches []string, tags string, isSkipTerratagFiles bool, tfVersion int) {
