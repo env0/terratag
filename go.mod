@@ -17,5 +17,6 @@ require (
 )
 
 // remove the following directive when https://github.com/hashicorp/hcl/issues/402 gets fixed
-
 replace github.com/hashicorp/hcl/v2 => github.com/env0/hcl/v2 v2.2.1-0.20201012055633-9ccfb031dba0
+// remove this once PR accepted: https://github.com/minamijoyo/tfschema/pull/26
+replace github.com/minamijoyo/tfschema => github.com/env0/tfschema v0.4.2-0.20201012071045-dd91e89308e2

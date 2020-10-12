@@ -2,14 +2,16 @@ package tfschema
 
 import (
 	"fmt"
+	"log"
+	"strings"
+
 	"github.com/env0/terratag/errors"
 	"github.com/env0/terratag/providers"
 	"github.com/env0/terratag/tagging"
 	"github.com/env0/terratag/terraform"
+	"github.com/hashicorp/go-hclog"
 	"github.com/hashicorp/hcl/v2/hclwrite"
 	"github.com/minamijoyo/tfschema/tfschema"
-	"log"
-	"strings"
 )
 
 var providerToClientMap = map[string]tfschema.Client{}
@@ -63,11 +65,23 @@ func detectProviderName(name string) (string, error) {
 }
 
 func getClient(providerName string, dir string) tfschema.Client {
+	logger := hclog.New(&hclog.LoggerOptions{
+		Name:   "plugin",
+		Level:  hclog.Trace,
+		Output: hclog.DefaultOutput,
+		// this annoyance - both tfschema and go-plugin open output
+		// directly to os.Stderr, bypassing our log level filter.
+		// weird to need to bypass the issue by assigning the default
+		// output ¯\_(ツ)_/¯
+	})
 	client, exists := providerToClientMap[providerName]
 	if exists {
 		return client
 	} else {
-		newClient, err := tfschema.NewClient(providerName, tfschema.Option{RootDir: dir})
+		newClient, err := tfschema.NewClient(providerName, tfschema.Option{
+			RootDir: dir,
+			Logger:  logger,
+		})
 		errors.PanicOnError(err, nil)
 
 		providerToClientMap[providerName] = newClient
