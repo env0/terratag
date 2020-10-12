@@ -14,3 +14,7 @@ require (
 	golang.org/x/sys v0.0.0-20200523222454-059865788121 // indirect
 	google.golang.org/protobuf v1.24.0 // indirect
 )
+
+// remove the following directive when https://github.com/hashicorp/hcl/issues/402 gets fixed
+
+replace github.com/hashicorp/hcl/v2 => github.com/env0/hcl/v2 v2.2.1-0.20201012055633-9ccfb031dba0
