@@ -142,6 +142,8 @@ github.com/dylanmei/iso8601 v0.1.0/go.mod h1:w9KhXSgIyROl1DefbMYIE7UVSIvELTbMrCf
 github.com/dylanmei/winrmtest v0.0.0-20190225150635-99b7fe2fddf1/go.mod h1:lcy9/2gH1jn/VCLouHA6tOEwLoNVd4GW6zhuKLmHC2Y=
 github.com/elazarl/goproxy v0.0.0-20170405201442-c4fc26588b6e/go.mod h1:/Zj4wYkgs4iZTTu3o/KG3Itv/qCCa8VVMlb3i9OVuzc=
 github.com/emicklei/go-restful v0.0.0-20170410110728-ff4f55a20633/go.mod h1:otzb+WCGbkyDHkqmQmT5YD2WR4BBwUdeQoFo8l/7tVs=
+github.com/env0/hcl/v2 v2.2.1-0.20201012055633-9ccfb031dba0 h1:pvNP3LKzxNNMVCB/IlPJ+tEzL6eY7E8PMiBqt609Qqs=
+github.com/env0/hcl/v2 v2.2.1-0.20201012055633-9ccfb031dba0/go.mod h1:bQTN5mpo+jewjJgh8jr0JUguIi7qPHUF6yIfAEN3jqY=
 github.com/env0/tfschema v0.3.1-0.20190530131153-e80f61aaf88b/go.mod h1:6Zuhgp4anExvB/JgjHyZNWDV690Jixmu41OuiWvg+7U=
 github.com/env0/tfschema v0.3.1-0.20200726141535-d161300e087f h1:Ks45XC1aKTtIoDlYxO12TpLDWHi7UfNIAjfMTiyKdoU=
 github.com/env0/tfschema v0.3.1-0.20200726141535-d161300e087f/go.mod h1:6Zuhgp4anExvB/JgjHyZNWDV690Jixmu41OuiWvg+7U=
