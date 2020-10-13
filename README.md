@@ -139,6 +139,13 @@ locals {
 }
 ```
 
+### Optional CLI flags
+
+* `-dir=<path>` - defaults to `.`. Sets the terraform folder to tag `.tf` files in
+* `-skipTerratagFiles=false` - Dont skip processing `*.terratag.tf` files (when running terratag a second time for the same directory)
+* `-verbose=true` - Turn on verbose logging
+* `-rename=false` - Instead of replacing files named `<basename>.tf` with `<basename>.terratag.tf`, keep the original filename
+
 ##### See more samples [here](https://github.com/env0/terratag/tree/master/test/fixture)
 
 ## Notes
