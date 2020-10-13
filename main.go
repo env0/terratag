@@ -26,18 +26,24 @@ func main() {
 	if isMissingArg {
 		return
 	}
+	initLogFiltering(args.Verbose)
+
+	Terratag(args)
+}
+
+func initLogFiltering(verbose bool) {
+	level := "INFO"
+	if verbose {
+		level = "DEBUG"
+	}
+
 	filter := &logutils.LevelFilter{
 		Levels:   []logutils.LogLevel{"DEBUG", "TRACE", "INFO", "WARN", "ERROR"},
-		MinLevel: logutils.LogLevel("INFO"),
+		MinLevel: logutils.LogLevel(level),
 		Writer:   os.Stderr,
-	}
-	if args.Verbose {
-		filter.MinLevel = logutils.LogLevel("DEBUG")
 	}
 	log.SetOutput(filter)
 	hclog.DefaultOutput = filter
-
-	Terratag(args)
 }
 
 func Terratag(args Args) {
