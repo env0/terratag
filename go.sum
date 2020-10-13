@@ -113,8 +113,6 @@ github.com/elazarl/goproxy v0.0.0-20170405201442-c4fc26588b6e/go.mod h1:/Zj4wYkg
 github.com/emicklei/go-restful v0.0.0-20170410110728-ff4f55a20633/go.mod h1:otzb+WCGbkyDHkqmQmT5YD2WR4BBwUdeQoFo8l/7tVs=
 github.com/env0/hcl/v2 v2.2.1-0.20201012055633-9ccfb031dba0 h1:pvNP3LKzxNNMVCB/IlPJ+tEzL6eY7E8PMiBqt609Qqs=
 github.com/env0/hcl/v2 v2.2.1-0.20201012055633-9ccfb031dba0/go.mod h1:bQTN5mpo+jewjJgh8jr0JUguIi7qPHUF6yIfAEN3jqY=
-github.com/env0/tfschema v0.4.2-0.20201012071045-dd91e89308e2 h1:L70v90ik3066+AFuzt5xGFABrZYp04Iy0EskG76mk08=
-github.com/env0/tfschema v0.4.2-0.20201012071045-dd91e89308e2/go.mod h1:rL/i9z2yOadXs74KcZay3wuD0l4d8ShbQpC7uAuFOS4=
 github.com/envoyproxy/go-control-plane v0.9.1-0.20191026205805-5f8ba28d4473/go.mod h1:YTl/9mNaCwkRvm6d1a2C3ymFceY/DCBVvsKhRF0iEA4=
 github.com/envoyproxy/protoc-gen-validate v0.1.0/go.mod h1:iSmxcyjqTsJpI2R4NaDN7+kN2VEUnK/pcBlmesArF7c=
 github.com/evanphx/json-patch v0.0.0-20190203023257-5858425f7550/go.mod h1:50XU6AFN0ol/bzJsmQLiYLvXMP4fmwYFNcr97nuDLSk=
@@ -325,8 +323,8 @@ github.com/mattn/go-runewidth v0.0.4/go.mod h1:LwmH8dsx7+W8Uxz3IHJYH5QSwggIsqBzp
 github.com/mattn/go-shellwords v1.0.4/go.mod h1:3xCvwCdWdlDJUrvuMn7Wuy9eWs4pE8vqg+NOMyg4B2o=
 github.com/matttproud/golang_protobuf_extensions v1.0.1/go.mod h1:D8He9yQNgCq6Z5Ld7szi9bcBfOoFv/3dc6xSMkL2PC0=
 github.com/miekg/dns v1.0.8/go.mod h1:W1PPwlIAgtquWBMBEV9nkV9Cazfe8ScdGz/Lj7v3Nrg=
-github.com/minamijoyo/tfschema v0.5.0 h1:wFREazT1m1c27ZOzkI/0Sj0RCqni+bl29rozYIZ604A=
-github.com/minamijoyo/tfschema v0.5.0/go.mod h1:rL/i9z2yOadXs74KcZay3wuD0l4d8ShbQpC7uAuFOS4=
+github.com/minamijoyo/tfschema v0.5.1-0.20201012140620-226d0de9aed6 h1:0UVtYCEPQiJ+S+0vg8cnbBs4IDXiBrGJT/l9Q1ypDlE=
+github.com/minamijoyo/tfschema v0.5.1-0.20201012140620-226d0de9aed6/go.mod h1:rL/i9z2yOadXs74KcZay3wuD0l4d8ShbQpC7uAuFOS4=
 github.com/mitchellh/cli v1.0.0 h1:iGBIsUe3+HZ/AD/Vd7DErOt5sU9fa8Uj7A2s1aggv1Y=
 github.com/mitchellh/cli v1.0.0/go.mod h1:hNIlj7HEI86fIcpObd7a0FcrxTWetlwJDGcceTlRvqc=
 github.com/mitchellh/colorstring v0.0.0-20190213212951-d06e56a500db/go.mod h1:l0dey0ia/Uv7NcFFVbCLtqEBQbrT4OCwCSKTEv6enCw=
