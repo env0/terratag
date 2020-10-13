@@ -17,20 +17,22 @@ func ReplaceWithTerratagFile(path string, textContent string, rename bool) {
 
 	if rename {
 		taggedFilename := strings.TrimSuffix(path, filepath.Ext(path)) + ".terratag.tf"
-		log.Print("[INFO] Creating file ", taggedFilename)
-		taggedFileError := ioutil.WriteFile(taggedFilename, []byte(textContent), 0644)
-		errors.PanicOnError(taggedFileError, nil)
+		CreateFile(taggedFilename, textContent)
 	}
 
-	log.Print("[INFO] Renaming original file from ", path, " to ", backupFilename)
+	log.Print("[INFO] Backing up ", path, " to ", backupFilename)
 	backupFileError := os.Rename(path, backupFilename)
 	errors.PanicOnError(backupFileError, nil)
 
 	if !rename {
-		log.Print("[INFO] Creating file ", path)
-		taggedFileError := ioutil.WriteFile(path, []byte(textContent), 0644)
-		errors.PanicOnError(taggedFileError, nil)
+		CreateFile(path, textContent)
 	}
+}
+
+func CreateFile(path string, textContent string) {
+	log.Print("[INFO] Creating file ", path)
+	err := ioutil.WriteFile(path, []byte(textContent), 0644)
+	errors.PanicOnError(err, nil)
 }
 
 func GetFilename(path string) string {
