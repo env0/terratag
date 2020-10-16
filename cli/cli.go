@@ -1,35 +1,40 @@
 package cli
 
 import (
-	"github.com/env0/terratag/errors"
+	"fmt"
 	"log"
 	"os"
 	"strconv"
 	"strings"
+
+	"github.com/env0/terratag/errors"
 )
 
-func InitArgs() (string, string, bool, bool) {
-	var tags string
-	var dir string
-	var skipTerratagFiles string
-	var isSkipTerratagFiles bool
+type Args struct {
+	Tags                string
+	Dir                 string
+	SkipTerratagFiles   string
+	IsSkipTerratagFiles bool
+	Verbose             bool
+	Rename              bool
+}
 
+func InitArgs() (Args, bool) {
+	args := Args{}
 	isMissingArg := false
 
-	tags = setFlag("tags", "")
-	dir = setFlag("dir", ".")
-	skipTerratagFiles = setFlag("skipTerratagFiles", "true")
+	args.Tags = setFlag("tags", "")
+	args.Dir = setFlag("dir", ".")
+	args.IsSkipTerratagFiles = booleanFlag("skipTerratagFiles", true)
+	args.Verbose = booleanFlag("verbose", false)
+	args.Rename = booleanFlag("rename", true)
 
-	if tags == "" {
+	if args.Tags == "" {
 		log.Println("Usage: terratag -tags='{ \"some_tag\": \"value\" }' [-dir=\".\"]")
 		isMissingArg = true
 	}
 
-	isSkipTerratagFiles, err := strconv.ParseBool(skipTerratagFiles)
-	errorMessage := "-skipTerratagFiles may only be set to true or false"
-	errors.PanicOnError(err, &errorMessage)
-
-	return tags, dir, isSkipTerratagFiles, isMissingArg
+	return args, isMissingArg
 }
 
 func setFlag(flag string, defaultValue string) string {
@@ -42,4 +47,16 @@ func setFlag(flag string, defaultValue string) string {
 	}
 
 	return result
+}
+
+func booleanFlag(flag string, defaultValue bool) bool {
+	defaultString := "false"
+	if defaultValue {
+		defaultString = "true"
+	}
+	stringValue := setFlag(flag, defaultString)
+	value, err := strconv.ParseBool(stringValue)
+	errorMessage := fmt.Sprint("-", flag, " may only be set to true or false")
+	errors.PanicOnError(err, &errorMessage)
+	return value
 }

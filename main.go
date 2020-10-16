@@ -2,6 +2,10 @@ package main
 
 import (
 	"encoding/json"
+	"log"
+	"os"
+	"strings"
+
 	. "github.com/env0/terratag/cli"
 	"github.com/env0/terratag/convert"
 	. "github.com/env0/terratag/errors"
@@ -11,41 +15,70 @@ import (
 	. "github.com/env0/terratag/terraform"
 	. "github.com/env0/terratag/tfschema"
 	"github.com/env0/terratag/utils"
+
+	"github.com/hashicorp/go-hclog"
 	"github.com/hashicorp/hcl/v2/hclwrite"
-	"log"
-	"strings"
+	"github.com/hashicorp/logutils"
 )
 
 func main() {
-	Terratag()
+	args, isMissingArg := InitArgs()
+	if isMissingArg {
+		return
+	}
+	initLogFiltering(args.Verbose)
+
+	Terratag(args)
 }
 
-func Terratag() {
-	tags, dir, isSkipTerratagFiles, isMissingArg := InitArgs()
+func initLogFiltering(verbose bool) {
+	level := "INFO"
+	if verbose {
+		level = "DEBUG"
+	}
 
+	filter := &logutils.LevelFilter{
+		Levels:   []logutils.LogLevel{"DEBUG", "TRACE", "INFO", "WARN", "ERROR"},
+		MinLevel: logutils.LogLevel(level),
+		Writer:   os.Stderr,
+	}
+	log.SetOutput(filter)
+	hclog.DefaultOutput = filter
+}
+
+func Terratag(args Args) {
 	tfVersion := GetTerraformVersion()
 
-	if isMissingArg || !IsTerraformInitRun(dir) {
+	if !IsTerraformInitRun(args.Dir) {
 		return
 	}
 
-	matches := GetTerraformFilePaths(dir)
+	matches := GetTerraformFilePaths(args.Dir)
 
-	tagDirectoryResources(dir, matches, tags, isSkipTerratagFiles, tfVersion)
+	counters := tagDirectoryResources(args.Dir, matches, args.Tags, args.IsSkipTerratagFiles, tfVersion, args.Rename)
+	log.Print("[INFO] Summary:")
+	log.Print("[INFO] Tagged ", counters.taggedResources, " resource/s (out of ", counters.totalResources, " resource/s processed)")
+	log.Print("[INFO] In ", counters.taggedFiles, " file/s (out of ", counters.totalFiles, " file/s processed)")
 }
 
-func tagDirectoryResources(dir string, matches []string, tags string, isSkipTerratagFiles bool, tfVersion int) {
+func tagDirectoryResources(dir string, matches []string, tags string, isSkipTerratagFiles bool, tfVersion int, rename bool) counters {
+	var total counters
 	for _, path := range matches {
 		if isSkipTerratagFiles && strings.HasSuffix(path, "terratag.tf") {
-			log.Print("Skipping file ", path, " as it's already tagged")
+			log.Print("[INFO] Skipping file ", path, " as it's already tagged")
 		} else {
-			tagFileResources(path, dir, tags, tfVersion)
+			perFile := tagFileResources(path, dir, tags, tfVersion, rename)
+			total.Add(perFile)
 		}
 	}
+	return total
 }
 
-func tagFileResources(path string, dir string, tags string, tfVersion int) {
-	log.Print("Processing file ", path)
+func tagFileResources(path string, dir string, tags string, tfVersion int, rename bool) counters {
+	perFileCounters := counters{
+		totalFiles: 1,
+	}
+	log.Print("[INFO] Processing file ", path)
 	var swappedTagsStrings []string
 
 	hcl := file.ReadHCLFile(path)
@@ -57,10 +90,12 @@ func tagFileResources(path string, dir string, tags string, tfVersion int) {
 
 	for _, resource := range hcl.Body().Blocks() {
 		if resource.Type() == "resource" {
-			log.Print("Processing resource ", resource.Labels())
+			log.Print("[INFO] Processing resource ", resource.Labels())
+			perFileCounters.totalResources += 1
 
 			if IsTaggable(dir, *resource) {
-				log.Print("Resource taggable, processing...")
+				log.Print("[INFO] Resource taggable, processing...", resource.Labels())
+				perFileCounters.taggedResources += 1
 				result := tagging.TagResource(tagging.TagBlockArgs{
 					Filename:  filename,
 					Block:     resource,
@@ -72,7 +107,7 @@ func tagFileResources(path string, dir string, tags string, tfVersion int) {
 
 				swappedTagsStrings = append(swappedTagsStrings, result.SwappedTagsStrings...)
 			} else {
-				log.Print("Resource not taggable, skipping. ")
+				log.Print("[INFO] Resource not taggable, skipping.", resource.Labels())
 			}
 		}
 	}
@@ -85,10 +120,12 @@ func tagFileResources(path string, dir string, tags string, tfVersion int) {
 		swappedTagsStrings = append(swappedTagsStrings, terratag.Added)
 		text = convert.UnquoteTagsAttribute(swappedTagsStrings, text)
 
-		file.ReplaceWithTerratagFile(path, text)
+		file.ReplaceWithTerratagFile(path, text, rename)
+		perFileCounters.taggedFiles = 1
 	} else {
-		log.Print("No taggable resources found in file ", path, " - skipping")
+		log.Print("[INFO] No taggable resources found in file ", path, " - skipping")
 	}
+	return perFileCounters
 }
 
 func jsonToHclMap(tags string) string {
