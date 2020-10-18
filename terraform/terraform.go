@@ -52,7 +52,7 @@ func IsTerraformInitRun(dir string) bool {
 }
 
 func GetTerraformFilePaths(rootDir string) []string {
-	const tfFileMatcher = "/**/*.tf"
+	const tfFileMatcher = "/*.tf"
 
 	tfFiles, err := doublestar.Glob(rootDir + tfFileMatcher)
 	errors.PanicOnError(err, nil)
