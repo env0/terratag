@@ -21,7 +21,7 @@ func IsTaggable(dir string, resource hclwrite.Block) bool {
 	resourceType := terraform.GetResourceType(resource)
 
 	if providers.IsSupportedResource(resourceType) {
-		providerName, _ := detectProviderName(resourceType)
+		providerName, _ := detectProviderName(resource)
 		client := getClient(providerName, dir)
 		typeSchema, err := client.GetResourceTypeSchema(resourceType)
 		if err != nil {
@@ -54,14 +54,21 @@ type TfSchemaAttribute struct {
 	Type string
 }
 
-// shamefully copied from
-// https://github.com/minamijoyo/tfschema/blob/8e65902597e0eb9ce7d5ac2b56bf948a1bf17429/command/meta.go#L20
-func detectProviderName(name string) (string, error) {
-	s := strings.SplitN(name, "_", 2)
-	if len(s) < 2 {
-		return "", fmt.Errorf("Failed to detect a provider name: %s", name)
+func detectProviderName(resource hclwrite.Block) (string, error) {
+	providerAttribute := resource.Body().GetAttribute("provider")
+
+	if providerAttribute == nil {
+		resourceType := resource.Labels()[0]
+		s := strings.SplitN(resourceType, "_", 2)
+		if len(s) < 2 {
+			return "", fmt.Errorf("Failed to detect a provider name: %s", resourceType)
+		}
+		return s[0], nil
+	} else {
+		providerTokens := providerAttribute.Expr().BuildTokens(hclwrite.Tokens{})
+		providerName := strings.Trim(string(providerTokens.Bytes()), "\" ")
+		return providerName, nil
 	}
-	return s[0], nil
 }
 
 func getClient(providerName string, dir string) tfschema.Client {
