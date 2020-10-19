@@ -2,7 +2,7 @@ name: ci
 
 on:
   pull_request:
-    types: [created, synchronize]
+    types: [opened, synchronize]
 
 jobs:
 
