@@ -2,6 +2,7 @@ package tfschema
 
 import (
 	"fmt"
+	"github.com/thoas/go-funk"
 	"log"
 	"strings"
 
@@ -15,6 +16,8 @@ import (
 )
 
 var providerToClientMap = map[string]tfschema.Client{}
+
+var customSupportedProviderNames = [...]string{"google-beta"}
 
 func IsTaggable(dir string, resource hclwrite.Block) bool {
 	var isTaggable bool
@@ -54,21 +57,26 @@ type TfSchemaAttribute struct {
 	Type string
 }
 
+func extractProviderNameFromResourceType(resourceType string) (string, error) {
+	s := strings.SplitN(resourceType, "_", 2)
+	if len(s) < 2 {
+		return "", fmt.Errorf("Failed to detect a provider name: %s", resourceType)
+	}
+	return s[0], nil
+}
+
 func detectProviderName(resource hclwrite.Block) (string, error) {
 	providerAttribute := resource.Body().GetAttribute("provider")
 
-	if providerAttribute == nil {
-		resourceType := resource.Labels()[0]
-		s := strings.SplitN(resourceType, "_", 2)
-		if len(s) < 2 {
-			return "", fmt.Errorf("Failed to detect a provider name: %s", resourceType)
-		}
-		return s[0], nil
-	} else {
+	if providerAttribute != nil {
 		providerTokens := providerAttribute.Expr().BuildTokens(hclwrite.Tokens{})
 		providerName := strings.Trim(string(providerTokens.Bytes()), "\" ")
-		return providerName, nil
+		if funk.Contains(customSupportedProviderNames, providerName) {
+			return providerName, nil
+		}
 	}
+
+	return extractProviderNameFromResourceType(terraform.GetResourceType(resource))
 }
 
 func getClient(providerName string, dir string) tfschema.Client {
