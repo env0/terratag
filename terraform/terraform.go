@@ -2,16 +2,19 @@ package terraform
 
 import (
 	"encoding/json"
-	"github.com/bmatcuk/doublestar"
-	"github.com/env0/terratag/errors"
-	"github.com/hashicorp/hcl/v2/hclwrite"
-	"github.com/thoas/go-funk"
 	"io/ioutil"
 	"log"
 	"os"
 	"os/exec"
 	"path/filepath"
+	"regexp"
+	"strconv"
 	"strings"
+
+	"github.com/bmatcuk/doublestar"
+	"github.com/env0/terratag/errors"
+	"github.com/hashicorp/hcl/v2/hclwrite"
+	"github.com/thoas/go-funk"
 )
 
 func GetTerraformVersion() int {
@@ -19,16 +22,23 @@ func GetTerraformVersion() int {
 	outputAsString := strings.TrimSpace(string(output))
 	errors.PanicOnError(err, &outputAsString)
 
-	if strings.HasPrefix(outputAsString, "Terraform v0.11") {
-		return 11
-	} else if strings.HasPrefix(outputAsString, "Terraform v0.12") {
-		return 12
-	} else if strings.HasPrefix(outputAsString, "Terraform v0.13") {
-		return 13
+	regularExpression := regexp.MustCompile(`Terraform v0\.(\d+)\.\d+`)
+	matches := regularExpression.FindStringSubmatch(outputAsString)
+	if matches == nil {
+		log.Fatalln("Unable to parse 'terraform version'")
+		return -1
+	}
+	minorVersion, err := strconv.Atoi(matches[1])
+	if err != nil {
+		log.Fatalln("Unable to parse ", matches[1], "as integer")
+		return -1
+	}
+	if minorVersion < 11 || minorVersion > 14 {
+		log.Fatalln("Terratag only supports Terraform 0.11.x, 0.12.x, 0.13.x and 0.14.x - your version says ", outputAsString)
+		return -1
 	}
 
-	log.Fatalln("Terratag only supports Terraform 0.11.x, 0.12.x and 0.13.x - your version says ", outputAsString)
-	return -1
+	return minorVersion
 }
 
 func GetResourceType(resource hclwrite.Block) string {
