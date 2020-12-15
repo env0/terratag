@@ -39,6 +39,10 @@ func TestTerraform13(t *testing.T) {
 	testTerraform(t, "13")
 }
 
+func TestTerraform14(t *testing.T) {
+	testTerraform(t, "14")
+}
+
 func testTerraform(t *testing.T, version string) {
 	for _, tt := range getEntries(version) {
 		tt := tt // NOTE: https://github.com/golang/go/wiki/CommonMistakes#using-goroutines-on-loop-iterator-variables
