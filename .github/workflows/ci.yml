@@ -41,7 +41,7 @@ jobs:
           echo "$GITHUB_WORKSPACE/.tfenv/bin" >> $GITHUB_PATH
 
       - name: Install terraform
-        working-directory: test/fixture/terraform_${{ matrix.terraform_version }}
+        working-directory: test/tfenvconf/terraform_${{ matrix.terraform_version }}
         run: |
           tfenv install
           tfenv use
