@@ -36,7 +36,11 @@ func TestTerraform12(t *testing.T) {
 }
 
 func TestTerraform13(t *testing.T) {
-	testTerraform(t, "13")
+	testTerraform(t, "13_14")
+}
+
+func TestTerraform14(t *testing.T) {
+	testTerraform(t, "13_14")
 }
 
 func testTerraform(t *testing.T, version string) {
