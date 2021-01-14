@@ -38,7 +38,7 @@ func TagBlock(args TagBlockArgs) string {
 	}
 
 	if args.TfVersion == 11 {
-		newTagsValue = "${" + newTagsValue + "}"
+		newTagsValue = "\"${" + newTagsValue + "}\""
 	}
 
 	newTagsValueTokens := ParseHclValueStringToTokens(newTagsValue)
