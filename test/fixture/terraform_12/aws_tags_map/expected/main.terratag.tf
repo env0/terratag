@@ -7,14 +7,14 @@ resource "aws_s3_bucket" "b" {
   bucket = "my-tf-test-bucket"
   acl    = "private"
 
-  tags = merge( map("Name","Mybucket","Unquoted1","Iwannabequoted","AnotherName","Yo","Unquoted2","Ireallywannabequoted","Unquoted3","IreallyreallywannabequotedandIgotacomma",join("-",["foo","bar"]),"Testfunction",(local.localTagKey),"Testexpression","${local.localTagKey2}","Testvariableaskey","Yo-${local.localTagKey}","Testvariableinsidekey","Testvariableasvalue","${local.localTagKey}","Testvariableinsidevalue","Yo-${local.localTagKey}"), local.terratag_added_main)
+  tags = merge(map("Name", "Mybucket", "Unquoted1", "Iwannabequoted", "AnotherName", "Yo", "Unquoted2", "Ireallywannabequoted", "Unquoted3", "IreallyreallywannabequotedandIgotacomma", join("-", ["foo", "bar"]), "Testfunction", (local.localTagKey), "Testexpression", "${local.localTagKey2}", "Testvariableaskey", "Yo-${local.localTagKey}", "Testvariableinsidekey", "Testvariableasvalue", "${local.localTagKey}", "Testvariableinsidevalue", "Yo-${local.localTagKey}"), local.terratag_added_main)
 }
 
 resource "aws_s3_bucket" "a" {
   bucket = "my-another-tf-test-bucket"
   acl    = "private"
 
-  tags = merge( local.localMap, local.terratag_added_main)
+  tags = merge(local.localMap, local.terratag_added_main)
 }
 
 locals {
