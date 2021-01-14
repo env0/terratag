@@ -191,7 +191,9 @@ Each test will run:
 And finally, will compare the results in `out` with the `expected` directory 
 
 #### Running Tests
-Focus on a particular Terraform version:
+Tests can only run on a specific Terraform version - 
 ```
 go test -run TestTerraformXX
 ``` 
+
+We use [tfenv](https://github.com/tfutils/tfenv) to switch between versions. The exact versions used in the CI tests can be found under `test/tfenvconf`.
