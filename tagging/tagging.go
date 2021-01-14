@@ -6,7 +6,6 @@ import (
 	"github.com/env0/terratag/terraform"
 	"github.com/hashicorp/hcl/v2/hclwrite"
 	"github.com/hashicorp/hcl/v2"
-	"github.com/hashicorp/hcl/v2/hclsyntax"
 	"log"
 )
 
@@ -42,69 +41,8 @@ func TagBlock(args TagBlockArgs) string {
 		newTagsValue = "${" + newTagsValue + "}"
 	}
 
-	mergeCommand := &hclwrite.Token{
-		Type:         hclsyntax.TokenIdent,
-		Bytes:        []byte("merge"),
-		SpacesBefore: 0,
-	}
-
-	localPrefix := &hclwrite.Token{
-		Type:         hclsyntax.TokenIdent,
-		Bytes:        []byte("local"),
-		SpacesBefore: 0,
-	}
-
-	dotToken := &hclwrite.Token{
-		Type:         hclsyntax.TokenDot,
-		Bytes:        []byte("."),
-		SpacesBefore: 0,
-	}
-
-	terraTagLocal := &hclwrite.Token{
-		Type:         hclsyntax.TokenIdent,
-		Bytes:        []byte(tag_keys.GetTerratagAddedKey(args.Filename)),
-		SpacesBefore: 0,
-	}
-
-	comma := &hclwrite.Token{
-		Type:         hclsyntax.TokenComma,
-		Bytes:        []byte(","),
-		SpacesBefore: 0,
-	}
-
-	openParen := &hclwrite.Token{
-		Type:         hclsyntax.TokenOParen,
-		Bytes:        []byte("("),
-		SpacesBefore: 0,
-	} 
-
-	newLine := &hclwrite.Token{
-		Type:         hclsyntax.TokenNewline,
-		Bytes:        []byte(""),
-		SpacesBefore: 0,
-	} 
-	
-	closeParen := &hclwrite.Token{
-		Type:         hclsyntax.TokenCParen,
-		Bytes:        []byte(")"),
-		SpacesBefore: 0,
-	} 
-
-	existingTags := args.Block.Body().GetAttribute(args.TagId)
-	existingTagsTokens := existingTags.Expr().BuildTokens(hclwrite.Tokens{})
-
-	var newTokens hclwrite.Tokens
-	newTokens = append(newTokens, mergeCommand, openParen, newLine)
-	newTokens = append(newTokens, existingTagsTokens...)
-	newTokens = append(newTokens, newLine, comma, localPrefix, dotToken, terraTagLocal, closeParen)
-
-	for _, token := range existingTagsTokens {
-		log.Print(token.Type)
-		log.Print(string(token.Bytes))
-	}
-
-	// newTagsValueTokens := ParseHclValueStringToTokens(newTagsValue)
-	args.Block.Body().SetAttributeRaw(args.TagId, newTokens)
+	newTagsValueTokens := ParseHclValueStringToTokens(newTagsValue)
+	args.Block.Body().SetAttributeRaw(args.TagId, newTagsValueTokens)
 
 	return newTagsValue
 }
