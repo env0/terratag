@@ -25,7 +25,7 @@ resource "kubernetes_deployment" "audit_server" {
 
 resource "google_pubsub_topic" "audit_topic" {
   name   = "yuvu"
-  labels = merge( local.terratag_added_main, local.terratag_added_main)
+  labels = merge(local.terratag_added_main, local.terratag_added_main)
 }
 
 locals {
