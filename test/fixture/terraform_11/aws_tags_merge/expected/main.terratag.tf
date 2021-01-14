@@ -6,7 +6,10 @@ provider "aws" {
 resource "aws_s3_bucket" "a" {
   bucket = "my-another-tf-test-bucket"
 
-  tags = "${merge( "${merge(map("a", "b"), map("c", "d"))}", local.terratag_added_main)}"
+  tags = "${merge("${merge(
+    map("a", "b"),
+    map("c", "d")
+  )}", local.terratag_added_main)}"
 }
 
 locals {
