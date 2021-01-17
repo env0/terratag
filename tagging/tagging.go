@@ -5,7 +5,8 @@ import (
 	"github.com/env0/terratag/tag_keys"
 	"github.com/env0/terratag/terraform"
 	"github.com/hashicorp/hcl/v2/hclwrite"
-	"github.com/zclconf/go-cty/cty"
+	"github.com/hashicorp/hcl/v2"
+	"log"
 )
 
 func defaultTaggingFn(args TagBlockArgs) Result {
@@ -14,23 +15,36 @@ func defaultTaggingFn(args TagBlockArgs) Result {
 	}
 }
 
+func ParseHclValueStringToTokens(hclValueString string) hclwrite.Tokens {
+	file, diags := hclwrite.ParseConfig([]byte("tempKey = " + hclValueString), "", hcl.Pos{Line: 1, Column: 1})
+	if diags.HasErrors() {
+		log.Print("error parsing hcl value string " + hclValueString)
+		panic(diags.Errs()[0])
+	}
+	tempAttribute := file.Body().GetAttribute("tempKey")
+	return tempAttribute.Expr().BuildTokens(hclwrite.Tokens{})
+}
+
 func TagBlock(args TagBlockArgs) string {
 	hasExistingTags := convert.MoveExistingTags(args.Filename, args.Terratag, args.Block, args.TagId)
+	
+	terratagAddedKey := "local." + tag_keys.GetTerratagAddedKey(args.Filename)
+	newTagsValue := terratagAddedKey
 
-	tagsValue := ""
 	if hasExistingTags {
-		tagsValue = "merge( " + convert.GetExistingTagsExpression(args.Terratag.Found[tag_keys.GetResourceExistingTagsKey(args.Filename, args.Block)]) + ", local." + tag_keys.GetTerratagAddedKey(args.Filename) + ")"
-	} else {
-		tagsValue = "local." + tag_keys.GetTerratagAddedKey(args.Filename)
+		existingTagsKey := tag_keys.GetResourceExistingTagsKey(args.Filename, args.Block)
+		existingTagsExpression := convert.GetExistingTagsExpression(args.Terratag.Found[existingTagsKey])
+		newTagsValue = "merge( " + existingTagsExpression + ", " + terratagAddedKey + ")"
 	}
 
 	if args.TfVersion == 11 {
-		tagsValue = "${" + tagsValue + "}"
+		newTagsValue = "\"${" + newTagsValue + "}\""
 	}
 
-	args.Block.Body().SetAttributeValue(args.TagId, cty.StringVal(tagsValue))
+	newTagsValueTokens := ParseHclValueStringToTokens(newTagsValue)
+	args.Block.Body().SetAttributeRaw(args.TagId, newTagsValueTokens)
 
-	return tagsValue
+	return newTagsValue
 }
 
 func HasResourceTagFn(resourceType string) bool {
