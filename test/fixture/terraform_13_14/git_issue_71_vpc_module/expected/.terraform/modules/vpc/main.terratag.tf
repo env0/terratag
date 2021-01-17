@@ -66,6 +66,7 @@ resource "aws_default_security_group" "this" {
       cidr_blocks      = compact(split(",", lookup(ingress.value, "cidr_blocks", "")))
       ipv6_cidr_blocks = compact(split(",", lookup(ingress.value, "ipv6_cidr_blocks", "")))
       prefix_list_ids  = compact(split(",", lookup(ingress.value, "prefix_list_ids", "")))
+      security_groups  = compact(split(",", lookup(ingress.value, "security_groups", "")))
       description      = lookup(ingress.value, "description", null)
       from_port        = lookup(ingress.value, "from_port", 0)
       to_port          = lookup(ingress.value, "to_port", 0)
@@ -80,6 +81,7 @@ resource "aws_default_security_group" "this" {
       cidr_blocks      = compact(split(",", lookup(egress.value, "cidr_blocks", "")))
       ipv6_cidr_blocks = compact(split(",", lookup(egress.value, "ipv6_cidr_blocks", "")))
       prefix_list_ids  = compact(split(",", lookup(egress.value, "prefix_list_ids", "")))
+      security_groups  = compact(split(",", lookup(egress.value, "security_groups", "")))
       description      = lookup(egress.value, "description", null)
       from_port        = lookup(egress.value, "from_port", 0)
       to_port          = lookup(egress.value, "to_port", 0)
@@ -215,12 +217,6 @@ resource "aws_route_table" "private" {
     var.tags,
     var.private_route_table_tags,
   ), local.terratag_added_main)
-
-  lifecycle {
-    # When attaching VPN gateways it is common to define aws_vpn_gateway_route_propagation
-    # resources that manipulate the attributes of the routing table (typically for the private subnets)
-    ignore_changes = [propagating_vgws]
-  }
 }
 
 #################
@@ -255,7 +251,7 @@ resource "aws_route" "database_internet_gateway" {
 resource "aws_route" "database_nat_gateway" {
   count = var.create_vpc && var.create_database_subnet_route_table && length(var.database_subnets) > 0 && false == var.create_database_internet_gateway_route && var.create_database_nat_gateway_route && var.enable_nat_gateway ? local.nat_gateway_count : 0
 
-  route_table_id         = element(aws_route_table.private.*.id, count.index)
+  route_table_id         = element(aws_route_table.database.*.id, count.index)
   destination_cidr_block = "0.0.0.0/0"
   nat_gateway_id         = element(aws_nat_gateway.this.*.id, count.index)
 
@@ -538,6 +534,27 @@ resource "aws_default_network_acl" "this" {
 
   default_network_acl_id = element(concat(aws_vpc.this.*.default_network_acl_id, [""]), 0)
 
+  # The value of subnet_ids should be any subnet IDs that are not set as subnet_ids
+  #   for any of the non-default network ACLs
+  subnet_ids = setsubtract(
+    compact(flatten([
+      aws_subnet.public.*.id,
+      aws_subnet.private.*.id,
+      aws_subnet.intra.*.id,
+      aws_subnet.database.*.id,
+      aws_subnet.redshift.*.id,
+      aws_subnet.elasticache.*.id,
+    ])),
+    compact(flatten([
+      aws_network_acl.public.*.subnet_ids,
+      aws_network_acl.private.*.subnet_ids,
+      aws_network_acl.intra.*.subnet_ids,
+      aws_network_acl.database.*.subnet_ids,
+      aws_network_acl.redshift.*.subnet_ids,
+      aws_network_acl.elasticache.*.subnet_ids,
+    ]))
+  )
+
   dynamic "ingress" {
     for_each = var.default_network_acl_ingress
     content {
@@ -574,10 +591,6 @@ resource "aws_default_network_acl" "this" {
     var.tags,
     var.default_network_acl_tags,
   ), local.terratag_added_main)
-
-  lifecycle {
-    ignore_changes = [subnet_ids]
-  }
 }
 
 ########################

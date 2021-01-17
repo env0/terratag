@@ -1,10 +1,11 @@
 provider "aws" {
   region = "us-east-1"
+  version = "2.68"
 }
 
 module "vpc" {
   source  = "terraform-aws-modules/vpc/aws"
-  version = "2.47.0"
+  version = "2.66.0"
   name                 = "vpc-name"
   cidr                 = "10.0.0.0/16"
   azs                  = ["123"]

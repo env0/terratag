@@ -30,7 +30,7 @@ resource "aws_vpc_endpoint_route_table_association" "intra_s3" {
 }
 
 resource "aws_vpc_endpoint_route_table_association" "public_s3" {
-  count = var.create_vpc && var.enable_s3_endpoint && length(var.public_subnets) > 0 ? 1 : 0
+  count = var.create_vpc && var.enable_s3_endpoint && var.enable_public_s3_endpoint && length(var.public_subnets) > 0 ? 1 : 0
 
   vpc_endpoint_id = aws_vpc_endpoint.s3[0].id
   route_table_id  = aws_route_table.public[0].id
@@ -182,6 +182,27 @@ resource "aws_vpc_endpoint" "sqs" {
   security_group_ids  = var.sqs_endpoint_security_group_ids
   subnet_ids          = coalescelist(var.sqs_endpoint_subnet_ids, aws_subnet.private.*.id)
   private_dns_enabled = var.sqs_endpoint_private_dns_enabled
+  tags                = merge(local.vpce_tags, local.terratag_added_vpc-endpoints)
+}
+
+#########################
+# VPC Endpoint for Lambda
+#########################
+data "aws_vpc_endpoint_service" "lambda" {
+  count = var.create_vpc && var.enable_lambda_endpoint ? 1 : 0
+
+  service = "lambda"
+}
+resource "aws_vpc_endpoint" "lambda" {
+  count = var.create_vpc && var.enable_lambda_endpoint ? 1 : 0
+
+  vpc_id            = local.vpc_id
+  service_name      = data.aws_vpc_endpoint_service.lambda[0].service_name
+  vpc_endpoint_type = "Interface"
+
+  security_group_ids  = var.lambda_endpoint_security_group_ids
+  subnet_ids          = coalescelist(var.lambda_endpoint_subnet_ids, aws_subnet.private.*.id)
+  private_dns_enabled = var.lambda_endpoint_private_dns_enabled
   tags                = merge(local.vpce_tags, local.terratag_added_vpc-endpoints)
 }
 
@@ -916,24 +937,46 @@ resource "aws_vpc_endpoint" "sagemaker_runtime" {
 }
 
 #############################
-# VPC Endpoint for AppStream
+# VPC Endpoint for AppStream API
 #############################
-data "aws_vpc_endpoint_service" "appstream" {
-  count = var.create_vpc && var.enable_appstream_endpoint ? 1 : 0
+data "aws_vpc_endpoint_service" "appstream_api" {
+  count = var.create_vpc && var.enable_appstream_streaming_endpoint ? 1 : 0
 
-  service = "appstream"
+  service = "appstream.api"
 }
 
-resource "aws_vpc_endpoint" "appstream" {
-  count = var.create_vpc && var.enable_appstream_endpoint ? 1 : 0
+resource "aws_vpc_endpoint" "appstream_api" {
+  count = var.create_vpc && var.enable_appstream_api_endpoint ? 1 : 0
 
   vpc_id            = local.vpc_id
-  service_name      = data.aws_vpc_endpoint_service.appstream[0].service_name
+  service_name      = data.aws_vpc_endpoint_service.appstream_api[0].service_name
   vpc_endpoint_type = "Interface"
 
-  security_group_ids  = var.appstream_endpoint_security_group_ids
-  subnet_ids          = coalescelist(var.appstream_endpoint_subnet_ids, aws_subnet.private.*.id)
-  private_dns_enabled = var.appstream_endpoint_private_dns_enabled
+  security_group_ids  = var.appstream_api_endpoint_security_group_ids
+  subnet_ids          = coalescelist(var.appstream_api_endpoint_subnet_ids, aws_subnet.private.*.id)
+  private_dns_enabled = var.appstream_api_endpoint_private_dns_enabled
+  tags                = merge(local.vpce_tags, local.terratag_added_vpc-endpoints)
+}
+
+#############################
+# VPC Endpoint for AppStream STREAMING
+#############################
+data "aws_vpc_endpoint_service" "appstream_streaming" {
+  count = var.create_vpc && var.enable_appstream_streaming_endpoint ? 1 : 0
+
+  service = "appstream.streaming"
+}
+
+resource "aws_vpc_endpoint" "appstream_streaming" {
+  count = var.create_vpc && var.enable_appstream_streaming_endpoint ? 1 : 0
+
+  vpc_id            = local.vpc_id
+  service_name      = data.aws_vpc_endpoint_service.appstream_streaming[0].service_name
+  vpc_endpoint_type = "Interface"
+
+  security_group_ids  = var.appstream_streaming_endpoint_security_group_ids
+  subnet_ids          = coalescelist(var.appstream_streaming_endpoint_subnet_ids, aws_subnet.private.*.id)
+  private_dns_enabled = var.appstream_streaming_endpoint_private_dns_enabled
   tags                = merge(local.vpce_tags, local.terratag_added_vpc-endpoints)
 }
 
@@ -1345,6 +1388,144 @@ resource "aws_vpc_endpoint" "ses" {
   security_group_ids  = var.ses_endpoint_security_group_ids
   subnet_ids          = coalescelist(var.ses_endpoint_subnet_ids, aws_subnet.private.*.id)
   private_dns_enabled = var.ses_endpoint_private_dns_enabled
+
+  tags = merge(local.vpce_tags, local.terratag_added_vpc-endpoints)
+}
+
+######################
+# VPC Endpoint for RDS
+######################
+data "aws_vpc_endpoint_service" "rds" {
+  count = var.create_vpc && var.enable_rds_endpoint ? 1 : 0
+
+  service = "rds"
+}
+
+resource "aws_vpc_endpoint" "rds" {
+  count = var.create_vpc && var.enable_rds_endpoint ? 1 : 0
+
+  vpc_id            = local.vpc_id
+  service_name      = data.aws_vpc_endpoint_service.rds[0].service_name
+  vpc_endpoint_type = "Interface"
+
+  security_group_ids  = var.rds_endpoint_security_group_ids
+  subnet_ids          = coalescelist(var.rds_endpoint_subnet_ids, aws_subnet.private.*.id)
+  private_dns_enabled = var.rds_endpoint_private_dns_enabled
+
+  tags = merge(local.vpce_tags, local.terratag_added_vpc-endpoints)
+}
+
+#############################
+# VPC Endpoint for CodeDeploy
+#############################
+data "aws_vpc_endpoint_service" "codedeploy" {
+  count = var.create_vpc && var.enable_codedeploy_endpoint ? 1 : 0
+
+  service = "codedeploy"
+}
+
+resource "aws_vpc_endpoint" "codedeploy" {
+  count = var.create_vpc && var.enable_codedeploy_endpoint ? 1 : 0
+
+  vpc_id            = local.vpc_id
+  service_name      = data.aws_vpc_endpoint_service.codedeploy[0].service_name
+  vpc_endpoint_type = "Interface"
+
+  security_group_ids  = var.codedeploy_endpoint_security_group_ids
+  subnet_ids          = coalescelist(var.codedeploy_endpoint_subnet_ids, aws_subnet.private.*.id)
+  private_dns_enabled = var.codedeploy_endpoint_private_dns_enabled
+
+  tags = merge(local.vpce_tags, local.terratag_added_vpc-endpoints)
+}
+
+#############################################
+# VPC Endpoint for CodeDeploy Commands Secure
+#############################################
+data "aws_vpc_endpoint_service" "codedeploy_commands_secure" {
+  count = var.create_vpc && var.enable_codedeploy_commands_secure_endpoint ? 1 : 0
+
+  service = "codedeploy-commands-secure"
+}
+
+resource "aws_vpc_endpoint" "codedeploy_commands_secure" {
+  count = var.create_vpc && var.enable_codedeploy_commands_secure_endpoint ? 1 : 0
+
+  vpc_id            = local.vpc_id
+  service_name      = data.aws_vpc_endpoint_service.codedeploy_commands_secure[0].service_name
+  vpc_endpoint_type = "Interface"
+
+  security_group_ids  = var.codedeploy_commands_secure_endpoint_security_group_ids
+  subnet_ids          = coalescelist(var.codedeploy_commands_secure_endpoint_subnet_ids, aws_subnet.private.*.id)
+  private_dns_enabled = var.codedeploy_commands_secure_endpoint_private_dns_enabled
+
+  tags = merge(local.vpce_tags, local.terratag_added_vpc-endpoints)
+}
+
+#############################################
+# VPC Endpoint for Textract
+#############################################
+data "aws_vpc_endpoint_service" "textract" {
+  count = var.create_vpc && var.enable_textract_endpoint ? 1 : 0
+
+  service = "textract"
+}
+
+resource "aws_vpc_endpoint" "textract" {
+  count = var.create_vpc && var.enable_textract_endpoint ? 1 : 0
+
+  vpc_id            = local.vpc_id
+  service_name      = data.aws_vpc_endpoint_service.textract[0].service_name
+  vpc_endpoint_type = "Interface"
+
+  security_group_ids  = var.textract_endpoint_security_group_ids
+  subnet_ids          = coalescelist(var.textract_endpoint_subnet_ids, aws_subnet.private.*.id)
+  private_dns_enabled = var.textract_endpoint_private_dns_enabled
+
+  tags = merge(local.vpce_tags, local.terratag_added_vpc-endpoints)
+}
+
+#############################################
+# VPC Endpoint for Codeartifact API
+#############################################
+data "aws_vpc_endpoint_service" "codeartifact_api" {
+  count = var.create_vpc && var.enable_codeartifact_api_endpoint ? 1 : 0
+
+  service = "codeartifact.api"
+}
+
+resource "aws_vpc_endpoint" "codeartifact_api" {
+  count = var.create_vpc && var.enable_codeartifact_api_endpoint ? 1 : 0
+
+  vpc_id            = local.vpc_id
+  service_name      = data.aws_vpc_endpoint_service.codeartifact_api[0].service_name
+  vpc_endpoint_type = "Interface"
+
+  security_group_ids  = var.codeartifact_api_endpoint_security_group_ids
+  subnet_ids          = coalescelist(var.codeartifact_api_endpoint_subnet_ids, aws_subnet.private.*.id)
+  private_dns_enabled = var.codeartifact_api_endpoint_private_dns_enabled
+
+  tags = merge(local.vpce_tags, local.terratag_added_vpc-endpoints)
+}
+
+#############################################
+# VPC Endpoint for Codeartifact repositories
+#############################################
+data "aws_vpc_endpoint_service" "codeartifact_repositories" {
+  count = var.create_vpc && var.enable_codeartifact_repositories_endpoint ? 1 : 0
+
+  service = "codeartifact.repositories"
+}
+
+resource "aws_vpc_endpoint" "codeartifact_repositories" {
+  count = var.create_vpc && var.enable_codeartifact_repositories_endpoint ? 1 : 0
+
+  vpc_id            = local.vpc_id
+  service_name      = data.aws_vpc_endpoint_service.codeartifact_repositories[0].service_name
+  vpc_endpoint_type = "Interface"
+
+  security_group_ids  = var.codeartifact_repositories_endpoint_security_group_ids
+  subnet_ids          = coalescelist(var.codeartifact_repositories_endpoint_subnet_ids, aws_subnet.private.*.id)
+  private_dns_enabled = var.codeartifact_repositories_endpoint_private_dns_enabled
 
   tags = merge(local.vpce_tags, local.terratag_added_vpc-endpoints)
 }
