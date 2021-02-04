@@ -6,7 +6,9 @@
 > Governed by your policies and with complete visibility and cost management.      
 
 ## What?
-Terratag is a CLI tool allowing for tags or labels to be applied across an entire set of Terraform files. Terratag will apply tags or labels to any AWS, GCP and Azure resources.   
+Terratag is a CLI tool allowing for tags or labels to be applied across an entire set of Terraform files. Terratag will apply tags or labels to any AWS, GCP and Azure resources. 
+
+### Terratag in action
 ![](https://assets.website-files.com/5dc3f52851595b160ba99670/5f62090d2d532ca35e143133_terratag.gif)
 
 ## Why?
