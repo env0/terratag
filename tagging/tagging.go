@@ -4,8 +4,8 @@ import (
 	"github.com/env0/terratag/convert"
 	"github.com/env0/terratag/tag_keys"
 	"github.com/env0/terratag/terraform"
-	"github.com/hashicorp/hcl/v2/hclwrite"
 	"github.com/hashicorp/hcl/v2"
+	"github.com/hashicorp/hcl/v2/hclwrite"
 	"log"
 )
 
@@ -33,7 +33,7 @@ func TagBlock(args TagBlockArgs) string {
 
 	if hasExistingTags {
 		existingTagsKey := tag_keys.GetResourceExistingTagsKey(args.Filename, args.Block)
-		existingTagsExpression := convert.GetExistingTagsExpression(args.Terratag.Found[existingTagsKey])
+		existingTagsExpression := convert.GetExistingTagsExpression(args.Terratag.Found[existingTagsKey], args.TfVersion)
 		newTagsValue = "merge( " + existingTagsExpression + ", " + terratagAddedKey + ")"
 	}
 
