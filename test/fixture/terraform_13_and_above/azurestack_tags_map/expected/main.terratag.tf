@@ -26,7 +26,7 @@ resource "azurestack_virtual_network" "test2" {
   address_space       = ["10.0.0.0/16"]
   location            = azurestack_resource_group.test.location
   resource_group_name = azurestack_resource_group.test.name
-  tags                = merge(tomap({
+  tags = merge(tomap({
     "yo" = "ho"
   }), local.terratag_added_main)
 }

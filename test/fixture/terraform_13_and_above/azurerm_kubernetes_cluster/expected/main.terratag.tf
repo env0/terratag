@@ -64,7 +64,9 @@ resource "azurerm_kubernetes_cluster" "existing_tags_cluster" {
     network_plugin    = "kubenet"
   }
 
-  tags = merge(map("existing", "tag"), local.terratag_added_main)
+  tags = merge(tomap({
+    existing = "tag"
+  }), local.terratag_added_main)
 }
 
 locals {

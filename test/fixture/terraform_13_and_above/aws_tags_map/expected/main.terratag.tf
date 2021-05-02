@@ -15,7 +15,19 @@ resource "aws_s3_bucket" "b" {
   bucket = "my-tf-test-bucket"
   acl    = "private"
 
-  tags = merge(map("Name", "Mybucket", "Unquoted1", "Iwannabequoted", "AnotherName", "Yo", "Unquoted2", "Ireallywannabequoted", "Unquoted3", "IreallyreallywannabequotedandIgotacomma", join("-", ["foo", "bar"]), "Testfunction", (local.localTagKey), "Testexpression", "${local.localTagKey2}", "Testvariableaskey", "Yo-${local.localTagKey}", "Testvariableinsidekey", "Testvariableasvalue", "${local.localTagKey}", "Testvariableinsidevalue", "Yo-${local.localTagKey}"), local.terratag_added_main)
+  tags = merge(tomap({
+    "Name"                    = "My bucket"
+    Unquoted1                 = "I wanna be quoted"
+    "AnotherName"             = "Yo"
+    Unquoted2                 = "I really wanna be quoted"
+    Unquoted3                 = "I really really wanna be quoted and I got a comma",
+    join("-", ["foo", "bar"]) = "Test function"
+    (local.localTagKey)       = "Test expression"
+    "${local.localTagKey2}"   = "Test variable as key"
+    "Yo-${local.localTagKey}" = "Test variable inside key"
+    "Test variable as value" = "${local.localTagKey}"
+    "Test variable inside value"  = "Yo-${local.localTagKey}"
+  }), local.terratag_added_main)
 }
 
 resource "aws_s3_bucket" "a" {

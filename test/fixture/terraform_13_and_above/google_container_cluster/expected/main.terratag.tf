@@ -34,7 +34,9 @@ resource "google_container_cluster" "existing-labels-cluster" {
   name     = "cluster2"
   location = "us-central1"
 
-  resource_labels = merge(map("foo", "bar"), local.terratag_added_main)
+  resource_labels = merge(tomap({
+    foo = "bar"
+  }), local.terratag_added_main)
 
   node_config {
     machine_type = "n1-standard-1"
