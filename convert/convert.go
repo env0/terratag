@@ -51,7 +51,7 @@ func trimTokens(tokens hclwrite.Tokens) hclwrite.Tokens {
 
 func buildMapExpression(tokens hclwrite.Tokens, tfVersion int) string {
 	if tfVersion >= 15 {
-		mapContent := string(tokens.Bytes())
+		mapContent := strings.TrimSpace(string(tokens.Bytes()))
 		return "tomap(" + mapContent + ")"
 	}
 
