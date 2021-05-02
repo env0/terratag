@@ -56,7 +56,9 @@ resource "azurerm_kubernetes_cluster" "existing_tags_cluster" {
     name       = "pool"
     node_count = 2
     vm_size    = "Standard_D2_v2"
-    tags       = merge(map("existing", "tag"), local.terratag_added_main)
+    tags       = merge(tomap({
+      "existing" = "tag"
+    }), local.terratag_added_main)
   }
 
   network_profile {
