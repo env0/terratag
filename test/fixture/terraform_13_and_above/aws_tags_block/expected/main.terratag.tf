@@ -16,7 +16,7 @@ resource "aws_s3_bucket" "b" {
   acl    = "private"
 
   tags = merge(tomap({
-    Name = "My bucket"
+    "Name" = "My bucket"
   }), local.terratag_added_main)
 }
 locals {

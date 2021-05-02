@@ -16,17 +16,17 @@ resource "aws_s3_bucket" "b" {
   acl    = "private"
 
   tags = merge(tomap({
-    "Name"                    = "My bucket"
-    Unquoted1                 = "I wanna be quoted"
-    "AnotherName"             = "Yo"
-    Unquoted2                 = "I really wanna be quoted"
-    Unquoted3                 = "I really really wanna be quoted and I got a comma",
-    join("-", ["foo", "bar"]) = "Test function"
-    (local.localTagKey)       = "Test expression"
-    "${local.localTagKey2}"   = "Test variable as key"
-    "Yo-${local.localTagKey}" = "Test variable inside key"
-    "Test variable as value" = "${local.localTagKey}"
-    "Test variable inside value"  = "Yo-${local.localTagKey}"
+    "Name"                       = "My bucket"
+    "Unquoted1"                  = "I wanna be quoted"
+    "AnotherName"                = "Yo"
+    "Unquoted2"                  = "I really wanna be quoted"
+    "Unquoted3"                  = "I really really wanna be quoted and I got a comma",
+    join("-", ["foo", "bar"])    = "Test function"
+    (local.localTagKey)          = "Test expression"
+    "${local.localTagKey2}"      = "Test variable as key"
+    "Yo-${local.localTagKey}"    = "Test variable inside key"
+    "Test variable as value"     = "${local.localTagKey}"
+    "Test variable inside value" = "Yo-${local.localTagKey}"
   }), local.terratag_added_main)
 }
 

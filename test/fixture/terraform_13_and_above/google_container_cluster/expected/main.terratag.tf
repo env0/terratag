@@ -61,7 +61,7 @@ resource "google_container_node_pool" "existing-labels-pool" {
   node_config {
     machine_type = "n1-standard-1"
     labels = {
-      foo = "bar"
+      "foo" = "bar"
     }
   }
 }
