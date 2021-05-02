@@ -36,11 +36,11 @@ func TestTerraform12(t *testing.T) {
 }
 
 func TestTerraform13(t *testing.T) {
-	testTerraform(t, "13_and_above")
+	testTerraform(t, "13_14")
 }
 
 func TestTerraform14(t *testing.T) {
-	testTerraform(t, "13_and_above")
+	testTerraform(t, "13_14")
 }
 
 func TestTerraform15(t *testing.T) {
