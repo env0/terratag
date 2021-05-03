@@ -33,8 +33,8 @@ func GetTerraformVersion() int {
 		log.Fatalln("Unable to parse ", matches[1], "as integer")
 		return -1
 	}
-	if minorVersion < 11 || minorVersion > 14 {
-		log.Fatalln("Terratag only supports Terraform 0.11.x, 0.12.x, 0.13.x and 0.14.x - your version says ", outputAsString)
+	if minorVersion < 11 || minorVersion > 15 {
+		log.Fatalln("Terratag only supports Terraform from version 0.11.x and up to 0.15.x - your version says ", outputAsString)
 		return -1
 	}
 

@@ -13,9 +13,9 @@ import (
 	"strings"
 )
 
-func GetExistingTagsExpression(tokens hclwrite.Tokens) string {
+func GetExistingTagsExpression(tokens hclwrite.Tokens, tfVersion int) string {
 	if isHclMap(tokens) {
-		return buildMapExpression(tokens)
+		return buildMapExpression(tokens, tfVersion)
 	} else {
 		return stringifyExpression(tokens)
 	}
@@ -49,7 +49,12 @@ func trimTokens(tokens hclwrite.Tokens) hclwrite.Tokens {
 	return tokens[startIndex : len(tokens)-endIndex]
 }
 
-func buildMapExpression(tokens hclwrite.Tokens) string {
+func buildMapExpression(tokens hclwrite.Tokens, tfVersion int) string {
+	if tfVersion >= 15 {
+		mapContent := strings.TrimSpace(string(tokens.Bytes()))
+		return "tomap(" + mapContent + ")"
+	}
+
 	// Need to convert to inline map expression
 
 	// First, we get rid of the opening/closing newlines and {}
