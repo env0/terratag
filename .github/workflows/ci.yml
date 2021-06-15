@@ -50,5 +50,14 @@ jobs:
         run: |
           terraform --version
 
+      - name: Set Test-Suite
+        id: test-suite
+        env:
+          TF_VERSION: ${{ matrix.terraform_version }}
+        uses: actions/github-script@v4
+        with:
+          script: return process.env.TF_VERSION.replace('.', 'o')
+          result-encoding: string
+
       - name: Test
-        run: go test -v -run TestTerraform${{ matrix.terraform_version.replace('.', 'o') }}
+        run: go test -v -run TestTerraform${{ steps.outputs.test-suite.result }}
