@@ -28,17 +28,36 @@ func GetTerraformVersion() int {
 		log.Fatalln("Unable to parse 'terraform version'")
 		return -1
 	}
-	minorVersion, err := strconv.Atoi(matches[1])
-	if err != nil {
-		log.Fatalln("Unable to parse ", matches[1], "as integer")
-		return -1
-	}
-	if minorVersion < 11 || minorVersion > 15 {
-		log.Fatalln("Terratag only supports Terraform from version 0.11.x and up to 0.15.x - your version says ", outputAsString)
+	majorVersion := getVersionPart(matches, Major)
+	minorVersion := getVersionPart(matches, Minor)
+
+	if (majorVersion == 0 && minorVersion < 11 || minorVersion > 15) || (majorVersion == 1 && minorVersion > 0) {
+		log.Fatalln("Terratag only supports Terraform from version 0.11.x and up to 1.0.x - your version says ", outputAsString)
 		return -1
 	}
 
 	return minorVersion
+}
+
+type VersionPart int
+
+const (
+	Major VersionPart = iota
+	Minor
+)
+
+func (w VersionPart) EnumIndex() int {
+	return int(w)
+}
+
+func getVersionPart(parts []string, versionPart VersionPart) int {
+	version, err := strconv.Atoi(parts[versionPart])
+	if err != nil {
+		log.Fatalln("Unable to parse ", parts[versionPart], "as integer")
+		return -1
+	}
+
+	return version
 }
 
 func GetResourceType(resource hclwrite.Block) string {
