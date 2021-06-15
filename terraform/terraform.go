@@ -22,8 +22,8 @@ func GetTerraformVersion() int {
 	outputAsString := strings.TrimSpace(string(output))
 	errors.PanicOnError(err, &outputAsString)
 
-	regularExpression := regexp.MustCompile(`Terraform v(\d+)\.(\d+)\.\d+`)
-	matches := regularExpression.FindStringSubmatch(outputAsString)
+	regexp.MustCompile(`Terraform v(\d+)\.(\d+)\.\d+`)
+	matches := strings.Split(strings.TrimPrefix("Terraform v", outputAsString), ".")
 	if matches == nil {
 		log.Fatalln("Unable to parse 'terraform version'")
 		return -1
