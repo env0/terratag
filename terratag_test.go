@@ -43,8 +43,8 @@ func TestTerraform14(t *testing.T) {
 	testTerraform(t, "13_14")
 }
 
-func TestTerraform15(t *testing.T) {
-	testTerraform(t, "15")
+func TestTerraform15_1o0(t *testing.T) {
+	testTerraform(t, "15_1.0")
 }
 
 func testTerraform(t *testing.T, version string) {
