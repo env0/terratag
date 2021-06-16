@@ -65,5 +65,4 @@ jobs:
 
       - name: Test
         run: |
-          echo suite version is ${{ steps.outputs.test-suite.result }}
-          go test -v -run ^TestTerraform${{ steps.outputs.test-suite.result }}$
+          go test -v -run ^TestTerraform${{ steps.test-suite.outputs.result }}$
