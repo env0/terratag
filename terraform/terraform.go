@@ -2,6 +2,7 @@ package terraform
 
 import (
 	"encoding/json"
+	"github.com/env0/terratag/convert"
 	"io/ioutil"
 	"log"
 	"os"
@@ -17,7 +18,7 @@ import (
 	"github.com/thoas/go-funk"
 )
 
-func GetTerraformVersion() int {
+func GetTerraformVersion() convert.Version {
 	output, err := exec.Command("terraform", "version").Output()
 	outputAsString := strings.TrimSpace(string(output))
 	errors.PanicOnError(err, &outputAsString)
@@ -26,17 +27,17 @@ func GetTerraformVersion() int {
 	matches := strings.Split(strings.TrimPrefix(strings.TrimSpace(outputAsString), "Terraform v"), ".")
 	if matches == nil {
 		log.Fatalln("Unable to parse 'terraform version'")
-		return -1
+		return convert.Version{}
 	}
 	majorVersion := getVersionPart(matches, Major)
 	minorVersion := getVersionPart(matches, Minor)
 
 	if (majorVersion == 0 && minorVersion < 11 || minorVersion > 15) || (majorVersion == 1 && minorVersion > 0) {
 		log.Fatalln("Terratag only supports Terraform from version 0.11.x and up to 1.0.x - your version says ", outputAsString)
-		return -1
+		return convert.Version{}
 	}
 
-	return minorVersion
+	return convert.Version{majorVersion, minorVersion}
 }
 
 type VersionPart int
