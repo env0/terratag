@@ -16,7 +16,7 @@ func defaultTaggingFn(args TagBlockArgs) Result {
 }
 
 func ParseHclValueStringToTokens(hclValueString string) hclwrite.Tokens {
-	file, diags := hclwrite.ParseConfig([]byte("tempKey = " + hclValueString), "", hcl.Pos{Line: 1, Column: 1})
+	file, diags := hclwrite.ParseConfig([]byte("tempKey = "+hclValueString), "", hcl.Pos{Line: 1, Column: 1})
 	if diags.HasErrors() {
 		log.Print("error parsing hcl value string " + hclValueString)
 		panic(diags.Errs()[0])
@@ -27,7 +27,7 @@ func ParseHclValueStringToTokens(hclValueString string) hclwrite.Tokens {
 
 func TagBlock(args TagBlockArgs) string {
 	hasExistingTags := convert.MoveExistingTags(args.Filename, args.Terratag, args.Block, args.TagId)
-	
+
 	terratagAddedKey := "local." + tag_keys.GetTerratagAddedKey(args.Filename)
 	newTagsValue := terratagAddedKey
 
@@ -37,7 +37,7 @@ func TagBlock(args TagBlockArgs) string {
 		newTagsValue = "merge( " + existingTagsExpression + ", " + terratagAddedKey + ")"
 	}
 
-	if args.TfVersion == 11 {
+	if args.TfVersion.Major == 0 && args.TfVersion.Minor == 11 {
 		newTagsValue = "\"${" + newTagsValue + "}\""
 	}
 
@@ -78,7 +78,7 @@ type TagBlockArgs struct {
 	Tags      string
 	Terratag  convert.TerratagLocal
 	TagId     string
-	TfVersion int
+	TfVersion convert.Version
 }
 
 type TagResourceFn func(args TagBlockArgs) Result

@@ -2,6 +2,7 @@ package terraform
 
 import (
 	"encoding/json"
+	"github.com/env0/terratag/convert"
 	"io/ioutil"
 	"log"
 	"os"
@@ -17,28 +18,47 @@ import (
 	"github.com/thoas/go-funk"
 )
 
-func GetTerraformVersion() int {
+func GetTerraformVersion() convert.Version {
 	output, err := exec.Command("terraform", "version").Output()
 	outputAsString := strings.TrimSpace(string(output))
 	errors.PanicOnError(err, &outputAsString)
 
-	regularExpression := regexp.MustCompile(`Terraform v0\.(\d+)\.\d+`)
-	matches := regularExpression.FindStringSubmatch(outputAsString)
+	regexp.MustCompile(`Terraform v(\d+)\.(\d+)\.\d+`)
+	matches := strings.Split(strings.TrimPrefix(strings.TrimSpace(outputAsString), "Terraform v"), ".")
 	if matches == nil {
 		log.Fatalln("Unable to parse 'terraform version'")
-		return -1
+		return convert.Version{}
 	}
-	minorVersion, err := strconv.Atoi(matches[1])
+	majorVersion := getVersionPart(matches, Major)
+	minorVersion := getVersionPart(matches, Minor)
+
+	if (majorVersion == 0 && minorVersion < 11 || minorVersion > 15) || (majorVersion == 1 && minorVersion > 0) {
+		log.Fatalln("Terratag only supports Terraform from version 0.11.x and up to 1.0.x - your version says ", outputAsString)
+		return convert.Version{}
+	}
+
+	return convert.Version{majorVersion, minorVersion}
+}
+
+type VersionPart int
+
+const (
+	Major VersionPart = iota
+	Minor
+)
+
+func (w VersionPart) EnumIndex() int {
+	return int(w)
+}
+
+func getVersionPart(parts []string, versionPart VersionPart) int {
+	version, err := strconv.Atoi(parts[versionPart])
 	if err != nil {
-		log.Fatalln("Unable to parse ", matches[1], "as integer")
-		return -1
-	}
-	if minorVersion < 11 || minorVersion > 15 {
-		log.Fatalln("Terratag only supports Terraform from version 0.11.x and up to 0.15.x - your version says ", outputAsString)
+		log.Fatalln("Unable to parse ", parts[versionPart], "as integer")
 		return -1
 	}
 
-	return minorVersion
+	return version
 }
 
 func GetResourceType(resource hclwrite.Block) string {

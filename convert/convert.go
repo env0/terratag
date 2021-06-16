@@ -13,7 +13,7 @@ import (
 	"strings"
 )
 
-func GetExistingTagsExpression(tokens hclwrite.Tokens, tfVersion int) string {
+func GetExistingTagsExpression(tokens hclwrite.Tokens, tfVersion Version) string {
 	if isHclMap(tokens) {
 		return buildMapExpression(tokens, tfVersion)
 	} else {
@@ -49,8 +49,8 @@ func trimTokens(tokens hclwrite.Tokens) hclwrite.Tokens {
 	return tokens[startIndex : len(tokens)-endIndex]
 }
 
-func buildMapExpression(tokens hclwrite.Tokens, tfVersion int) string {
-	if tfVersion >= 15 {
+func buildMapExpression(tokens hclwrite.Tokens, tfVersion Version) string {
+	if tfVersion.Major == 0 && tfVersion.Minor >= 15 || tfVersion.Major == 1 {
 		mapContent := strings.TrimSpace(string(tokens.Bytes()))
 		return "tomap(" + mapContent + ")"
 	}
@@ -237,4 +237,8 @@ func quoteAttributeKeys(tagsAttribute *hclwrite.Attribute) hclwrite.Tokens {
 type TerratagLocal struct {
 	Found map[string]hclwrite.Tokens
 	Added string
+}
+type Version struct {
+	Major int
+	Minor int
 }

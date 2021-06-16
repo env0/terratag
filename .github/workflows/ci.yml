@@ -12,7 +12,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        terraform_version: [11,12,13,14,15]
+        terraform_version: ['11','12','13','14','15','1.0']
 
     steps:
       - name: Set up Go 1.x
@@ -50,5 +50,19 @@ jobs:
         run: |
           terraform --version
 
+      - name: Set Test-Suite
+        id: test-suite
+        env:
+          TF_VERSION: ${{ matrix.terraform_version }}
+        uses: actions/github-script@v4
+        with:
+          script: |
+            console.log(`Setting test suite version based on ${process.env.TF_VERSION}`)
+            const suite = process.env.TF_VERSION.replace('.', 'o')
+            console.log(`Test suite set to ${suite}`)
+            return suite
+          result-encoding: string
+
       - name: Test
-        run: go test -v -run TestTerraform${{ matrix.terraform_version }}
+        run: |
+          go test -v -run ^TestTerraform${{ steps.test-suite.outputs.result }}$
