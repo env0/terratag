@@ -51,6 +51,10 @@ func TestTerraform1o0(t *testing.T) {
 	testTerraform(t, "15_1.0")
 }
 
+func TestTerraform1o0WithFilter(t *testing.T) {
+	testTerraformWithFilter(t, "15_1.0_filter", "azurerm_resource_group,aws_s3_bucket")
+}
+
 func testTerraform(t *testing.T, version string) {
 	for _, tt := range getEntries(version) {
 		tt := tt // NOTE: https://github.com/golang/go/wiki/CommonMistakes#using-goroutines-on-loop-iterator-variables
@@ -58,7 +62,21 @@ func testTerraform(t *testing.T, version string) {
 			t.Parallel() // marks each test case as capable of running in parallel with each other
 			g := NewGomegaWithT(t)
 			itShouldTerraformInit(tt.entryDir, g)
-			itShouldRunTerratag(tt.entryDir, g)
+			itShouldRunTerratag(tt.entryDir, "", g)
+			itShouldRunTerraformValidate(tt.entryDir, g)
+			itShouldGenerateExpectedTerratagFiles(tt.suiteDir, g)
+		})
+	}
+}
+
+func testTerraformWithFilter(t *testing.T, version string, filter string) {
+	for _, tt := range getEntries(version) {
+		tt := tt // NOTE: https://github.com/golang/go/wiki/CommonMistakes#using-goroutines-on-loop-iterator-variables
+		t.Run(tt.suite, func(t *testing.T) {
+			t.Parallel() // marks each test case as capable of running in parallel with each other
+			g := NewGomegaWithT(t)
+			itShouldTerraformInit(tt.entryDir, g)
+			itShouldRunTerratag(tt.entryDir, filter, g)
 			itShouldRunTerraformValidate(tt.entryDir, g)
 			itShouldGenerateExpectedTerratagFiles(tt.suiteDir, g)
 		})
@@ -89,8 +107,8 @@ func itShouldRunTerraformValidate(entryDir string, g *GomegaWithT) {
 	g.Expect(err).To(BeNil(), "terraform validate failed")
 }
 
-func itShouldRunTerratag(entryDir string, g *GomegaWithT) {
-	err := terratag(entryDir)
+func itShouldRunTerratag(entryDir string, filter string, g *GomegaWithT) {
+	err := terratag(entryDir, filter)
 	g.Expect(err).To(BeNil(), "terratag failed")
 }
 
@@ -109,8 +127,10 @@ func getEntries(version string) []TestCase {
 	entryFiles, _ := doublestar.Glob(rootDir + terraformDir + entryFilesMatcher)
 	var testEntries []TestCase
 	for _, entryFile := range entryFiles {
-		entryDir := strings.TrimSuffix(entryFile, "/main.tf")
-		terraformPathSplit := strings.Split(entryFile, terraformDir)
+		// convert windows paths to use forward slashes
+		slashed := filepath.ToSlash(entryFile)
+		entryDir := strings.TrimSuffix(slashed, "/main.tf")
+		terraformPathSplit := strings.Split(slashed, terraformDir)
 		pathAfterTerraformDir := terraformPathSplit[1]
 		suite := strings.Split(pathAfterTerraformDir, "/")[1]
 		pathBeforeTerraformDir := terraformPathSplit[0]
@@ -134,14 +154,18 @@ func cloneOutput(inputDirs []string) {
 	}
 }
 
-func terratag(entryDir string) (err interface{}) {
+func terratag(entryDir string, filter string) (err interface{}) {
 	defer func() {
 		if innerErr := recover(); innerErr != nil {
 			fmt.Println(innerErr)
 			err = innerErr
 		}
 	}()
-	os.Args = append(args, "-dir="+entryDir)
+	if filter == "" {
+		os.Args = append(args, "-dir="+entryDir)
+	} else {
+		os.Args = append(args, "-dir="+entryDir, "-filter="+filter)
+	}
 	args, isMissingArg := cli.InitArgs()
 	if isMissingArg {
 		return errors.New("Missing arg")

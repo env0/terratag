@@ -1,13 +1,13 @@
-# [<img src="ttlogo.png" width="300" alt="Terratag Logo">](https://terratag.io) 
+# [<img src="ttlogo.png" width="300" alt="Terratag Logo">](https://terratag.io)
 [![ci](https://github.com/env0/terratag/workflows/ci/badge.svg)](https://github.com/env0/terratag/actions?query=workflow%3Aci+branch%3Amaster) [![FOSSA Status](https://app.fossa.com/api/projects/git%2Bgithub.com%2Fenv0%2Fterratag.svg?type=small)](https://app.fossa.com/projects/git%2Bgithub.com%2Fenv0%2Fterratag?ref=badge_small)
 
-> <sub>Terratag is brought to you with&nbsp;❤️&nbsp; by   
->[<img src="logo.svg" width="150">](https://env0.com)  
-> Let your team manage their own environment in AWS, Azure and Google. <br/> 
-> Governed by your policies and with complete visibility and cost management.      
+> <sub>Terratag is brought to you with&nbsp;❤️&nbsp; by
+>[<img src="logo.svg" width="150">](https://env0.com)
+> Let your team manage their own environment in AWS, Azure and Google. <br/>
+> Governed by your policies and with complete visibility and cost management.
 
 ## What?
-Terratag is a CLI tool allowing for tags or labels to be applied across an entire set of Terraform files. Terratag will apply tags or labels to any AWS, GCP and Azure resources. 
+Terratag is a CLI tool allowing for tags or labels to be applied across an entire set of Terraform files. Terratag will apply tags or labels to any AWS, GCP and Azure resources.
 
 ### Terratag in action
 ![](https://assets.website-files.com/5dc3f52851595b160ba99670/5f62090d2d532ca35e143133_terratag.gif)
@@ -27,18 +27,19 @@ Maintaining tags across your application is hard, especially when done manually.
     Or download the latest [release binary](https://github.com/env0/terratag/releases) .
 
 1. Initialize Terraform modules to get provider schema and pull child modules:
-   ```bash    
-    terraform init  
+   ```bash
+    terraform init
     ```
-1. Run Terratag  
-      ```bash    
+1. Run Terratag
+      ```bash
        terratag -dir=foo/bar -tags={\"environment_id\": \"prod\"}
-   ```    
-   
-   Terratag supports the following arguments:  
-   - `-dir` - optional, the directory to recursively search for any `.tf` file and try to terratag it.  
+   ```
+
+   Terratag supports the following arguments:
+   - `-dir` - optional, the directory to recursively search for any `.tf` file and try to terratag it.
    - `-tags` - tags, as valid JSON (NOT HCL)
    - `-skipTerratagFiles` - optional. Default to `true`. Skips any previously tagged - (files with `terratag.tf` suffix)
+   - `-filter` - optional. Only apply tags to the selected resource types (comma separated list)
 
 ### Example Output
 #### Before Terratag
@@ -148,6 +149,7 @@ locals {
 * `-skipTerratagFiles=false` - Dont skip processing `*.terratag.tf` files (when running terratag a second time for the same directory)
 * `-verbose=true` - Turn on verbose logging
 * `-rename=false` - Instead of replacing files named `<basename>.tf` with `<basename>.terratag.tf`, keep the original filename
+* `-filter=<type_1>,<type_2>` - Only apply tags to the selected resource types
 
 ##### See more samples [here](https://github.com/env0/terratag/tree/master/test/fixture)
 
@@ -155,7 +157,7 @@ locals {
 - Resources already having the exact same tag as the one being appended will be overridden
 
 ## Develop
-Issues and Pull Requests are very welcome!  
+Issues and Pull Requests are very welcome!
 
 ### Prerequisites
 - Go > 1.13.5
@@ -170,8 +172,8 @@ go build
 ### Test
 
 #### Structure
-The test suite will look for fixtures under `test/fixtures/terraform_xx`.  
-Each fixture placed there should have the following directory structure:  
+The test suite will look for fixtures under `test/fixtures/terraform_xx`.
+Each fixture placed there should have the following directory structure:
 ```
 my_fixture
 |+ input
@@ -180,23 +182,23 @@ my_fixture
 |- expected
 ```
 
-- `input` is where you should place the terraform files of your fixture.  
-All commands will be executed wherever down the hierarchy where `main.tf` is located.  
-We do that to allow cases where complex nested submodule resolution may take place, and one would like to test how a directory higher up the hierarchy gets resolved.  
+- `input` is where you should place the terraform files of your fixture.
+All commands will be executed wherever down the hierarchy where `main.tf` is located.
+We do that to allow cases where complex nested submodule resolution may take place, and one would like to test how a directory higher up the hierarchy gets resolved.
 - `expected` is a directory in which all `.terratag.tf` files will be matched with the output directory
 
 #### What's being tested?
 Each test will run:
 - `terraform init`
 - `terratag`
-- `terraform validate`  
+- `terraform validate`
 
-And finally, will compare the results in `out` with the `expected` directory 
+And finally, will compare the results in `out` with the `expected` directory
 
 #### Running Tests
-Tests can only run on a specific Terraform version - 
+Tests can only run on a specific Terraform version -
 ```
 go test -run TestTerraformXX
-``` 
+```
 
 We use [tfenv](https://github.com/tfutils/tfenv) to switch between versions. The exact versions used in the CI tests can be found under `test/tfenvconf`.
