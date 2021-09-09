@@ -14,7 +14,7 @@ type Args struct {
 	Tags                string
 	Dir                 string
 	SkipTerratagFiles   string
-	Filter              []string
+	Filter              string
 	IsSkipTerratagFiles bool
 	Verbose             bool
 	Rename              bool
@@ -27,7 +27,7 @@ func InitArgs() (Args, bool) {
 	args.Tags = setFlag("tags", "")
 	args.Dir = setFlag("dir", ".")
 	args.IsSkipTerratagFiles = booleanFlag("skipTerratagFiles", true)
-	args.Filter = setArrayFlag("filter", make([]string, 0))
+	args.Filter = setFlag("filter", ".*")
 	args.Verbose = booleanFlag("verbose", false)
 	args.Rename = booleanFlag("rename", true)
 
@@ -45,18 +45,6 @@ func setFlag(flag string, defaultValue string) string {
 	for _, arg := range os.Args {
 		if strings.HasPrefix(arg, prefix) {
 			result = strings.TrimPrefix(arg, prefix)
-		}
-	}
-
-	return result
-}
-
-func setArrayFlag(flag string, defaultValue []string) []string {
-	result := defaultValue
-	prefix := "-" + flag + "="
-	for _, arg := range os.Args {
-		if strings.HasPrefix(arg, prefix) {
-			result = strings.Split(strings.TrimPrefix(arg, prefix), ",")
 		}
 	}
 

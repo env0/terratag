@@ -4,10 +4,12 @@ import (
 	"encoding/json"
 	"log"
 	"os"
+	"regexp"
 	"strings"
 
 	. "github.com/env0/terratag/cli"
 	"github.com/env0/terratag/convert"
+	"github.com/env0/terratag/errors"
 	. "github.com/env0/terratag/errors"
 	"github.com/env0/terratag/file"
 	. "github.com/env0/terratag/providers"
@@ -61,7 +63,7 @@ func Terratag(args Args) {
 	log.Print("[INFO] In ", counters.taggedFiles, " file/s (out of ", counters.totalFiles, " file/s processed)")
 }
 
-func tagDirectoryResources(dir string, filter []string, matches []string, tags string, isSkipTerratagFiles bool, tfVersion convert.Version, rename bool) counters {
+func tagDirectoryResources(dir string, filter string, matches []string, tags string, isSkipTerratagFiles bool, tfVersion convert.Version, rename bool) counters {
 	var total counters
 	for _, path := range matches {
 		if isSkipTerratagFiles && strings.HasSuffix(path, "terratag.tf") {
@@ -74,7 +76,7 @@ func tagDirectoryResources(dir string, filter []string, matches []string, tags s
 	return total
 }
 
-func tagFileResources(path string, dir string, filter []string, tags string, tfVersion convert.Version, rename bool) counters {
+func tagFileResources(path string, dir string, filter string, tags string, tfVersion convert.Version, rename bool) counters {
 	perFileCounters := counters{
 		totalFiles: 1,
 	}
@@ -93,7 +95,11 @@ func tagFileResources(path string, dir string, filter []string, tags string, tfV
 			log.Print("[INFO] Processing resource ", resource.Labels())
 			perFileCounters.totalResources += 1
 
-			if len(filter) > 0 && !contains(filter, resource.Labels()[0]) {
+			matched, err := regexp.MatchString(filter, resource.Labels()[0])
+			if err != nil {
+				errors.PanicOnError(err, nil)
+			}
+			if !matched {
 				log.Print("[INFO] Resource excluded by filter, skipping.", resource.Labels())
 				continue
 			}

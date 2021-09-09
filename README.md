@@ -39,7 +39,7 @@ Maintaining tags across your application is hard, especially when done manually.
    - `-dir` - optional, the directory to recursively search for any `.tf` file and try to terratag it.
    - `-tags` - tags, as valid JSON (NOT HCL)
    - `-skipTerratagFiles` - optional. Default to `true`. Skips any previously tagged - (files with `terratag.tf` suffix)
-   - `-filter` - optional. Only apply tags to the selected resource types (comma separated list)
+   - `-filter` - optional. Only apply tags to the selected resource types (regex)
 
 ### Example Output
 #### Before Terratag
@@ -149,7 +149,7 @@ locals {
 * `-skipTerratagFiles=false` - Dont skip processing `*.terratag.tf` files (when running terratag a second time for the same directory)
 * `-verbose=true` - Turn on verbose logging
 * `-rename=false` - Instead of replacing files named `<basename>.tf` with `<basename>.terratag.tf`, keep the original filename
-* `-filter=<type_1>,<type_2>` - Only apply tags to the selected resource types
+* `-filter=<regular expression>` - defaults to `.*`. Only apply tags to the resource types matched by the regular expression
 
 ##### See more samples [here](https://github.com/env0/terratag/tree/master/test/fixture)
 

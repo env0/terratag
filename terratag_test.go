@@ -52,7 +52,7 @@ func TestTerraform1o0(t *testing.T) {
 }
 
 func TestTerraform1o0WithFilter(t *testing.T) {
-	testTerraformWithFilter(t, "15_1.0_filter", "azurerm_resource_group,aws_s3_bucket")
+	testTerraformWithFilter(t, "15_1.0_filter", "azurerm_resource_group|aws_s3_bucket")
 }
 
 func testTerraform(t *testing.T, version string) {
