@@ -152,12 +152,3 @@ func jsonToHclMap(tags string) string {
 	}
 	return "{" + strings.Join(mapContent, ",") + "}"
 }
-
-func contains(array []string, value string) bool {
-	for _, item := range array {
-		if item == value {
-			return true
-		}
-	}
-	return false
-}
