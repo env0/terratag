@@ -18,7 +18,7 @@ provider "aws" {
   region = "us-east-1"
 }
 
-resource "azurerm_resource_group" "example" {
+resource "azurerm_resource_group" "should_have_tags" {
   name     = "example-resources"
   location = "West Europe"
   tags = merge(tomap({
@@ -26,14 +26,14 @@ resource "azurerm_resource_group" "example" {
   }), local.terratag_added_main)
 }
 
-resource "azurerm_virtual_network" "example" {
+resource "azurerm_virtual_network" "should_not_have_tags" {
   name                = "example-network"
-  resource_group_name = azurerm_resource_group.example.name
-  location            = azurerm_resource_group.example.location
+  resource_group_name = azurerm_resource_group.should_have_tags.name
+  location            = azurerm_resource_group.should_have_tags.location
   address_space       = ["10.0.0.0/16"]
 }
 
-resource "aws_s3_bucket" "b" {
+resource "aws_s3_bucket" "should_have_tags" {
   bucket = "my-tf-test-bucket"
   acl    = "private"
 
