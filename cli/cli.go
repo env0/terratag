@@ -14,6 +14,7 @@ type Args struct {
 	Tags                string
 	Dir                 string
 	SkipTerratagFiles   string
+	Filter              string
 	IsSkipTerratagFiles bool
 	Verbose             bool
 	Rename              bool
@@ -26,6 +27,7 @@ func InitArgs() (Args, bool) {
 	args.Tags = setFlag("tags", "")
 	args.Dir = setFlag("dir", ".")
 	args.IsSkipTerratagFiles = booleanFlag("skipTerratagFiles", true)
+	args.Filter = setFlag("filter", ".*")
 	args.Verbose = booleanFlag("verbose", false)
 	args.Rename = booleanFlag("rename", true)
 
