@@ -22,7 +22,7 @@ Maintaining tags across your application is hard, especially when done manually.
 ### Usage
 1. Install from homebrew:
     ```
-    ➜ brew install env0/terratag/terratag
+    brew install env0/terratag/terratag
     ```
     Or download the latest [release binary](https://github.com/env0/terratag/releases) .
 
