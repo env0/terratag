@@ -8,9 +8,9 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
-	"regexp"
 	"strconv"
 	"strings"
+	"regexp"
 
 	"github.com/bmatcuk/doublestar"
 	"github.com/env0/terratag/errors"
@@ -23,8 +23,9 @@ func GetTerraformVersion() convert.Version {
 	outputAsString := strings.TrimSpace(string(output))
 	errors.PanicOnError(err, &outputAsString)
 
-	regexp.MustCompile(`Terraform v(\d+)\.(\d+)\.\d+`)
-	matches := strings.Split(strings.TrimPrefix(strings.TrimSpace(outputAsString), "Terraform v"), ".")
+	regularExpression := regexp.MustCompile(`Terraform v(\d+).(\d+)\.\d+`)
+	matches := regularExpression.FindStringSubmatch(outputAsString)[1:]
+
 	if matches == nil {
 		log.Fatalln("Unable to parse 'terraform version'")
 		return convert.Version{}
