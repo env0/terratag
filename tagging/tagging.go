@@ -47,6 +47,22 @@ func TagBlock(args TagBlockArgs) string {
 	return newTagsValue
 }
 
+func ConcatTagsToTagsBlock(args TagBlockArgs) string {
+	convert.MoveExistingTags(args.Filename, args.Terratag, args.Block, args.TagId)
+
+	terratagAddedKey := "local." + tag_keys.GetTerratagAddedKey(args.Filename)
+	newTagsValue := terratagAddedKey
+
+	existingTagsKey := tag_keys.GetResourceExistingTagsKey(args.Filename, args.Block)
+	existingTagsExpression := convert.GetExistingTagsExpression(args.Terratag.Found[existingTagsKey], args.TfVersion)
+	newTagsValue = "concat( " + existingTagsExpression + ", [" + terratagAddedKey + "])"
+
+	newTagsValueTokens := ParseHclValueStringToTokens(newTagsValue)
+	args.Block.Body().SetAttributeRaw(args.TagId, newTagsValueTokens)
+
+	return newTagsValue
+}
+
 func HasResourceTagFn(resourceType string) bool {
 	return resourceTypeToFnMap[resourceType] != nil
 }
