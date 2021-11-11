@@ -11,7 +11,6 @@ resource "google_storage_bucket" "static-site" {
   location      = "EU"
   force_destroy = true
 
-  bucket_policy_only = true
 
   website {
     main_page_suffix = "index.html"
