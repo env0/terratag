@@ -2,6 +2,7 @@ terraform {
   required_providers {
     google = {
       source = "hashicorp/google"
+      version = "4.1.0"
     }
   }
 }
@@ -10,8 +11,6 @@ resource "google_storage_bucket" "static-site" {
   name          = "image-store.com"
   location      = "EU"
   force_destroy = true
-
-  bucket_policy_only = true
 
   website {
     main_page_suffix = "index.html"
