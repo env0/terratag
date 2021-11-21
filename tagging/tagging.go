@@ -32,14 +32,11 @@ func TagBlock(args TagBlockArgs) string {
 	newTagsValue := terratagAddedKey
 
 	if hasExistingTags {
-		existingTagsKey := tag_keys.GetResourceExistingTagsKey(args.Filename, args.Block)
-		existingTagsExpression := convert.GetExistingTagsExpression(args.Terratag.Found[existingTagsKey], args.TfVersion)
+		existingTagsExpression := getExistingTagsExpression(args)
 		newTagsValue = "merge( " + existingTagsExpression + ", " + terratagAddedKey + ")"
 	}
 
-	if args.TfVersion.Major == 0 && args.TfVersion.Minor == 11 {
-		newTagsValue = "\"${" + newTagsValue + "}\""
-	}
+	newTagsValue = fixLegacyTerraform(args, newTagsValue)
 
 	newTagsValueTokens := ParseHclValueStringToTokens(newTagsValue)
 	args.Block.Body().SetAttributeRaw(args.TagId, newTagsValueTokens)
@@ -53,9 +50,10 @@ func ConcatTagsToTagsBlock(args TagBlockArgs) string {
 	terratagAddedKey := "local." + tag_keys.GetTerratagAddedKey(args.Filename)
 	newTagsValue := terratagAddedKey
 
-	existingTagsKey := tag_keys.GetResourceExistingTagsKey(args.Filename, args.Block)
-	existingTagsExpression := convert.GetExistingTagsExpression(args.Terratag.Found[existingTagsKey], args.TfVersion)
+	existingTagsExpression := getExistingTagsExpression(args)
 	newTagsValue = "concat( " + existingTagsExpression + ", [" + terratagAddedKey + "])"
+
+	newTagsValue = fixLegacyTerraform(args, newTagsValue)
 
 	newTagsValueTokens := ParseHclValueStringToTokens(newTagsValue)
 	args.Block.Body().SetAttributeRaw(args.TagId, newTagsValueTokens)
@@ -80,6 +78,19 @@ func TagResource(args TagBlockArgs) Result {
 	}
 
 	return result
+}
+
+func getExistingTagsExpression(args TagBlockArgs) string {
+	existingTagsKey := tag_keys.GetResourceExistingTagsKey(args.Filename, args.Block)
+	existingTagsExpression := convert.GetExistingTagsExpression(args.Terratag.Found[existingTagsKey], args.TfVersion)
+	return existingTagsExpression
+}
+
+func fixLegacyTerraform(args TagBlockArgs, newTagsValue string) string {
+	if args.TfVersion.Major == 0 && args.TfVersion.Minor == 11 {
+		newTagsValue = "\"${" + newTagsValue + "}\""
+	}
+	return newTagsValue
 }
 
 var resourceTypeToFnMap = map[string]TagResourceFn{
