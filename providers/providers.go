@@ -4,6 +4,8 @@ import (
 	"strings"
 )
 
+var resourcesToSkip = []string{"azurerm_api_management_named_value"}
+
 func getProviderByResource(resourceType string) Provider {
 	if strings.HasPrefix(resourceType, "aws_") {
 		return "aws"
@@ -39,6 +41,12 @@ func GetTagIdByResource(resourceType string) string {
 }
 
 func IsSupportedResource(resourceType string) bool {
+	for _, resourceToSkip := range resourcesToSkip {
+		if resourceType == resourceToSkip {
+			return false
+		}
+	}
+
 	return isSupportedProvider(getProviderByResource(resourceType))
 }
 
