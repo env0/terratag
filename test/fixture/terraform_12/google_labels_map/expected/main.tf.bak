@@ -1,3 +1,7 @@
+provider "google" {
+  version = "3.65.0"
+}
+
 resource "google_storage_bucket" "static-site" {
   name          = "image-store.com"
   location      = "EU"

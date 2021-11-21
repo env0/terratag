@@ -1,3 +1,7 @@
+provider "google" {
+  version = "3.65.0"
+}
+
 resource "google_container_cluster" "no-labels-cluster" {
   name = "cluster"
   location = "us-central1"
