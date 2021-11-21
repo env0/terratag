@@ -44,7 +44,7 @@ func TagBlock(args TagBlockArgs) string {
 	return newTagsValue
 }
 
-func ConcatTagsToTagsBlock(args TagBlockArgs) string {
+func ConcatTagToTagsBlock(args TagBlockArgs) string {
 	convert.MoveExistingTags(args.Filename, args.Terratag, args.Block, args.TagId)
 
 	terratagAddedKey := "local." + tag_keys.GetTerratagAddedKey(args.Filename)

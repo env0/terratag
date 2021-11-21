@@ -14,7 +14,7 @@ func tagAutoscalingGroup(args TagBlockArgs) Result {
 	if foundTagBlock {
 		convert.AppendTagBlocks(args.Block, args.Tags)
 	} else {
-		ConcatTagsToTagsBlock(args)
+		ConcatTagToTagsBlock(args)
 	}
 	return Result{}
 }
