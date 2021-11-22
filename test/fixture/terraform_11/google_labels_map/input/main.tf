@@ -1,8 +1,11 @@
+provider "google" {
+  version = "2.20.3"
+}
+
 resource "google_storage_bucket" "static-site" {
   name          = "image-store.com"
   location      = "EU"
   force_destroy = true
-
 
   website {
     main_page_suffix = "index.html"
