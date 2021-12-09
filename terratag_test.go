@@ -59,6 +59,15 @@ func TestTerraform1o0WithFilter(t *testing.T) {
 	testTerraformWithFilter(t, "15_1.0_filter", "azurerm_resource_group|aws_s3_bucket")
 }
 
+func TestTerraform1o1(t *testing.T) {
+	testTerraform(t, "15_1.1")
+}
+
+func TestTerraform1o1WithFilter(t *testing.T) {
+	testTerraformWithFilter(t, "15_1.1_filter", "azurerm_resource_group|aws_s3_bucket")
+}
+
+
 func testTerraform(t *testing.T, version string) {
 	for _, tt := range getEntries(version) {
 		tt := tt // NOTE: https://github.com/golang/go/wiki/CommonMistakes#using-goroutines-on-loop-iterator-variables

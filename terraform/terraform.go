@@ -33,8 +33,8 @@ func GetTerraformVersion() convert.Version {
 	majorVersion := getVersionPart(matches, Major)
 	minorVersion := getVersionPart(matches, Minor)
 
-	if (majorVersion == 0 && minorVersion < 11 || minorVersion > 15) || (majorVersion == 1 && minorVersion > 0) {
-		log.Fatalln("Terratag only supports Terraform from version 0.11.x and up to 1.0.x - your version says ", outputAsString)
+	if (majorVersion == 0 && minorVersion < 11 || minorVersion > 15) || (majorVersion == 1 && minorVersion > 1) {
+		log.Fatalln("Terratag only supports Terraform from version 0.11.x and up to 1.1.x - your version says ", outputAsString)
 		return convert.Version{}
 	}
 
