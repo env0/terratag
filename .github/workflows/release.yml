@@ -64,6 +64,6 @@ jobs:
           echo "`jq .version="${tag}" package.json`" > package.json
         working-directory: ./out/terratag
 
-      - run: npm publish ./out/terratag
+      - run: npm publish --access public ./out/terratag
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
