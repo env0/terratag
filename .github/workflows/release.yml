@@ -37,7 +37,7 @@ jobs:
       - run: |
           npm init --yes --scope @env0
           ref=${{ github.ref }}
-          tag="0.1.32"
+          tag=0.1.32
           echo "`jq .version="${tag}" package.json`" > package.json
         working-directory: ./out/terratag
 
