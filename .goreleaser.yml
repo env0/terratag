@@ -6,6 +6,8 @@ builds:
       - windows
     goarch:
       - amd64
+      - arm64
+      - arm
     env:
       - CGO_ENABLED=0
 
