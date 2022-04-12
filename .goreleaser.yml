@@ -1,8 +1,8 @@
 builds:
   - binary: terratag
     goos:
-      - linux
       - darwin
+      - linux
       - windows
     goarch:
       - amd64
