@@ -1,13 +1,16 @@
 builds:
   - binary: terratag
     goos:
-      - darwin
       - linux
+      - darwin
       - windows
     goarch:
       - amd64
       - arm64
-      - arm
+    ignore:
+      - goarch: arm64
+        goos: windows
+
     env:
       - CGO_ENABLED=0
 
