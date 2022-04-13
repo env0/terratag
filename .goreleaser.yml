@@ -6,6 +6,11 @@ builds:
       - windows
     goarch:
       - amd64
+      - arm64
+    ignore:
+      - goarch: arm64
+        goos: windows
+
     env:
       - CGO_ENABLED=0
 
