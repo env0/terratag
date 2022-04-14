@@ -1,6 +1,6 @@
 module github.com/env0/terratag
 
-go 1.13
+go 1.16
 
 require (
 	github.com/bmatcuk/doublestar v1.2.2
