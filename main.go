@@ -13,6 +13,7 @@ import (
 	. "github.com/env0/terratag/errors"
 	"github.com/env0/terratag/file"
 	. "github.com/env0/terratag/providers"
+	"github.com/env0/terratag/tag_keys"
 	"github.com/env0/terratag/tagging"
 	. "github.com/env0/terratag/terraform"
 	. "github.com/env0/terratag/tfschema"
@@ -91,7 +92,8 @@ func tagFileResources(path string, dir string, filter string, tags string, tfVer
 	}
 
 	for _, resource := range hcl.Body().Blocks() {
-		if resource.Type() == "resource" {
+		switch resource.Type() {
+		case "resource":
 			log.Print("[INFO] Processing resource ", resource.Labels())
 			perFileCounters.totalResources += 1
 
@@ -120,7 +122,25 @@ func tagFileResources(path string, dir string, filter string, tags string, tfVer
 			} else {
 				log.Print("[INFO] Resource not taggable, skipping.", resource.Labels())
 			}
+		case "locals":
+			// Checks if terratag_added_* exists.
+			// If it exists no need to append it again to Terratag file.
+			// Instead should override it.
+			attributes := resource.Body().Attributes()
+			key := tag_keys.GetTerratagAddedKey(filename)
+			for attributeKey, attribute := range attributes {
+				if attributeKey == key {
+					mergedLocals, err := convert.MergeLocals(attribute, terratag.Added)
+					if err != nil {
+						errors.PanicOnError(err, nil)
+					}
+					terratag.Added = mergedLocals
+
+					break
+				}
+			}
 		}
+
 	}
 
 	if len(swappedTagsStrings) > 0 {

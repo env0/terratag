@@ -2,6 +2,9 @@ package convert
 
 import (
 	"encoding/json"
+	"log"
+	"strings"
+
 	"github.com/env0/terratag/errors"
 	"github.com/env0/terratag/tag_keys"
 	"github.com/env0/terratag/utils"
@@ -9,8 +12,6 @@ import (
 	"github.com/hashicorp/hcl/v2/hclwrite"
 	"github.com/thoas/go-funk"
 	"github.com/zclconf/go-cty/cty"
-	"log"
-	"strings"
 )
 
 func GetExistingTagsExpression(tokens hclwrite.Tokens, tfVersion Version) string {
@@ -114,11 +115,27 @@ func stringifyExpression(tokens hclwrite.Tokens) string {
 }
 
 func AppendLocalsBlock(file *hclwrite.File, filename string, terratag TerratagLocal) {
+	key := tag_keys.GetTerratagAddedKey(filename)
+
+	// If there's an existings terratag locals, remove it.
+	// A merged one will be added instead.
+	blocks := file.Body().Blocks()
+	for _, block := range blocks {
+		if block.Type() != "locals" {
+			continue
+		}
+		if block.Body().GetAttribute(key) == nil {
+			continue
+		}
+		file.Body().RemoveBlock(block)
+		break
+	}
+
 	file.Body().AppendNewline()
 	locals := file.Body().AppendNewBlock("locals", nil)
 	file.Body().AppendNewline()
 
-	locals.Body().SetAttributeValue(tag_keys.GetTerratagAddedKey(filename), cty.StringVal(terratag.Added))
+	locals.Body().SetAttributeValue(key, cty.StringVal(terratag.Added))
 }
 
 func AppendTagBlocks(resource *hclwrite.Block, tags string) {
