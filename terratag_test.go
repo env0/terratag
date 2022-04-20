@@ -68,7 +68,12 @@ func TestTerraform1o1WithFilter(t *testing.T) {
 }
 
 func testTerraform(t *testing.T, version string) {
-	for _, tt := range getEntries(version) {
+	entries := getEntries(version)
+	if len(entries) == 0 {
+		t.Fatalf("test entries not found for version %s", version)
+	}
+
+	for _, tt := range entries {
 		tt := tt // NOTE: https://github.com/golang/go/wiki/CommonMistakes#using-goroutines-on-loop-iterator-variables
 		t.Run(tt.suite, func(t *testing.T) {
 			t.Parallel() // marks each test case as capable of running in parallel with each other
