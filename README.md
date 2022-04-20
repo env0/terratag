@@ -160,7 +160,7 @@ locals {
 Issues and Pull Requests are very welcome!
 
 ### Prerequisites
-- Go > 1.16
+- Go > 1.18
 
 ### Build
 ```bash
