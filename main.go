@@ -130,11 +130,11 @@ func tagFileResources(path string, dir string, filter string, tags string, tfVer
 			key := tag_keys.GetTerratagAddedKey(filename)
 			for attributeKey, attribute := range attributes {
 				if attributeKey == key {
-					mergedLocals, err := convert.MergeLocals(attribute, terratag.Added)
+					mergedAdded, err := convert.MergeTerratagLocals(attribute, terratag.Added)
 					if err != nil {
 						errors.PanicOnError(err, nil)
 					}
-					terratag.Added = mergedLocals
+					terratag.Added = mergedAdded
 
 					break
 				}

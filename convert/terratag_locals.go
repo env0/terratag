@@ -4,16 +4,17 @@ import (
 	"errors"
 	"fmt"
 	"regexp"
+	"sort"
 	"strings"
 
 	"github.com/hashicorp/hcl/v2/hclwrite"
 )
 
-var localsRegex = regexp.MustCompile(`"([^"]*)"[ ]*=[ ]*"([^"]*)"`)
+var localsRegex = regexp.MustCompile(`"([^"]*)"[ \t]*=[ \t]*"([^"]*)"`)
 
 type Locals map[string]string
 
-func decodeLocals(locals Locals, s string) error {
+func decodeTerratagLocals(locals Locals, s string) error {
 	for k := range locals {
 		delete(locals, k)
 	}
@@ -30,10 +31,18 @@ func decodeLocals(locals Locals, s string) error {
 	return nil
 }
 
-func encodeLocals(locals Locals) string {
+func encodeTerratagLocals(locals Locals) string {
 	ret := "{"
-	for key, value := range locals {
-		ret += fmt.Sprintf("\"%s\" = \"%s\", ", key, value)
+
+	// Return it in ordered manner for order consistency (primarly when running tests).
+	var keys []string
+	for key := range locals {
+		keys = append(keys, key)
+	}
+	sort.Strings(keys)
+
+	for _, key := range keys {
+		ret += fmt.Sprintf("\"%s\" = \"%s\", ", key, locals[key])
 	}
 
 	ret = strings.TrimSuffix(ret, ", ")
@@ -41,16 +50,16 @@ func encodeLocals(locals Locals) string {
 	return ret
 }
 
-func MergeLocals(attribute *hclwrite.Attribute, added string) (string, error) {
+func MergeTerratagLocals(attribute *hclwrite.Attribute, added string) (string, error) {
 	localsAttribute := Locals{}
 	tokens := hclwrite.Tokens{}
 	existingLocalsExpression := stringifyExpression(attribute.BuildTokens(tokens))
-	if err := decodeLocals(localsAttribute, existingLocalsExpression); err != nil {
+	if err := decodeTerratagLocals(localsAttribute, existingLocalsExpression); err != nil {
 		return "", err
 	}
 
 	localsAdded := Locals{}
-	if err := decodeLocals(localsAdded, added); err != nil {
+	if err := decodeTerratagLocals(localsAdded, added); err != nil {
 		return "", err
 	}
 
@@ -58,5 +67,5 @@ func MergeLocals(attribute *hclwrite.Attribute, added string) (string, error) {
 		localsAttribute[key] = value
 	}
 
-	return encodeLocals(localsAttribute), nil
+	return encodeTerratagLocals(localsAttribute), nil
 }

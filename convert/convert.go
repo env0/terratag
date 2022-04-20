@@ -117,8 +117,7 @@ func stringifyExpression(tokens hclwrite.Tokens) string {
 func AppendLocalsBlock(file *hclwrite.File, filename string, terratag TerratagLocal) {
 	key := tag_keys.GetTerratagAddedKey(filename)
 
-	// If there's an existings terratag locals, remove it.
-	// A merged one will be added instead.
+	// If there's an existings terratag locals replace it with the merged locals.
 	blocks := file.Body().Blocks()
 	for _, block := range blocks {
 		if block.Type() != "locals" {
@@ -127,8 +126,11 @@ func AppendLocalsBlock(file *hclwrite.File, filename string, terratag TerratagLo
 		if block.Body().GetAttribute(key) == nil {
 			continue
 		}
-		file.Body().RemoveBlock(block)
-		break
+
+		block.Body().RemoveAttribute(key)
+		block.Body().SetAttributeValue(key, cty.StringVal(terratag.Added))
+
+		return
 	}
 
 	file.Body().AppendNewline()
