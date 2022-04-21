@@ -11,7 +11,6 @@ import (
 	"testing"
 
 	"github.com/bmatcuk/doublestar"
-	. "github.com/env0/terratag"
 	"github.com/env0/terratag/cli"
 	. "github.com/onsi/gomega"
 	"github.com/otiai10/copy"
@@ -187,7 +186,7 @@ func terratag(entryDir string, filter string) (err interface{}) {
 	if isMissingArg {
 		return errors.New("Missing arg")
 	}
-	Terratag(args)
+	cli.Terratag(args)
 	os.Args = cleanArgs
 
 	return nil
