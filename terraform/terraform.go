@@ -2,15 +2,16 @@ package terraform
 
 import (
 	"encoding/json"
-	"github.com/env0/terratag/convert"
 	"io/ioutil"
 	"log"
 	"os"
 	"os/exec"
 	"path/filepath"
+	"regexp"
 	"strconv"
 	"strings"
-	"regexp"
+
+	"github.com/env0/terratag/convert"
 
 	"github.com/bmatcuk/doublestar"
 	"github.com/env0/terratag/errors"
@@ -124,6 +125,9 @@ func getTerraformModulesDirPaths(dir string) []string {
 
 	for _, module := range modulesJson.Modules {
 		modulePath, err := filepath.EvalSymlinks(dir + "/" + module.Dir)
+		if os.IsNotExist(err) {
+			continue
+		}
 		errors.PanicOnError(err, nil)
 
 		paths = append(paths, modulePath)
