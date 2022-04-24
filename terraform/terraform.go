@@ -126,6 +126,7 @@ func getTerraformModulesDirPaths(dir string) []string {
 	for _, module := range modulesJson.Modules {
 		modulePath, err := filepath.EvalSymlinks(dir + "/" + module.Dir)
 		if os.IsNotExist(err) {
+			log.Print("[WARN] Module not found, skipping.", dir+"/"+module.Dir)
 			continue
 		}
 		errors.PanicOnError(err, nil)
