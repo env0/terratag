@@ -3,6 +3,7 @@ package cli
 import (
 	"encoding/json"
 	"log"
+	"os"
 	"regexp"
 	"strings"
 
@@ -131,7 +132,10 @@ func tagFileResources(path string, dir string, filter string, tags string, tfVer
 func jsonToHclMap(tags string) string {
 	var tagsMap map[string]string
 	err := json.Unmarshal([]byte(tags), &tagsMap)
-	errors.PanicOnError(err, nil)
+	if err != nil {
+		log.Printf("[ERROR] Invalid input tags! must be a valid JSON.\nInput: %s\nError: %s\n", tags, err.Error())
+		os.Exit(1)
+	}
 
 	keys := utils.SortObjectKeys(tagsMap)
 
