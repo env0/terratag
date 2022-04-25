@@ -188,12 +188,8 @@ func getEntries(t *testing.T, version string) []TestCase {
 		suite := strings.Split(pathBeforeTerraformDir, "/")[2]
 
 		if _, ok := suitesMap[suite]; !ok {
-			// Might be a version specific test.
-			suite = strings.TrimSuffix(suite, "_"+version)
-			if _, ok := suitesMap[suite]; !ok {
-				// Not in configuration file. Skip test.
-				continue
-			}
+			// Not in configuration file. Skip test.
+			continue
 		}
 
 		testEntries = append(testEntries, TestCase{
