@@ -1,0 +1,11 @@
+suites:
+  - aws_autoscaling_group
+  - aws_submodule
+  - aws_tags_block
+  - aws_tags_map
+  - azurerm_kubernetes_cluster
+  - azurerm_tags_map
+  - azurestack_tags_map
+  - google_beta_resource_skip
+  - google_container_cluster
+  - google_labels_map
