@@ -173,20 +173,23 @@ go build
 ### Test
 
 #### Structure
-The test suite will look for fixtures under `test/fixtures/terraform_xx`.
-Each fixture placed there should have the following directory structure:
+The test cases are located under `test/tests`
+Each test case placed there should have the following directory structure:
 ```
-my_fixture
+my_test
 |+ input
   ...            // any depth under /input
      |- main.tf  // this is where we will run all terraform/terratag commands
 |- expected
 ```
 
-- `input` is where you should place the terraform files of your fixture.
+- `input` is where you should place the terraform files of your test.
 All commands will be executed wherever down the hierarchy where `main.tf` is located.
 We do that to allow cases where complex nested submodule resolution may take place, and one would like to test how a directory higher up the hierarchy gets resolved.
 - `expected` is a directory in which all `.terratag.tf` files will be matched with the output directory
+  
+Each terraform version has it's own config file containing the list of test suites to run.
+The config file is under `test/fixtures/terraform_xx/config.yaml` where `xx` is the terraform version. 
 
 #### What's being tested?
 Each test will run:
