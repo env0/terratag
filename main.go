@@ -66,7 +66,7 @@ func Terratag(args Args) {
 func tagDirectoryResources(dir string, filter string, matches []string, tags string, isSkipTerratagFiles bool, tfVersion convert.Version, rename bool) counters {
 	var total counters
 	for _, path := range matches {
-		if isSkipTerratagFiles && strings.HasSuffix(path, "terratag.tf") {
+		if (isSkipTerratagFiles && strings.HasSuffix(path, "terratag.tf")) || strings.HasSuffix(path, "override.tf") || strings.HasSuffix(path, "override.tf.json") {
 			log.Print("[INFO] Skipping file ", path, " as it's already tagged")
 		} else {
 			perFile := tagFileResources(path, dir, filter, tags, tfVersion, rename)
