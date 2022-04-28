@@ -1,9 +1,11 @@
 package main_test
 
 import (
+	"bytes"
 	"errors"
 	"fmt"
 	"io/ioutil"
+	"log"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -14,6 +16,7 @@ import (
 	"github.com/env0/terratag/cli"
 	. "github.com/onsi/gomega"
 	"github.com/otiai10/copy"
+	"github.com/spf13/viper"
 )
 
 var cleanArgs = append(os.Args)
@@ -22,12 +25,17 @@ var args = []string{
 	programName,
 	"-tags={\"env0_environment_id\":\"40907eff-cf7c-419a-8694-e1c6bf1d1168\",\"env0_project_id\":\"43fd4ff1-8d37-4d9d-ac97-295bd850bf94\"}",
 }
-var rootDir = "test/fixture"
+var testsDir = "test/tests"
+var fixtureDir = "test/fixture"
 
 type TestCase struct {
 	suite    string
 	suiteDir string
 	entryDir string
+}
+
+type TestCaseConfig struct {
+	Suites []string
 }
 
 func TestTerraform11(t *testing.T) {
@@ -67,7 +75,7 @@ func TestTerraform1o1WithFilter(t *testing.T) {
 }
 
 func testTerraform(t *testing.T, version string) {
-	entries := getEntries(version)
+	entries := getEntries(t, version)
 	if len(entries) == 0 {
 		t.Fatalf("test entries not found for version %s", version)
 	}
@@ -86,7 +94,7 @@ func testTerraform(t *testing.T, version string) {
 }
 
 func testTerraformWithFilter(t *testing.T, version string, filter string) {
-	for _, tt := range getEntries(version) {
+	for _, tt := range getEntries(t, version) {
 		tt := tt // NOTE: https://github.com/golang/go/wiki/CommonMistakes#using-goroutines-on-loop-iterator-variables
 		t.Run(tt.suite, func(t *testing.T) {
 			t.Parallel() // marks each test case as capable of running in parallel with each other
@@ -133,24 +141,55 @@ func itShouldTerraformInit(entryDir string, g *GomegaWithT) {
 	g.Expect(err).To(BeNil(), "terraform init failed")
 }
 
-func getEntries(version string) []TestCase {
-	terraformDir := "/terraform_" + version
-	const inputDirsMatcher = "/**/input/"
-	inputDirs, _ := doublestar.Glob(rootDir + terraformDir + inputDirsMatcher)
-	cloneOutput(inputDirs)
+func getConfig(terraformDir string) (*TestCaseConfig, error) {
+	var config TestCaseConfig
 
-	const entryFilesMatcher = "/**/out/**/main.tf"
-	entryFiles, _ := doublestar.Glob(rootDir + terraformDir + entryFilesMatcher)
+	viper.SetConfigType("yaml")
+	viper.SetConfigFile(fixtureDir + terraformDir + "/config.yaml")
+
+	if err := viper.ReadInConfig(); err != nil {
+		return nil, err
+	}
+	if err := viper.Unmarshal(&config); err != nil {
+		return nil, err
+	}
+
+	return &config, nil
+}
+
+func getEntries(t *testing.T, version string) []TestCase {
+	terraformDir := "/terraform_" + version
+
+	config, err := getConfig(terraformDir)
+	if err != nil {
+		t.Fatalf("failed to load test case config for version %s: %v", version, err)
+	}
+	suitesMap := make(map[string]interface{})
+	for _, suite := range config.Suites {
+		suitesMap[suite] = nil
+	}
+
+	const inputDirsMatcher = "/**/input/"
+	inputDirs, _ := doublestar.Glob(testsDir + inputDirsMatcher)
+	cloneOutput(inputDirs, terraformDir)
+
+	entryFilesMatcher := "/**/out" + terraformDir + "/**/main.tf"
+	entryFiles, _ := doublestar.Glob(testsDir + entryFilesMatcher)
+
 	var testEntries []TestCase
 	for _, entryFile := range entryFiles {
 		// convert windows paths to use forward slashes
 		slashed := filepath.ToSlash(entryFile)
 		entryDir := strings.TrimSuffix(slashed, "/main.tf")
 		terraformPathSplit := strings.Split(slashed, terraformDir)
-		pathAfterTerraformDir := terraformPathSplit[1]
-		suite := strings.Split(pathAfterTerraformDir, "/")[1]
 		pathBeforeTerraformDir := terraformPathSplit[0]
-		suiteDir := pathBeforeTerraformDir + terraformDir + "/" + suite
+		suiteDir := pathBeforeTerraformDir + terraformDir + "/main.tf"
+		suite := strings.Split(pathBeforeTerraformDir, "/")[2]
+
+		if _, ok := suitesMap[suite]; !ok {
+			// Not in configuration file. Skip test.
+			continue
+		}
 
 		testEntries = append(testEntries, TestCase{
 			suite:    suite,
@@ -162,9 +201,9 @@ func getEntries(version string) []TestCase {
 	return testEntries
 }
 
-func cloneOutput(inputDirs []string) {
+func cloneOutput(inputDirs []string, terraformDir string) {
 	for _, inputDir := range inputDirs {
-		outputDir := strings.TrimSuffix(inputDir, "input") + "out"
+		outputDir := strings.TrimSuffix(inputDir, "input") + "out" + terraformDir
 		os.RemoveAll(outputDir)
 		copy.Copy(inputDir, outputDir)
 	}
@@ -194,12 +233,21 @@ func terratag(entryDir string, filter string) (err interface{}) {
 
 func terraform(entryDir string, cmd string) error {
 	println("terraform", cmd)
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
 	command := exec.Command("terraform", cmd)
 	command.Dir = entryDir
-	output, err := command.Output()
-	println(string(output))
+	command.Stdout = &stdout
+	command.Stderr = &stderr
 
-	return err
+	if err := command.Run(); err != nil {
+		log.Println(stderr.String())
+		return err
+	}
+
+	println(stdout.String())
+
+	return nil
 }
 
 func filterSymlink(ss []string) (ret []string) {
