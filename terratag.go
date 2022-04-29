@@ -1,4 +1,4 @@
-package cli
+package terratag
 
 import (
 	"encoding/json"
@@ -7,19 +7,34 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/env0/terratag/convert"
-	"github.com/env0/terratag/errors"
-	"github.com/env0/terratag/file"
-	"github.com/env0/terratag/providers"
-	"github.com/env0/terratag/tag_keys"
-	"github.com/env0/terratag/tagging"
-	"github.com/env0/terratag/terraform"
-	"github.com/env0/terratag/tfschema"
-	"github.com/env0/terratag/utils"
+	"github.com/env0/terratag/internal/cli"
+	"github.com/env0/terratag/internal/convert"
+	"github.com/env0/terratag/internal/errors"
+	"github.com/env0/terratag/internal/file"
+	"github.com/env0/terratag/internal/providers"
+	"github.com/env0/terratag/internal/tag_keys"
+	"github.com/env0/terratag/internal/tagging"
+	"github.com/env0/terratag/internal/terraform"
+	"github.com/env0/terratag/internal/tfschema"
+	"github.com/env0/terratag/internal/utils"
 	"github.com/hashicorp/hcl/v2/hclwrite"
 )
 
-func Terratag(args Args) {
+type counters struct {
+	totalResources  int
+	taggedResources int
+	totalFiles      int
+	taggedFiles     int
+}
+
+func (c *counters) Add(other counters) {
+	c.totalResources += other.totalResources
+	c.taggedResources += other.taggedResources
+	c.totalFiles += other.totalFiles
+	c.taggedFiles += other.taggedFiles
+}
+
+func Terratag(args cli.Args) {
 	tfVersion := terraform.GetTerraformVersion()
 
 	if !terraform.IsTerraformInitRun(args.Dir) {
