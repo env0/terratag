@@ -13,7 +13,7 @@ import (
 	"testing"
 
 	"github.com/bmatcuk/doublestar"
-	"github.com/env0/terratag/internal/cli"
+	"github.com/env0/terratag/cli"
 	. "github.com/onsi/gomega"
 	"github.com/otiai10/copy"
 	"github.com/spf13/viper"

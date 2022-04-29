@@ -7,7 +7,7 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/env0/terratag/internal/cli"
+	"github.com/env0/terratag/cli"
 	"github.com/env0/terratag/internal/convert"
 	"github.com/env0/terratag/internal/errors"
 	"github.com/env0/terratag/internal/file"
