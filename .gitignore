@@ -5,6 +5,7 @@
 *.so
 *.dylib
 terratag
+!terratag/
 
 **/out
 
