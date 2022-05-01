@@ -11,10 +11,9 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/env0/terratag/convert"
-
 	"github.com/bmatcuk/doublestar"
-	"github.com/env0/terratag/errors"
+	"github.com/env0/terratag/internal/convert"
+	"github.com/env0/terratag/internal/errors"
 	"github.com/hashicorp/hcl/v2/hclwrite"
 	"github.com/thoas/go-funk"
 )
@@ -39,7 +38,7 @@ func GetTerraformVersion() convert.Version {
 		return convert.Version{}
 	}
 
-	return convert.Version{majorVersion, minorVersion}
+	return convert.Version{Major: majorVersion, Minor: minorVersion}
 }
 
 type VersionPart int

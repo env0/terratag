@@ -2,14 +2,15 @@ package tfschema
 
 import (
 	"fmt"
-	"github.com/thoas/go-funk"
 	"log"
 	"strings"
 
-	"github.com/env0/terratag/errors"
-	"github.com/env0/terratag/providers"
-	"github.com/env0/terratag/tagging"
-	"github.com/env0/terratag/terraform"
+	"github.com/env0/terratag/internal/errors"
+	"github.com/env0/terratag/internal/providers"
+	"github.com/env0/terratag/internal/tagging"
+	"github.com/env0/terratag/internal/terraform"
+	"github.com/thoas/go-funk"
+
 	"github.com/hashicorp/go-hclog"
 	"github.com/hashicorp/hcl/v2/hclwrite"
 	"github.com/minamijoyo/tfschema/tfschema"
@@ -60,7 +61,7 @@ type TfSchemaAttribute struct {
 func extractProviderNameFromResourceType(resourceType string) (string, error) {
 	s := strings.SplitN(resourceType, "_", 2)
 	if len(s) < 2 {
-		return "", fmt.Errorf("Failed to detect a provider name: %s", resourceType)
+		return "", fmt.Errorf("failed to detect a provider name: %s", resourceType)
 	}
 	return s[0], nil
 }

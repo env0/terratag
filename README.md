@@ -167,7 +167,7 @@ Issues and Pull Requests are very welcome!
 git clone https://github.com/env0/terratag
 cd terratag
 go mod tidy
-go build
+go build ./cmd/terratag
 ```
 
 ### Test

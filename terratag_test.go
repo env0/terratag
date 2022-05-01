@@ -1,4 +1,4 @@
-package main_test
+package terratag
 
 import (
 	"bytes"
@@ -19,7 +19,7 @@ import (
 	"github.com/spf13/viper"
 )
 
-var cleanArgs = append(os.Args)
+var cleanArgs = append([]string(nil), os.Args...)
 var programName = os.Args[0]
 var args = []string{
 	programName,
@@ -127,17 +127,17 @@ func itShouldGenerateExpectedTerratagFiles(suiteDir string, g *GomegaWithT) {
 }
 
 func itShouldRunTerraformValidate(entryDir string, g *GomegaWithT) {
-	err := terraform(entryDir, "validate")
+	err := run_terraform(entryDir, "validate")
 	g.Expect(err).To(BeNil(), "terraform validate failed")
 }
 
 func itShouldRunTerratag(entryDir string, filter string, g *GomegaWithT) {
-	err := terratag(entryDir, filter)
+	err := run_terratag(entryDir, filter)
 	g.Expect(err).To(BeNil(), "terratag failed")
 }
 
 func itShouldTerraformInit(entryDir string, g *GomegaWithT) {
-	err := terraform(entryDir, "init")
+	err := run_terraform(entryDir, "init")
 	g.Expect(err).To(BeNil(), "terraform init failed")
 }
 
@@ -209,7 +209,7 @@ func cloneOutput(inputDirs []string, terraformDir string) {
 	}
 }
 
-func terratag(entryDir string, filter string) (err interface{}) {
+func run_terratag(entryDir string, filter string) (err interface{}) {
 	defer func() {
 		if innerErr := recover(); innerErr != nil {
 			fmt.Println(innerErr)
@@ -225,13 +225,13 @@ func terratag(entryDir string, filter string) (err interface{}) {
 	if isMissingArg {
 		return errors.New("Missing arg")
 	}
-	cli.Terratag(args)
+	Terratag(args)
 	os.Args = cleanArgs
 
 	return nil
 }
 
-func terraform(entryDir string, cmd string) error {
+func run_terraform(entryDir string, cmd string) error {
 	println("terraform", cmd)
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer

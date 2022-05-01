@@ -1,12 +1,13 @@
 package tagging
 
 import (
-	"github.com/env0/terratag/convert"
-	"github.com/env0/terratag/tag_keys"
-	"github.com/env0/terratag/terraform"
+	"log"
+
+	"github.com/env0/terratag/internal/convert"
+	"github.com/env0/terratag/internal/tag_keys"
+	"github.com/env0/terratag/internal/terraform"
 	"github.com/hashicorp/hcl/v2"
 	"github.com/hashicorp/hcl/v2/hclwrite"
-	"log"
 )
 
 func defaultTaggingFn(args TagBlockArgs) Result {

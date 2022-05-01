@@ -4,6 +4,7 @@ import (
 	"log"
 	"os"
 
+	"github.com/env0/terratag"
 	"github.com/env0/terratag/cli"
 	"github.com/hashicorp/go-hclog"
 	"github.com/hashicorp/logutils"
@@ -16,7 +17,7 @@ func main() {
 	}
 	initLogFiltering(args.Verbose)
 
-	cli.Terratag(args)
+	terratag.Terratag(args)
 }
 
 func initLogFiltering(verbose bool) {

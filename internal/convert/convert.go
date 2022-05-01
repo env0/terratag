@@ -5,9 +5,9 @@ import (
 	"log"
 	"strings"
 
-	"github.com/env0/terratag/errors"
-	"github.com/env0/terratag/tag_keys"
-	"github.com/env0/terratag/utils"
+	"github.com/env0/terratag/internal/errors"
+	"github.com/env0/terratag/internal/tag_keys"
+	"github.com/env0/terratag/internal/utils"
 	"github.com/hashicorp/hcl/v2/hclsyntax"
 	"github.com/hashicorp/hcl/v2/hclwrite"
 	"github.com/thoas/go-funk"
@@ -190,7 +190,7 @@ func MoveExistingTags(filename string, terratag TerratagLocal, block *hclwrite.B
 			existingTags = funk.Tail(quotedTagBlock.BuildTokens(hclwrite.Tokens{})).(hclwrite.Tokens)
 			// If we did get tags from block, we will now remove that block, as we're going to add a merged tags ATTRIBUTE
 			removeBlockResult := block.Body().RemoveBlock(tagsBlock)
-			if removeBlockResult == false {
+			if !removeBlockResult {
 				log.Fatal("Failed to remove found tags block!")
 			}
 		}
