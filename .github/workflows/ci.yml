@@ -5,9 +5,34 @@ on:
     types: [opened, synchronize]
 
 jobs:
+  unit-tests:
+    name: Unit Tests
+    timeout-minutes: 10
+    runs-on: ubuntu-20.04
+    steps:
+      - name: Install Go
+        uses: actions/setup-go@v2
+        with:
+          go-version: 1.18
+      - name: Checkout code
+        uses: actions/checkout@v2
+      - name: Go fmt
+        run: |
+          ! go fmt ./... | read
+      - name: Go vet
+        run: |
+          ! go vet ./... | read
+      - name: Go staticcheck
+        uses: dominikh/staticcheck-action@v1.2.0
+        with:
+          version: "2022.1"
+          install-go: false
+      - name: Go Test
+        run: SKIP_INTEGRATION_TESTS=1 go test -v ./...
 
-  test:
-    name: test
+
+  integration-tests:
+    name: Integration Tests
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
@@ -26,7 +51,7 @@ jobs:
 
       - name: Get dependencies
         run: |
-          go get -v -t -d ./...
+          go mod tidy
 
       - name: Install tfschema
         run: |

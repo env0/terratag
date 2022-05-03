@@ -17,6 +17,7 @@ import (
 	. "github.com/onsi/gomega"
 	"github.com/otiai10/copy"
 	"github.com/spf13/viper"
+	"github.com/stretchr/testify/assert"
 )
 
 var cleanArgs = append([]string(nil), os.Args...)
@@ -75,6 +76,10 @@ func TestTerraform1o1WithFilter(t *testing.T) {
 }
 
 func testTerraform(t *testing.T, version string) {
+	if _, skip := os.LookupEnv("SKIP_INTEGRATION_TESTS"); skip {
+		t.Skip("skipping integration test")
+	}
+
 	entries := getEntries(t, version)
 	if len(entries) == 0 {
 		t.Fatalf("test entries not found for version %s", version)
@@ -94,6 +99,10 @@ func testTerraform(t *testing.T, version string) {
 }
 
 func testTerraformWithFilter(t *testing.T, version string, filter string) {
+	if _, skip := os.LookupEnv("SKIP_INTEGRATION_TESTS"); skip {
+		t.Skip("skipping integration test")
+	}
+
 	for _, tt := range getEntries(t, version) {
 		tt := tt // NOTE: https://github.com/golang/go/wiki/CommonMistakes#using-goroutines-on-loop-iterator-variables
 		t.Run(tt.suite, func(t *testing.T) {
@@ -258,4 +267,38 @@ func filterSymlink(ss []string) (ret []string) {
 		}
 	}
 	return ret
+}
+
+func TestToHclMap(t *testing.T) {
+	validCases := map[string]string{
+		`{"a":"b","c":"d"}`: `{"a"="b","c"="d"}`,
+		`a=b,c=d`:           `{"a"="b","c"="d"}`,
+		`a-key=b-value`:     `{"a-key"="b-value"}`,
+		"{}":                "{}",
+	}
+
+	for input, output := range validCases {
+		input, expectedOutput := input, output
+		t.Run("valid input "+input, func(t *testing.T) {
+			output, err := toHclMap(input)
+			assert.NoError(t, err)
+			assert.Equal(t, expectedOutput, output)
+		})
+	}
+
+	invalidCases := []string{
+		"a$#$=b",
+		`{"a": {"b": "c"}}`,
+		"_a=b",
+		"5a=b",
+		"a=b!",
+	}
+
+	for i := range invalidCases {
+		input := invalidCases[i]
+		t.Run("invalid input "+input, func(t *testing.T) {
+			_, err := toHclMap(input)
+			assert.Error(t, err)
+		})
+	}
 }
