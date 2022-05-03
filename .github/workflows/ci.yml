@@ -66,3 +66,4 @@ jobs:
       - name: Test
         run: |
           go test -v -run ^TestTerraform${{ steps.test-suite.outputs.result }}$
+          go test -v ./terratag.go ./terratag_unit_test.go

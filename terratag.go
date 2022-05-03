@@ -2,8 +2,8 @@ package terratag
 
 import (
 	"encoding/json"
+	"fmt"
 	"log"
-	"os"
 	"regexp"
 	"strings"
 
@@ -73,9 +73,15 @@ func tagFileResources(path string, dir string, filter string, tags string, tfVer
 
 	hcl := file.ReadHCLFile(path)
 	filename := file.GetFilename(path)
+
+	hclMap, err := toHclMap(tags)
+	if err != nil {
+		errors.PanicOnError(err, nil)
+	}
+
 	terratag := convert.TerratagLocal{
 		Found: map[string]hclwrite.Tokens{},
-		Added: toHclMap(tags),
+		Added: hclMap,
 	}
 
 	for _, resource := range hcl.Body().Blocks() {
@@ -146,7 +152,7 @@ func tagFileResources(path string, dir string, filter string, tags string, tfVer
 	return perFileCounters
 }
 
-func toHclMap(tags string) string {
+func toHclMap(tags string) (string, error) {
 	var tagsMap map[string]string
 	err := json.Unmarshal([]byte(tags), &tagsMap)
 	if err != nil {
@@ -156,8 +162,7 @@ func toHclMap(tags string) string {
 		for _, pair := range pairs {
 			match := pairRegex.FindStringSubmatch(pair)
 			if match == nil {
-				log.Printf("[ERROR] Invalid input tags! must be a valid JSON or pairs of key=value.\nInput: %s", tags)
-				os.Exit(1)
+				return "", fmt.Errorf("invalid input tags! must be a valid JSON or pairs of key=value.\nInput: %s", tags)
 			}
 			tagsMap[match[1]] = match[2]
 		}
@@ -169,5 +174,5 @@ func toHclMap(tags string) string {
 	for _, key := range keys {
 		mapContent = append(mapContent, "\""+key+"\"="+"\""+tagsMap[key]+"\"")
 	}
-	return "{" + strings.Join(mapContent, ",") + "}"
+	return "{" + strings.Join(mapContent, ",") + "}", nil
 }
