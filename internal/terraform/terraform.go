@@ -2,6 +2,8 @@ package terraform
 
 import (
 	"encoding/json"
+	"errors"
+	"fmt"
 	"io/ioutil"
 	"log"
 	"os"
@@ -13,32 +15,38 @@ import (
 
 	"github.com/bmatcuk/doublestar"
 	"github.com/env0/terratag/internal/convert"
-	"github.com/env0/terratag/internal/errors"
 	"github.com/hashicorp/hcl/v2/hclwrite"
 	"github.com/thoas/go-funk"
 )
 
-func GetTerraformVersion() convert.Version {
+func GetTerraformVersion() (*convert.Version, error) {
 	output, err := exec.Command("terraform", "version").Output()
-	outputAsString := strings.TrimSpace(string(output))
-	errors.PanicOnError(err, &outputAsString)
+	if err != nil {
+		return nil, err
+	}
 
+	outputAsString := strings.TrimSpace(string(output))
 	regularExpression := regexp.MustCompile(`Terraform v(\d+).(\d+)\.\d+`)
 	matches := regularExpression.FindStringSubmatch(outputAsString)[1:]
 
 	if matches == nil {
-		log.Fatalln("Unable to parse 'terraform version'")
-		return convert.Version{}
+		return nil, errors.New("unable to parse 'terraform version'")
 	}
-	majorVersion := getVersionPart(matches, Major)
-	minorVersion := getVersionPart(matches, Minor)
+
+	majorVersion, err := getVersionPart(matches, Major)
+	if err != nil {
+		return nil, err
+	}
+	minorVersion, err := getVersionPart(matches, Minor)
+	if err != nil {
+		return nil, err
+	}
 
 	if (majorVersion == 0 && minorVersion < 11 || minorVersion > 15) || (majorVersion == 1 && minorVersion > 1) {
-		log.Fatalln("Terratag only supports Terraform from version 0.11.x and up to 1.1.x - your version says ", outputAsString)
-		return convert.Version{}
+		return nil, fmt.Errorf("terratag only supports Terraform from version 0.11.x and up to 1.1.x - your version says %s", outputAsString)
 	}
 
-	return convert.Version{Major: majorVersion, Minor: minorVersion}
+	return &convert.Version{Major: majorVersion, Minor: minorVersion}, nil
 }
 
 type VersionPart int
@@ -52,75 +60,87 @@ func (w VersionPart) EnumIndex() int {
 	return int(w)
 }
 
-func getVersionPart(parts []string, versionPart VersionPart) int {
+func getVersionPart(parts []string, versionPart VersionPart) (int, error) {
 	version, err := strconv.Atoi(parts[versionPart])
 	if err != nil {
-		log.Fatalln("Unable to parse ", parts[versionPart], "as integer")
-		return -1
+		return -1, fmt.Errorf("unable to parse %s as integer", parts[versionPart])
 	}
 
-	return version
+	return version, nil
 }
 
 func GetResourceType(resource hclwrite.Block) string {
 	return resource.Labels()[0]
 }
 
-func IsTerraformInitRun(dir string) bool {
+func ValidateTerraformInitRun(dir string) error {
 	_, err := os.Stat(dir + "/.terraform")
 
 	if err != nil {
 		if os.IsNotExist(err) {
-			log.Fatalln("terraform init must run before running terratag")
-			return false
+			return errors.New("terraform init must run before running terratag")
 		}
 
-		message := "couldn't determine if terraform init has run"
-		errors.PanicOnError(err, &message)
+		return fmt.Errorf("couldn't determine if terraform init has run: %v", err)
 	}
 
-	return true
+	return nil
 }
 
-func GetTerraformFilePaths(rootDir string) []string {
+func GetTerraformFilePaths(rootDir string) ([]string, error) {
 	const tfFileMatcher = "/*.tf"
 
 	tfFiles, err := doublestar.Glob(rootDir + tfFileMatcher)
-	errors.PanicOnError(err, nil)
+	if err != nil {
+		return nil, err
+	}
 
-	modulesDirs := getTerraformModulesDirPaths(rootDir)
+	modulesDirs, err := getTerraformModulesDirPaths(rootDir)
+	if err != nil {
+		return nil, err
+	}
 
 	for _, moduleDir := range modulesDirs {
 		matches, err := doublestar.Glob(moduleDir + tfFileMatcher)
-		errors.PanicOnError(err, nil)
+		if err != nil {
+			return nil, err
+		}
 
 		tfFiles = append(tfFiles, matches...)
 	}
 
 	for i, tfFile := range tfFiles {
 		resolvedTfFile, err := filepath.EvalSymlinks(tfFile)
-		errors.PanicOnError(err, nil)
+		if err != nil {
+			return nil, err
+		}
 
 		tfFiles[i] = resolvedTfFile
 	}
 
-	return funk.UniqString(tfFiles)
+	return funk.UniqString(tfFiles), nil
 }
 
-func getTerraformModulesDirPaths(dir string) []string {
+func getTerraformModulesDirPaths(dir string) ([]string, error) {
 	var paths []string
 	var modulesJson ModulesJson
 
 	jsonFile, err := os.Open(dir + "/.terraform/modules/modules.json")
+	//lint:ignore SA5001 not required to check file close status.
+	defer jsonFile.Close()
 
 	if os.IsNotExist(err) {
-		return paths
+		return paths, nil
 	}
-	errors.PanicOnError(err, nil)
 
-	byteValue, _ := ioutil.ReadAll(jsonFile)
-	err = json.Unmarshal(byteValue, &modulesJson)
-	errors.PanicOnError(err, nil)
+	byteValue, err := ioutil.ReadAll(jsonFile)
+	if err != nil {
+		return nil, err
+	}
+
+	if err := json.Unmarshal(byteValue, &modulesJson); err != nil {
+		return nil, err
+	}
 
 	for _, module := range modulesJson.Modules {
 		modulePath, err := filepath.EvalSymlinks(dir + "/" + module.Dir)
@@ -128,15 +148,15 @@ func getTerraformModulesDirPaths(dir string) []string {
 			log.Print("[WARN] Module not found, skipping.", dir+"/"+module.Dir)
 			continue
 		}
-		errors.PanicOnError(err, nil)
+
+		if err != nil {
+			return nil, err
+		}
 
 		paths = append(paths, modulePath)
 	}
 
-	err = jsonFile.Close()
-	errors.PanicOnError(err, nil)
-
-	return paths
+	return paths, nil
 }
 
 type ModulesJson struct {

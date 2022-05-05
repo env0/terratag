@@ -1,17 +1,25 @@
 package tagging
 
-func tagAksK8sCluster(args TagBlockArgs) Result {
+func tagAksK8sCluster(args TagBlockArgs) (*Result, error) {
 	var swappedTagsStrings []string
 
 	// handle root block tags attribute
-	swappedTagsStrings = append(swappedTagsStrings, TagBlock(args))
+	tagBlock, err := TagBlock(args)
+	if err != nil {
+		return nil, err
+	}
+	swappedTagsStrings = append(swappedTagsStrings, tagBlock)
 
 	// handle default_node_pool tags attribute
 	nodePool := args.Block.Body().FirstMatchingBlock("default_node_pool", nil)
 	if nodePool != nil {
 		args.Block = nodePool
-		swappedTagsStrings = append(swappedTagsStrings, TagBlock(args))
+		tagBlock, err := TagBlock(args)
+		if err != nil {
+			return nil, err
+		}
+		swappedTagsStrings = append(swappedTagsStrings, tagBlock)
 	}
 
-	return Result{SwappedTagsStrings: swappedTagsStrings}
+	return &Result{SwappedTagsStrings: swappedTagsStrings}, nil
 }

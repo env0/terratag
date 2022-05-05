@@ -6,10 +6,11 @@ import (
 	"log"
 	"regexp"
 	"strings"
+	"sync"
+	"sync/atomic"
 
 	"github.com/env0/terratag/cli"
 	"github.com/env0/terratag/internal/convert"
-	"github.com/env0/terratag/internal/errors"
 	"github.com/env0/terratag/internal/file"
 	"github.com/env0/terratag/internal/providers"
 	"github.com/env0/terratag/internal/tag_keys"
@@ -21,34 +22,44 @@ import (
 )
 
 type counters struct {
-	totalResources  int
-	taggedResources int
-	totalFiles      int
-	taggedFiles     int
+	totalResources  uint32
+	taggedResources uint32
+	totalFiles      uint32
+	taggedFiles     uint32
 }
 
 var pairRegex = regexp.MustCompile(`^([a-zA-Z][\w-]*)=([\w-]+)$`)
 
+var matchWaitGroup sync.WaitGroup
+
 func (c *counters) Add(other counters) {
-	c.totalResources += other.totalResources
-	c.taggedResources += other.taggedResources
-	c.totalFiles += other.totalFiles
-	c.taggedFiles += other.taggedFiles
+	atomic.AddUint32(&c.totalResources, other.totalResources)
+	atomic.AddUint32(&c.taggedResources, other.taggedResources)
+	atomic.AddUint32(&c.totalFiles, other.totalFiles)
+	atomic.AddUint32(&c.taggedFiles, other.taggedFiles)
 }
 
-func Terratag(args cli.Args) {
-	tfVersion := terraform.GetTerraformVersion()
-
-	if !terraform.IsTerraformInitRun(args.Dir) {
-		return
+func Terratag(args cli.Args) error {
+	tfVersion, err := terraform.GetTerraformVersion()
+	if err != nil {
+		return err
 	}
 
-	matches := terraform.GetTerraformFilePaths(args.Dir)
+	if err := terraform.ValidateTerraformInitRun(args.Dir); err != nil {
+		return err
+	}
 
-	counters := tagDirectoryResources(args.Dir, args.Filter, matches, args.Tags, args.IsSkipTerratagFiles, tfVersion, args.Rename)
+	matches, err := terraform.GetTerraformFilePaths(args.Dir)
+	if err != nil {
+		return err
+	}
+
+	counters := tagDirectoryResources(args.Dir, args.Filter, matches, args.Tags, args.IsSkipTerratagFiles, *tfVersion, args.Rename)
 	log.Print("[INFO] Summary:")
 	log.Print("[INFO] Tagged ", counters.taggedResources, " resource/s (out of ", counters.totalResources, " resource/s processed)")
 	log.Print("[INFO] In ", counters.taggedFiles, " file/s (out of ", counters.totalFiles, " file/s processed)")
+
+	return nil
 }
 
 func tagDirectoryResources(dir string, filter string, matches []string, tags string, isSkipTerratagFiles bool, tfVersion convert.Version, rename bool) counters {
@@ -57,26 +68,52 @@ func tagDirectoryResources(dir string, filter string, matches []string, tags str
 		if isSkipTerratagFiles && strings.HasSuffix(path, "terratag.tf") {
 			log.Print("[INFO] Skipping file ", path, " as it's already tagged")
 		} else {
-			perFile := tagFileResources(path, dir, filter, tags, tfVersion, rename)
-			total.Add(perFile)
+			matchWaitGroup.Add(1)
+
+			go func(path string) {
+				defer matchWaitGroup.Done()
+
+				total.Add(counters{
+					totalFiles: 1,
+				})
+
+				defer func() {
+					if r := recover(); r != nil {
+						log.Printf("[ERROR] failed to process %s due to an exception\n%v", path, r)
+					}
+				}()
+
+				perFile, err := tagFileResources(path, dir, filter, tags, tfVersion, rename)
+				if err != nil {
+					log.Printf("[ERROR] failed to process %s due to an error\n%v", path, err)
+					return
+				}
+
+				total.Add(*perFile)
+			}(path)
 		}
 	}
+
+	matchWaitGroup.Wait()
+
 	return total
 }
 
-func tagFileResources(path string, dir string, filter string, tags string, tfVersion convert.Version, rename bool) counters {
-	perFileCounters := counters{
-		totalFiles: 1,
-	}
+func tagFileResources(path string, dir string, filter string, tags string, tfVersion convert.Version, rename bool) (*counters, error) {
+	perFileCounters := counters{}
 	log.Print("[INFO] Processing file ", path)
 	var swappedTagsStrings []string
 
-	hcl := file.ReadHCLFile(path)
+	hcl, err := file.ReadHCLFile(path)
+	if err != nil {
+		return nil, err
+	}
+
 	filename := file.GetFilename(path)
 
 	hclMap, err := toHclMap(tags)
 	if err != nil {
-		errors.PanicOnError(err, nil)
+		return nil, err
 	}
 
 	terratag := convert.TerratagLocal{
@@ -92,17 +129,22 @@ func tagFileResources(path string, dir string, filter string, tags string, tfVer
 
 			matched, err := regexp.MatchString(filter, resource.Labels()[0])
 			if err != nil {
-				errors.PanicOnError(err, nil)
+				return nil, err
 			}
 			if !matched {
 				log.Print("[INFO] Resource excluded by filter, skipping.", resource.Labels())
 				continue
 			}
 
-			if tfschema.IsTaggable(dir, *resource) {
+			isTaggable, err := tfschema.IsTaggable(dir, *resource)
+			if err != nil {
+				return nil, err
+			}
+
+			if isTaggable {
 				log.Print("[INFO] Resource taggable, processing...", resource.Labels())
 				perFileCounters.taggedResources += 1
-				result := tagging.TagResource(tagging.TagBlockArgs{
+				result, err := tagging.TagResource(tagging.TagBlockArgs{
 					Filename:  filename,
 					Block:     resource,
 					Tags:      tags,
@@ -110,6 +152,9 @@ func tagFileResources(path string, dir string, filter string, tags string, tfVer
 					TagId:     providers.GetTagIdByResource(terraform.GetResourceType(*resource)),
 					TfVersion: tfVersion,
 				})
+				if err != nil {
+					return nil, err
+				}
 
 				swappedTagsStrings = append(swappedTagsStrings, result.SwappedTagsStrings...)
 			} else {
@@ -125,7 +170,7 @@ func tagFileResources(path string, dir string, filter string, tags string, tfVer
 				if attributeKey == key {
 					mergedAdded, err := convert.MergeTerratagLocals(attribute, terratag.Added)
 					if err != nil {
-						errors.PanicOnError(err, nil)
+						return nil, err
 					}
 					terratag.Added = mergedAdded
 
@@ -144,12 +189,14 @@ func tagFileResources(path string, dir string, filter string, tags string, tfVer
 		swappedTagsStrings = append(swappedTagsStrings, terratag.Added)
 		text = convert.UnquoteTagsAttribute(swappedTagsStrings, text)
 
-		file.ReplaceWithTerratagFile(path, text, rename)
+		if err := file.ReplaceWithTerratagFile(path, text, rename); err != nil {
+			return nil, err
+		}
 		perFileCounters.taggedFiles = 1
 	} else {
 		log.Print("[INFO] No taggable resources found in file ", path, " - skipping")
 	}
-	return perFileCounters
+	return &perFileCounters, nil
 }
 
 func toHclMap(tags string) (string, error) {

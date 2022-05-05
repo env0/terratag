@@ -10,10 +10,13 @@ import (
 	"github.com/hashicorp/hcl/v2/hclwrite"
 )
 
-func defaultTaggingFn(args TagBlockArgs) Result {
-	return Result{
-		SwappedTagsStrings: []string{TagBlock(args)},
+func defaultTaggingFn(args TagBlockArgs) (*Result, error) {
+	tagBlock, err := TagBlock(args)
+	if err != nil {
+		return nil, err
 	}
+
+	return &Result{SwappedTagsStrings: []string{tagBlock}}, nil
 }
 
 func ParseHclValueStringToTokens(hclValueString string) hclwrite.Tokens {
@@ -26,8 +29,11 @@ func ParseHclValueStringToTokens(hclValueString string) hclwrite.Tokens {
 	return tempAttribute.Expr().BuildTokens(hclwrite.Tokens{})
 }
 
-func TagBlock(args TagBlockArgs) string {
-	hasExistingTags := convert.MoveExistingTags(args.Filename, args.Terratag, args.Block, args.TagId)
+func TagBlock(args TagBlockArgs) (string, error) {
+	hasExistingTags, err := convert.MoveExistingTags(args.Filename, args.Terratag, args.Block, args.TagId)
+	if err != nil {
+		return "", err
+	}
 
 	terratagAddedKey := "local." + tag_keys.GetTerratagAddedKey(args.Filename)
 	newTagsValue := terratagAddedKey
@@ -45,26 +51,23 @@ func TagBlock(args TagBlockArgs) string {
 	newTagsValueTokens := ParseHclValueStringToTokens(newTagsValue)
 	args.Block.Body().SetAttributeRaw(args.TagId, newTagsValueTokens)
 
-	return newTagsValue
+	return newTagsValue, nil
 }
 
 func HasResourceTagFn(resourceType string) bool {
 	return resourceTypeToFnMap[resourceType] != nil
 }
 
-func TagResource(args TagBlockArgs) Result {
-	var result Result
+func TagResource(args TagBlockArgs) (*Result, error) {
 	resourceType := terraform.GetResourceType(*args.Block)
 
 	customTaggingFn := resourceTypeToFnMap[resourceType]
 
 	if customTaggingFn != nil {
-		result = customTaggingFn(args)
+		return customTaggingFn(args)
 	} else {
-		result = defaultTaggingFn(args)
+		return defaultTaggingFn(args)
 	}
-
-	return result
 }
 
 var resourceTypeToFnMap = map[string]TagResourceFn{
@@ -82,7 +85,7 @@ type TagBlockArgs struct {
 	TfVersion convert.Version
 }
 
-type TagResourceFn func(args TagBlockArgs) Result
+type TagResourceFn func(args TagBlockArgs) (*Result, error)
 
 type Result struct {
 	SwappedTagsStrings []string

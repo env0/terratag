@@ -30,9 +30,9 @@ func InitArgs() (Args, bool) {
 	fs.BoolVar(&args.Verbose, "verbose", false, "Enable verbose logging")
 	fs.BoolVar(&args.Rename, "rename", true, "Keep the original filename or replace it with <basename>.terratag.tf")
 
-	fs.Parse(programArgs)
+	err := fs.Parse(programArgs)
 
-	if args.Tags == "" {
+	if err != nil || args.Tags == "" {
 		log.Println("Usage: terratag -tags='{ \"some_tag\": \"value\" }' [-dir=\".\"]")
 		isMissingArg = true
 	}

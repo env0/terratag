@@ -11,8 +11,10 @@ require (
 	github.com/onsi/gomega v1.10.1
 	github.com/otiai10/copy v1.2.0
 	github.com/spf13/viper v1.11.0
+	github.com/stretchr/testify v1.7.1
 	github.com/thoas/go-funk v0.5.0
 	github.com/zclconf/go-cty v1.7.0
+	go.uber.org/multierr v1.8.0
 )
 
 require (
@@ -58,12 +60,11 @@ require (
 	github.com/spf13/cast v1.4.1 // indirect
 	github.com/spf13/jwalterweatherman v1.1.0 // indirect
 	github.com/spf13/pflag v1.0.5 // indirect
-	github.com/stretchr/objx v0.1.1 // indirect
-	github.com/stretchr/testify v1.7.1 // indirect
 	github.com/subosito/gotenv v1.2.0 // indirect
 	github.com/vmihailenco/msgpack/v4 v4.3.12 // indirect
 	github.com/vmihailenco/tagparser v0.1.1 // indirect
 	github.com/zclconf/go-cty-yaml v1.0.2 // indirect
+	go.uber.org/atomic v1.9.0 // indirect
 	golang.org/x/crypto v0.0.0-20220411220226-7b82a4e95df4 // indirect
 	golang.org/x/mod v0.4.2 // indirect
 	golang.org/x/net v0.0.0-20220412020605-290c469a71a5 // indirect

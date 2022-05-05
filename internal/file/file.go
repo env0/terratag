@@ -7,32 +7,38 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/env0/terratag/internal/errors"
 	"github.com/hashicorp/hcl/v2"
 	"github.com/hashicorp/hcl/v2/hclwrite"
+	"go.uber.org/multierr"
 )
 
-func ReplaceWithTerratagFile(path string, textContent string, rename bool) {
+func ReplaceWithTerratagFile(path string, textContent string, rename bool) error {
 	backupFilename := path + ".bak"
 
 	if rename {
 		taggedFilename := strings.TrimSuffix(path, filepath.Ext(path)) + ".terratag.tf"
-		CreateFile(taggedFilename, textContent)
+		if err := CreateFile(taggedFilename, textContent); err != nil {
+			return err
+		}
 	}
 
 	log.Print("[INFO] Backing up ", path, " to ", backupFilename)
-	backupFileError := os.Rename(path, backupFilename)
-	errors.PanicOnError(backupFileError, nil)
+	if err := os.Rename(path, backupFilename); err != nil {
+		return err
+	}
 
 	if !rename {
-		CreateFile(path, textContent)
+		if err := CreateFile(path, textContent); err != nil {
+			return err
+		}
 	}
+
+	return nil
 }
 
-func CreateFile(path string, textContent string) {
+func CreateFile(path string, textContent string) error {
 	log.Print("[INFO] Creating file ", path)
-	err := ioutil.WriteFile(path, []byte(textContent), 0644)
-	errors.PanicOnError(err, nil)
+	return ioutil.WriteFile(path, []byte(textContent), 0644)
 }
 
 func GetFilename(path string) string {
@@ -42,14 +48,16 @@ func GetFilename(path string) string {
 	return filename
 }
 
-func ReadHCLFile(path string) *hclwrite.File {
+func ReadHCLFile(path string) (*hclwrite.File, error) {
 	src, err := ioutil.ReadFile(path)
-	errors.PanicOnError(err, nil)
+	if err != nil {
+		return nil, err
+	}
 
 	file, diagnostics := hclwrite.ParseConfig(src, path, hcl.InitialPos)
-	if diagnostics.HasErrors() {
-		hclErrors := diagnostics.Errs()
-		log.Fatalln(hclErrors)
+	if err := multierr.Combine(diagnostics.Errs()...); err != nil {
+		return nil, err
 	}
-	return file
+
+	return file, nil
 }
