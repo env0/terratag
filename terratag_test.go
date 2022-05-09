@@ -89,7 +89,7 @@ func testTerraform(t *testing.T, version string) {
 		tt := tt // NOTE: https://github.com/golang/go/wiki/CommonMistakes#using-goroutines-on-loop-iterator-variables
 		t.Run(tt.suite, func(t *testing.T) {
 			t.Parallel() // marks each test case as capable of running in parallel with each other
-			g := NewGomegaWithT(t)
+			g := NewWithT(t)
 			itShouldTerraformInit(tt.entryDir, g)
 			itShouldRunTerratag(tt.entryDir, "", g)
 			itShouldRunTerraformValidate(tt.entryDir, g)
@@ -107,7 +107,7 @@ func testTerraformWithFilter(t *testing.T, version string, filter string) {
 		tt := tt // NOTE: https://github.com/golang/go/wiki/CommonMistakes#using-goroutines-on-loop-iterator-variables
 		t.Run(tt.suite, func(t *testing.T) {
 			t.Parallel() // marks each test case as capable of running in parallel with each other
-			g := NewGomegaWithT(t)
+			g := NewWithT(t)
 			itShouldTerraformInit(tt.entryDir, g)
 			itShouldRunTerratag(tt.entryDir, filter, g)
 			itShouldRunTerraformValidate(tt.entryDir, g)

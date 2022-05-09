@@ -2,10 +2,10 @@ package convert
 
 import (
 	"encoding/json"
+	"errors"
 	"log"
 	"strings"
 
-	"github.com/env0/terratag/internal/errors"
 	"github.com/env0/terratag/internal/tag_keys"
 	"github.com/env0/terratag/internal/utils"
 	"github.com/hashicorp/hcl/v2/hclsyntax"
@@ -140,10 +140,11 @@ func AppendLocalsBlock(file *hclwrite.File, filename string, terratag TerratagLo
 	locals.Body().SetAttributeValue(key, cty.StringVal(terratag.Added))
 }
 
-func AppendTagBlocks(resource *hclwrite.Block, tags string) {
+func AppendTagBlocks(resource *hclwrite.Block, tags string) error {
 	var tagsMap map[string]string
-	err := json.Unmarshal([]byte(tags), &tagsMap)
-	errors.PanicOnError(err, nil)
+	if err := json.Unmarshal([]byte(tags), &tagsMap); err != nil {
+		return err
+	}
 	keys := utils.SortObjectKeys(tagsMap)
 	for _, key := range keys {
 		resource.Body().AppendNewline()
@@ -152,6 +153,8 @@ func AppendTagBlocks(resource *hclwrite.Block, tags string) {
 		tagBlock.Body().SetAttributeValue("value", cty.StringVal(tagsMap[key]))
 		tagBlock.Body().SetAttributeValue("propagate_at_launch", cty.BoolVal(true))
 	}
+
+	return nil
 }
 
 func UnquoteTagsAttribute(swappedTagsStrings []string, text string) string {
@@ -172,7 +175,7 @@ func UnquoteTagsAttribute(swappedTagsStrings []string, text string) string {
 	return text
 }
 
-func MoveExistingTags(filename string, terratag TerratagLocal, block *hclwrite.Block, tagId string) bool {
+func MoveExistingTags(filename string, terratag TerratagLocal, block *hclwrite.Block, tagId string) (bool, error) {
 	var existingTags hclwrite.Tokens
 
 	// First we try to find tags as attribute
@@ -191,16 +194,16 @@ func MoveExistingTags(filename string, terratag TerratagLocal, block *hclwrite.B
 			// If we did get tags from block, we will now remove that block, as we're going to add a merged tags ATTRIBUTE
 			removeBlockResult := block.Body().RemoveBlock(tagsBlock)
 			if !removeBlockResult {
-				log.Fatal("Failed to remove found tags block!")
+				return false, errors.New("failed to remove found tags block")
 			}
 		}
 	}
 
 	if existingTags != nil {
 		terratag.Found[tag_keys.GetResourceExistingTagsKey(filename, block)] = existingTags
-		return true
+		return true, nil
 	}
-	return false
+	return false, nil
 }
 
 func quoteBlockKeys(tagsBlock *hclwrite.Block) *hclwrite.Block {

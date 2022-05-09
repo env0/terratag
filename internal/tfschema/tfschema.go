@@ -5,7 +5,6 @@ import (
 	"log"
 	"strings"
 
-	"github.com/env0/terratag/internal/errors"
 	"github.com/env0/terratag/internal/providers"
 	"github.com/env0/terratag/internal/tagging"
 	"github.com/env0/terratag/internal/terraform"
@@ -20,22 +19,25 @@ var providerToClientMap = map[string]tfschema.Client{}
 
 var customSupportedProviderNames = [...]string{"google-beta"}
 
-func IsTaggable(dir string, resource hclwrite.Block) bool {
+func IsTaggable(dir string, resource hclwrite.Block) (bool, error) {
 	var isTaggable bool
 	resourceType := terraform.GetResourceType(resource)
 
 	if providers.IsSupportedResource(resourceType) {
 		providerName, _ := detectProviderName(resource)
-		client := getClient(providerName, dir)
+		client, err := getClient(providerName, dir)
+		if err != nil {
+			return false, err
+		}
 		typeSchema, err := client.GetResourceTypeSchema(resourceType)
 		if err != nil {
 			if strings.Contains(err.Error(), "Failed to find resource type") {
 				// short circuiting unfound resource due to: https://github.com/env0/terratag/issues/17
-				log.Print("Skipped ", resourceType, " as it is not YET supported")
-				return false
-			} else {
-				errors.PanicOnError(err, nil)
+				log.Print("[WARN] Skipped ", resourceType, " as it is not YET supported")
+				return false, nil
 			}
+
+			return false, err
 		}
 
 		attributes := typeSchema.Attributes
@@ -50,7 +52,7 @@ func IsTaggable(dir string, resource hclwrite.Block) bool {
 		}
 	}
 
-	return isTaggable
+	return isTaggable, nil
 }
 
 type TfSchemaAttribute struct {
@@ -80,7 +82,7 @@ func detectProviderName(resource hclwrite.Block) (string, error) {
 	return extractProviderNameFromResourceType(terraform.GetResourceType(resource))
 }
 
-func getClient(providerName string, dir string) tfschema.Client {
+func getClient(providerName string, dir string) (tfschema.Client, error) {
 	logger := hclog.New(&hclog.LoggerOptions{
 		Name:   "plugin",
 		Level:  hclog.Trace,
@@ -92,15 +94,17 @@ func getClient(providerName string, dir string) tfschema.Client {
 	})
 	client, exists := providerToClientMap[providerName]
 	if exists {
-		return client
+		return client, nil
 	} else {
 		newClient, err := tfschema.NewClient(providerName, tfschema.Option{
 			RootDir: dir,
 			Logger:  logger,
 		})
-		errors.PanicOnError(err, nil)
+		if err != nil {
+			return nil, err
+		}
 
 		providerToClientMap[providerName] = newClient
-		return newClient
+		return newClient, nil
 	}
 }
