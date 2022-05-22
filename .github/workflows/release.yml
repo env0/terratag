@@ -28,6 +28,7 @@ jobs:
         HOMEBREW_TAP_GITHUB_TOKEN: ${{ secrets.HOMEBREW_TAP_GITHUB_TOKEN }}
 
   npmbuild:
+    needs: goreleaser
     name: Build for Alpine and publish node artifact
     runs-on: ubuntu-latest
     steps:
