@@ -1,6 +1,6 @@
 builds:
   - main: ./cmd/terratag/
-  - binary: terratag
+    binary: terratag
     goos:
       - darwin
       - linux
