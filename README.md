@@ -17,7 +17,7 @@ Maintaining tags across your application is hard, especially when done manually.
 
 ## How?
 ### Prerequisites
-- Terraform 0.11 through 1.0
+- Terraform 0.11 through 1.2
 
 ### Usage
 1. Install from homebrew:
