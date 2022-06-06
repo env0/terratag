@@ -10,6 +10,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"strings"
+	"sync"
 	"testing"
 
 	"github.com/bmatcuk/doublestar"
@@ -28,6 +29,7 @@ var args = []string{
 }
 var testsDir = "test/tests"
 var fixtureDir = "test/fixture"
+var osArgsLock sync.Mutex
 
 type TestCase struct {
 	suite    string
@@ -233,17 +235,19 @@ func run_terratag(entryDir string, filter string) (err interface{}) {
 			err = innerErr
 		}
 	}()
+	osArgsLock.Lock()
 	if filter == "" {
 		os.Args = append(args, "-dir="+entryDir)
 	} else {
 		os.Args = append(args, "-dir="+entryDir, "-filter="+filter)
 	}
 	args, isMissingArg := cli.InitArgs()
+	os.Args = cleanArgs
+	osArgsLock.Unlock()
 	if isMissingArg {
 		return errors.New("Missing arg")
 	}
 	Terratag(args)
-	os.Args = cleanArgs
 
 	return nil
 }

@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"strings"
+	"sync"
 
 	"github.com/env0/terratag/internal/providers"
 	"github.com/env0/terratag/internal/tagging"
@@ -16,6 +17,7 @@ import (
 )
 
 var providerToClientMap = map[string]tfschema.Client{}
+var providerToClientMapLock sync.Mutex
 
 var customSupportedProviderNames = [...]string{"google-beta"}
 
@@ -83,6 +85,14 @@ func detectProviderName(resource hclwrite.Block) (string, error) {
 }
 
 func getClient(providerName string, dir string) (tfschema.Client, error) {
+	providerToClientMapLock.Lock()
+	defer providerToClientMapLock.Unlock()
+
+	client, exists := providerToClientMap[providerName]
+	if exists {
+		return client, nil
+	}
+
 	logger := hclog.New(&hclog.LoggerOptions{
 		Name:   "plugin",
 		Level:  hclog.Trace,
@@ -92,19 +102,16 @@ func getClient(providerName string, dir string) (tfschema.Client, error) {
 		// weird to need to bypass the issue by assigning the default
 		// output ¯\_(ツ)_/¯
 	})
-	client, exists := providerToClientMap[providerName]
-	if exists {
-		return client, nil
-	} else {
-		newClient, err := tfschema.NewClient(providerName, tfschema.Option{
-			RootDir: dir,
-			Logger:  logger,
-		})
-		if err != nil {
-			return nil, err
-		}
 
-		providerToClientMap[providerName] = newClient
-		return newClient, nil
+	newClient, err := tfschema.NewClient(providerName, tfschema.Option{
+		RootDir: dir,
+		Logger:  logger,
+	})
+	if err != nil {
+		return nil, err
 	}
+
+	providerToClientMap[providerName] = newClient
+
+	return newClient, nil
 }
