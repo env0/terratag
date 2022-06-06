@@ -30,6 +30,7 @@ jobs:
   npmbuild:
     name: Build for Alpine and publish node artifact
     runs-on: ubuntu-latest
+    needs: goreleaser
     steps:
       - name: Set up Go 1.18
         uses: actions/setup-go@v1

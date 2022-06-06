@@ -15,7 +15,8 @@ import (
 )
 
 func GetExistingTagsExpression(tokens hclwrite.Tokens, tfVersion Version) string {
-	if isHclMap(tokens) {
+	// NOTE: consider removing buildMapExpression in case tf v0.11.0 support is removed.
+	if isHclMap(tokens) && tfVersion.Major == 0 && tfVersion.Minor <= 11 {
 		return buildMapExpression(tokens, tfVersion)
 	} else {
 		return stringifyExpression(tokens)

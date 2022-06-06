@@ -1,5 +1,6 @@
 builds:
-  - binary: terratag
+  - main: ./cmd/terratag/
+    binary: terratag
     goos:
       - darwin
       - linux
@@ -10,7 +11,6 @@ builds:
     ignore:
       - goarch: arm64
         goos: windows
-
     env:
       - CGO_ENABLED=0
 
