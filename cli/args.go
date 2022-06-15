@@ -13,6 +13,7 @@ type Args struct {
 	IsSkipTerratagFiles bool
 	Verbose             bool
 	Rename              bool
+	Terragrunt          bool
 }
 
 func InitArgs() (Args, bool) {
@@ -29,6 +30,7 @@ func InitArgs() (Args, bool) {
 	fs.StringVar(&args.Filter, "filter", ".*", "Only apply tags to the selected resource types (regex)")
 	fs.BoolVar(&args.Verbose, "verbose", false, "Enable verbose logging")
 	fs.BoolVar(&args.Rename, "rename", true, "Keep the original filename or replace it with <basename>.terratag.tf")
+	fs.BoolVar(&args.Terragrunt, "terragrunt", false, "Tags all the terraform files under .terragrunt-cache")
 
 	err := fs.Parse(programArgs)
 

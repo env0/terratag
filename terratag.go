@@ -45,16 +45,16 @@ func Terratag(args cli.Args) error {
 		return err
 	}
 
-	if err := terraform.ValidateTerraformInitRun(args.Dir); err != nil {
+	if err := terraform.ValidateInitRun(args.Dir, args.Terragrunt); err != nil {
 		return err
 	}
 
-	matches, err := terraform.GetTerraformFilePaths(args.Dir)
+	matches, err := terraform.GetFilePaths(args.Dir, args.Terragrunt)
 	if err != nil {
 		return err
 	}
 
-	counters := tagDirectoryResources(args.Dir, args.Filter, matches, args.Tags, args.IsSkipTerratagFiles, *tfVersion, args.Rename)
+	counters := tagDirectoryResources(args.Dir, args.Filter, matches, args.Tags, args.IsSkipTerratagFiles, *tfVersion, args.Rename, args.Terragrunt)
 	log.Print("[INFO] Summary:")
 	log.Print("[INFO] Tagged ", counters.taggedResources, " resource/s (out of ", counters.totalResources, " resource/s processed)")
 	log.Print("[INFO] In ", counters.taggedFiles, " file/s (out of ", counters.totalFiles, " file/s processed)")
@@ -62,7 +62,7 @@ func Terratag(args cli.Args) error {
 	return nil
 }
 
-func tagDirectoryResources(dir string, filter string, matches []string, tags string, isSkipTerratagFiles bool, tfVersion convert.Version, rename bool) counters {
+func tagDirectoryResources(dir string, filter string, matches []string, tags string, isSkipTerratagFiles bool, tfVersion convert.Version, rename bool, terragrunt bool) counters {
 	var total counters
 	for _, path := range matches {
 		if isSkipTerratagFiles && strings.HasSuffix(path, "terratag.tf") {
@@ -83,7 +83,7 @@ func tagDirectoryResources(dir string, filter string, matches []string, tags str
 					}
 				}()
 
-				perFile, err := tagFileResources(path, dir, filter, tags, tfVersion, rename)
+				perFile, err := tagFileResources(path, dir, filter, tags, tfVersion, rename, terragrunt)
 				if err != nil {
 					log.Printf("[ERROR] failed to process %s due to an error\n%v", path, err)
 					return
@@ -99,7 +99,7 @@ func tagDirectoryResources(dir string, filter string, matches []string, tags str
 	return total
 }
 
-func tagFileResources(path string, dir string, filter string, tags string, tfVersion convert.Version, rename bool) (*counters, error) {
+func tagFileResources(path string, dir string, filter string, tags string, tfVersion convert.Version, rename bool, terragrunt bool) (*counters, error) {
 	perFileCounters := counters{}
 	log.Print("[INFO] Processing file ", path)
 	var swappedTagsStrings []string
@@ -136,7 +136,7 @@ func tagFileResources(path string, dir string, filter string, tags string, tfVer
 				continue
 			}
 
-			isTaggable, err := tfschema.IsTaggable(dir, *resource)
+			isTaggable, err := tfschema.IsTaggable(dir, terragrunt, *resource)
 			if err != nil {
 				return nil, err
 			}

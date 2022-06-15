@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io/fs"
 	"io/ioutil"
 	"log"
 	"os"
@@ -73,21 +74,63 @@ func GetResourceType(resource hclwrite.Block) string {
 	return resource.Labels()[0]
 }
 
-func ValidateTerraformInitRun(dir string) error {
-	_, err := os.Stat(dir + "/.terraform")
+func ValidateInitRun(dir string, terragrunt bool) error {
+	path := dir + "/."
+	if terragrunt {
+		path += "terragrunt-cache"
+	} else {
+		path += "terraform"
+	}
 
-	if err != nil {
-		if os.IsNotExist(err) {
-			return errors.New("terraform init must run before running terratag")
+	if _, err := os.Stat(path); err != nil {
+		var errorTypeStr string
+		if terragrunt {
+			errorTypeStr = "terragrunt"
+		} else {
+			errorTypeStr = "terraform"
 		}
 
-		return fmt.Errorf("couldn't determine if terraform init has run: %v", err)
+		if os.IsNotExist(err) {
+			return fmt.Errorf("%s init must run before running terratag", errorTypeStr)
+		}
+
+		return fmt.Errorf("couldn't determine if %s init has run: %v", errorTypeStr, err)
 	}
 
 	return nil
 }
 
-func GetTerraformFilePaths(rootDir string) ([]string, error) {
+func GetFilePaths(dir string, terragrunt bool) ([]string, error) {
+	if terragrunt {
+		return getTerragruntFilePath(dir)
+	} else {
+		return getTerraformFilePaths(dir)
+	}
+}
+
+func getTerragruntFilePath(rootDir string) ([]string, error) {
+	rootDir += "/.terragrunt-cache"
+
+	var tfFiles []string
+	if err := filepath.WalkDir(rootDir, func(path string, d fs.DirEntry, err error) error {
+		if err != nil {
+			log.Printf("[WARN] skipping %s due to an error: %v", path, err)
+			return filepath.SkipDir
+		}
+
+		if strings.HasSuffix(path, ".tf") {
+			tfFiles = append(tfFiles, path)
+		}
+
+		return nil
+	}); err != nil {
+		return nil, err
+	}
+
+	return tfFiles, nil
+}
+
+func getTerraformFilePaths(rootDir string) ([]string, error) {
 	const tfFileMatcher = "/*.tf"
 
 	tfFiles, err := doublestar.Glob(rootDir + tfFileMatcher)

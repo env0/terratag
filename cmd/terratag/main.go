@@ -17,7 +17,9 @@ func main() {
 	}
 	initLogFiltering(args.Verbose)
 
-	terratag.Terratag(args)
+	if err := terratag.Terratag(args); err != nil {
+		log.Printf("[ERROR] execution failed due to an error\n%v", err)
+	}
 }
 
 func initLogFiltering(verbose bool) {
