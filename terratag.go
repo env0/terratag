@@ -61,6 +61,7 @@ func Terratag(args cli.Args) error {
 		Tags:                args.Tags,
 		Matches:             matches,
 		IsSkipTerratagFiles: args.IsSkipTerratagFiles,
+		Rename:              args.Rename,
 		IACType:             common.IACType(args.Type),
 		TFVersion:           *tfVersion,
 	}
@@ -201,7 +202,7 @@ func tagFileResources(path string, args *common.TaggingArgs) (*counters, error) 
 		swappedTagsStrings = append(swappedTagsStrings, terratag.Added)
 		text = convert.UnquoteTagsAttribute(swappedTagsStrings, text)
 
-		if err := file.ReplaceWithTerratagFile(path, text, args.IsSkipTerratagFiles); err != nil {
+		if err := file.ReplaceWithTerratagFile(path, text, args.Rename); err != nil {
 			return nil, err
 		}
 		perFileCounters.taggedFiles = 1

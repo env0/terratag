@@ -20,6 +20,7 @@ type TaggingArgs struct {
 	Tags                string
 	Matches             []string
 	IsSkipTerratagFiles bool
+	Rename              bool
 	IACType             IACType
 	TFVersion           Version
 }
