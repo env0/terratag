@@ -11,8 +11,10 @@ import (
 )
 
 func main() {
-	args, isMissingArg := cli.InitArgs()
-	if isMissingArg {
+	args, err := cli.InitArgs()
+	if err != nil {
+		log.Println(err)
+		log.Println("Usage: terratag -tags='{ \"some_tag\": \"value\" }' [-dir=\".\"]")
 		return
 	}
 	initLogFiltering(args.Verbose)

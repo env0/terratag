@@ -8,6 +8,7 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/env0/terratag/internal/common"
 	"github.com/env0/terratag/internal/providers"
 	"github.com/env0/terratag/internal/tagging"
 	"github.com/env0/terratag/internal/terraform"
@@ -23,13 +24,13 @@ var providerToClientMapLock sync.Mutex
 
 var customSupportedProviderNames = [...]string{"google-beta"}
 
-func IsTaggable(dir string, terragrunt bool, resource hclwrite.Block) (bool, error) {
+func IsTaggable(dir string, iacType common.IACType, resource hclwrite.Block) (bool, error) {
 	var isTaggable bool
 	resourceType := terraform.GetResourceType(resource)
 
 	if providers.IsSupportedResource(resourceType) {
 		providerName, _ := detectProviderName(resource)
-		client, err := getClient(providerName, dir, terragrunt)
+		client, err := getClient(providerName, dir, iacType)
 		if err != nil {
 			return false, err
 		}
@@ -108,8 +109,8 @@ func getTerragruntPluginPath(dir string) string {
 	return ret
 }
 
-func getClient(providerName string, dir string, terragrunt bool) (tfschema.Client, error) {
-	if terragrunt {
+func getClient(providerName string, dir string, iacType common.IACType) (tfschema.Client, error) {
+	if iacType == common.Terragrunt {
 		dir = getTerragruntPluginPath(dir)
 	}
 

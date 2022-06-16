@@ -6,6 +6,7 @@ import (
 	"log"
 	"strings"
 
+	"github.com/env0/terratag/internal/common"
 	"github.com/env0/terratag/internal/tag_keys"
 	"github.com/env0/terratag/internal/utils"
 	"github.com/hashicorp/hcl/v2/hclsyntax"
@@ -14,7 +15,7 @@ import (
 	"github.com/zclconf/go-cty/cty"
 )
 
-func GetExistingTagsExpression(tokens hclwrite.Tokens, tfVersion Version) string {
+func GetExistingTagsExpression(tokens hclwrite.Tokens, tfVersion common.Version) string {
 	// NOTE: consider removing buildMapExpression in case tf v0.11.0 support is removed.
 	if isHclMap(tokens) && tfVersion.Major == 0 && tfVersion.Minor <= 11 {
 		return buildMapExpression(tokens, tfVersion)
@@ -51,7 +52,7 @@ func trimTokens(tokens hclwrite.Tokens) hclwrite.Tokens {
 	return tokens[startIndex : len(tokens)-endIndex]
 }
 
-func buildMapExpression(tokens hclwrite.Tokens, tfVersion Version) string {
+func buildMapExpression(tokens hclwrite.Tokens, tfVersion common.Version) string {
 	if tfVersion.Major == 0 && tfVersion.Minor >= 15 || tfVersion.Major == 1 {
 		mapContent := strings.TrimSpace(string(tokens.Bytes()))
 		return "tomap(" + mapContent + ")"
@@ -115,7 +116,7 @@ func stringifyExpression(tokens hclwrite.Tokens) string {
 	return expression
 }
 
-func AppendLocalsBlock(file *hclwrite.File, filename string, terratag TerratagLocal) {
+func AppendLocalsBlock(file *hclwrite.File, filename string, terratag common.TerratagLocal) {
 	key := tag_keys.GetTerratagAddedKey(filename)
 
 	// If there's an existings terratag locals replace it with the merged locals.
@@ -176,7 +177,7 @@ func UnquoteTagsAttribute(swappedTagsStrings []string, text string) string {
 	return text
 }
 
-func MoveExistingTags(filename string, terratag TerratagLocal, block *hclwrite.Block, tagId string) (bool, error) {
+func MoveExistingTags(filename string, terratag common.TerratagLocal, block *hclwrite.Block, tagId string) (bool, error) {
 	var existingTags hclwrite.Tokens
 
 	// First we try to find tags as attribute
@@ -255,13 +256,4 @@ func quoteAttributeKeys(tagsAttribute *hclwrite.Attribute) hclwrite.Tokens {
 	}
 
 	return newTags
-}
-
-type TerratagLocal struct {
-	Found map[string]hclwrite.Tokens
-	Added string
-}
-type Version struct {
-	Major int
-	Minor int
 }

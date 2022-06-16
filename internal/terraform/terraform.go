@@ -15,12 +15,12 @@ import (
 	"strings"
 
 	"github.com/bmatcuk/doublestar"
-	"github.com/env0/terratag/internal/convert"
+	"github.com/env0/terratag/internal/common"
 	"github.com/hashicorp/hcl/v2/hclwrite"
 	"github.com/thoas/go-funk"
 )
 
-func GetTerraformVersion() (*convert.Version, error) {
+func GetTerraformVersion() (*common.Version, error) {
 	output, err := exec.Command("terraform", "version").Output()
 	if err != nil {
 		return nil, err
@@ -47,7 +47,7 @@ func GetTerraformVersion() (*convert.Version, error) {
 		return nil, fmt.Errorf("terratag only supports Terraform from version 0.11.x and up to 1.2.x - your version says %s", outputAsString)
 	}
 
-	return &convert.Version{Major: majorVersion, Minor: minorVersion}, nil
+	return &common.Version{Major: majorVersion, Minor: minorVersion}, nil
 }
 
 type VersionPart int
@@ -74,34 +74,30 @@ func GetResourceType(resource hclwrite.Block) string {
 	return resource.Labels()[0]
 }
 
-func ValidateInitRun(dir string, terragrunt bool) error {
-	path := dir + "/."
-	if terragrunt {
-		path += "terragrunt-cache"
+func getRootDir(iacType string) string {
+	if iacType == string(common.Terragrunt) {
+		return "/.terragrunt-cache"
 	} else {
-		path += "terraform"
+		return "/.terraform"
 	}
+}
+
+func ValidateInitRun(dir string, iacType string) error {
+	path := dir + getRootDir(iacType)
 
 	if _, err := os.Stat(path); err != nil {
-		var errorTypeStr string
-		if terragrunt {
-			errorTypeStr = "terragrunt"
-		} else {
-			errorTypeStr = "terraform"
-		}
-
 		if os.IsNotExist(err) {
-			return fmt.Errorf("%s init must run before running terratag", errorTypeStr)
+			return fmt.Errorf("%s init must run before running terratag", iacType)
 		}
 
-		return fmt.Errorf("couldn't determine if %s init has run: %v", errorTypeStr, err)
+		return fmt.Errorf("couldn't determine if %s init has run: %v", iacType, err)
 	}
 
 	return nil
 }
 
-func GetFilePaths(dir string, terragrunt bool) ([]string, error) {
-	if terragrunt {
+func GetFilePaths(dir string, iacType string) ([]string, error) {
+	if iacType == string(common.Terragrunt) {
 		return getTerragruntFilePath(dir)
 	} else {
 		return getTerraformFilePaths(dir)
@@ -109,7 +105,7 @@ func GetFilePaths(dir string, terragrunt bool) ([]string, error) {
 }
 
 func getTerragruntFilePath(rootDir string) ([]string, error) {
-	rootDir += "/.terragrunt-cache"
+	rootDir += getRootDir(string(common.Terragrunt))
 
 	var tfFiles []string
 	if err := filepath.WalkDir(rootDir, func(path string, d fs.DirEntry, err error) error {

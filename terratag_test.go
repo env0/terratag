@@ -2,7 +2,6 @@ package terratag
 
 import (
 	"bytes"
-	"errors"
 	"fmt"
 	"io/ioutil"
 	"log"
@@ -241,11 +240,11 @@ func run_terratag(entryDir string, filter string) (err interface{}) {
 	} else {
 		os.Args = append(args, "-dir="+entryDir, "-filter="+filter)
 	}
-	args, isMissingArg := cli.InitArgs()
+	args, err := cli.InitArgs()
 	os.Args = cleanArgs
 	osArgsLock.Unlock()
-	if isMissingArg {
-		return errors.New("Missing arg")
+	if err != nil {
+		return err
 	}
 	Terratag(args)
 
