@@ -3,6 +3,7 @@ package tagging
 import (
 	"log"
 
+	"github.com/env0/terratag/internal/common"
 	"github.com/env0/terratag/internal/convert"
 	"github.com/env0/terratag/internal/tag_keys"
 	"github.com/env0/terratag/internal/terraform"
@@ -80,9 +81,9 @@ type TagBlockArgs struct {
 	Filename  string
 	Block     *hclwrite.Block
 	Tags      string
-	Terratag  convert.TerratagLocal
+	Terratag  common.TerratagLocal
 	TagId     string
-	TfVersion convert.Version
+	TfVersion common.Version
 }
 
 type TagResourceFn func(args TagBlockArgs) (*Result, error)

@@ -11,13 +11,17 @@ import (
 )
 
 func main() {
-	args, isMissingArg := cli.InitArgs()
-	if isMissingArg {
+	args, err := cli.InitArgs()
+	if err != nil {
+		log.Println(err)
+		log.Println("Usage: terratag -tags='{ \"some_tag\": \"value\" }' [-dir=\".\"]")
 		return
 	}
 	initLogFiltering(args.Verbose)
 
-	terratag.Terratag(args)
+	if err := terratag.Terratag(args); err != nil {
+		log.Printf("[ERROR] execution failed due to an error\n%v", err)
+	}
 }
 
 func initLogFiltering(verbose bool) {

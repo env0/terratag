@@ -2,10 +2,13 @@ package tfschema
 
 import (
 	"fmt"
+	"io/fs"
 	"log"
+	"path/filepath"
 	"strings"
 	"sync"
 
+	"github.com/env0/terratag/internal/common"
 	"github.com/env0/terratag/internal/providers"
 	"github.com/env0/terratag/internal/tagging"
 	"github.com/env0/terratag/internal/terraform"
@@ -21,13 +24,13 @@ var providerToClientMapLock sync.Mutex
 
 var customSupportedProviderNames = [...]string{"google-beta"}
 
-func IsTaggable(dir string, resource hclwrite.Block) (bool, error) {
+func IsTaggable(dir string, iacType common.IACType, resource hclwrite.Block) (bool, error) {
 	var isTaggable bool
 	resourceType := terraform.GetResourceType(resource)
 
 	if providers.IsSupportedResource(resourceType) {
 		providerName, _ := detectProviderName(resource)
-		client, err := getClient(providerName, dir)
+		client, err := getClient(providerName, dir, iacType)
 		if err != nil {
 			return false, err
 		}
@@ -84,7 +87,33 @@ func detectProviderName(resource hclwrite.Block) (string, error) {
 	return extractProviderNameFromResourceType(terraform.GetResourceType(resource))
 }
 
-func getClient(providerName string, dir string) (tfschema.Client, error) {
+func getTerragruntPluginPath(dir string) string {
+	dir += "/.terragrunt-cache"
+	ret := dir
+	found := false
+
+	filepath.WalkDir(dir, func(path string, d fs.DirEntry, err error) error {
+		if found || err != nil {
+			return filepath.SkipDir
+		}
+
+		// E.g. ./.terragrunt-cache/yHtqnMrVQOISIYxobafVvZbAAyU/ThyYwttwki6d6AS3aD5OwoyqIWA/.terraform
+		if strings.HasSuffix(path, "/.terraform") {
+			ret = strings.TrimSuffix(path, "/.terraform")
+			found = true
+		}
+
+		return nil
+	})
+
+	return ret
+}
+
+func getClient(providerName string, dir string, iacType common.IACType) (tfschema.Client, error) {
+	if iacType == common.Terragrunt {
+		dir = getTerragruntPluginPath(dir)
+	}
+
 	providerToClientMapLock.Lock()
 	defer providerToClientMapLock.Unlock()
 

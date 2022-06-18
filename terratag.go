@@ -10,6 +10,7 @@ import (
 	"sync/atomic"
 
 	"github.com/env0/terratag/cli"
+	"github.com/env0/terratag/internal/common"
 	"github.com/env0/terratag/internal/convert"
 	"github.com/env0/terratag/internal/file"
 	"github.com/env0/terratag/internal/providers"
@@ -45,16 +46,27 @@ func Terratag(args cli.Args) error {
 		return err
 	}
 
-	if err := terraform.ValidateTerraformInitRun(args.Dir); err != nil {
+	if err := terraform.ValidateInitRun(args.Dir, args.Type); err != nil {
 		return err
 	}
 
-	matches, err := terraform.GetTerraformFilePaths(args.Dir)
+	matches, err := terraform.GetFilePaths(args.Dir, args.Type)
 	if err != nil {
 		return err
 	}
 
-	counters := tagDirectoryResources(args.Dir, args.Filter, matches, args.Tags, args.IsSkipTerratagFiles, *tfVersion, args.Rename)
+	taggingArgs := &common.TaggingArgs{
+		Filter:              args.Filter,
+		Dir:                 args.Dir,
+		Tags:                args.Tags,
+		Matches:             matches,
+		IsSkipTerratagFiles: args.IsSkipTerratagFiles,
+		Rename:              args.Rename,
+		IACType:             common.IACType(args.Type),
+		TFVersion:           *tfVersion,
+	}
+
+	counters := tagDirectoryResources(taggingArgs)
 	log.Print("[INFO] Summary:")
 	log.Print("[INFO] Tagged ", counters.taggedResources, " resource/s (out of ", counters.totalResources, " resource/s processed)")
 	log.Print("[INFO] In ", counters.taggedFiles, " file/s (out of ", counters.totalFiles, " file/s processed)")
@@ -62,10 +74,11 @@ func Terratag(args cli.Args) error {
 	return nil
 }
 
-func tagDirectoryResources(dir string, filter string, matches []string, tags string, isSkipTerratagFiles bool, tfVersion convert.Version, rename bool) counters {
+// dir string, filter string, matches []string, tags string, isSkipTerratagFiles bool, tfVersion convert.Version, rename bool, iacType string
+func tagDirectoryResources(args *common.TaggingArgs) counters {
 	var total counters
-	for _, path := range matches {
-		if isSkipTerratagFiles && strings.HasSuffix(path, "terratag.tf") {
+	for _, path := range args.Matches {
+		if args.IsSkipTerratagFiles && strings.HasSuffix(path, "terratag.tf") {
 			log.Print("[INFO] Skipping file ", path, " as it's already tagged")
 		} else {
 			matchWaitGroup.Add(1)
@@ -83,7 +96,7 @@ func tagDirectoryResources(dir string, filter string, matches []string, tags str
 					}
 				}()
 
-				perFile, err := tagFileResources(path, dir, filter, tags, tfVersion, rename)
+				perFile, err := tagFileResources(path, args)
 				if err != nil {
 					log.Printf("[ERROR] failed to process %s due to an error\n%v", path, err)
 					return
@@ -99,7 +112,7 @@ func tagDirectoryResources(dir string, filter string, matches []string, tags str
 	return total
 }
 
-func tagFileResources(path string, dir string, filter string, tags string, tfVersion convert.Version, rename bool) (*counters, error) {
+func tagFileResources(path string, args *common.TaggingArgs) (*counters, error) {
 	perFileCounters := counters{}
 	log.Print("[INFO] Processing file ", path)
 	var swappedTagsStrings []string
@@ -111,12 +124,12 @@ func tagFileResources(path string, dir string, filter string, tags string, tfVer
 
 	filename := file.GetFilename(path)
 
-	hclMap, err := toHclMap(tags)
+	hclMap, err := toHclMap(args.Tags)
 	if err != nil {
 		return nil, err
 	}
 
-	terratag := convert.TerratagLocal{
+	terratag := common.TerratagLocal{
 		Found: map[string]hclwrite.Tokens{},
 		Added: hclMap,
 	}
@@ -127,7 +140,7 @@ func tagFileResources(path string, dir string, filter string, tags string, tfVer
 			log.Print("[INFO] Processing resource ", resource.Labels())
 			perFileCounters.totalResources += 1
 
-			matched, err := regexp.MatchString(filter, resource.Labels()[0])
+			matched, err := regexp.MatchString(args.Filter, resource.Labels()[0])
 			if err != nil {
 				return nil, err
 			}
@@ -136,7 +149,7 @@ func tagFileResources(path string, dir string, filter string, tags string, tfVer
 				continue
 			}
 
-			isTaggable, err := tfschema.IsTaggable(dir, *resource)
+			isTaggable, err := tfschema.IsTaggable(args.Dir, args.IACType, *resource)
 			if err != nil {
 				return nil, err
 			}
@@ -147,10 +160,10 @@ func tagFileResources(path string, dir string, filter string, tags string, tfVer
 				result, err := tagging.TagResource(tagging.TagBlockArgs{
 					Filename:  filename,
 					Block:     resource,
-					Tags:      tags,
+					Tags:      args.Tags,
 					Terratag:  terratag,
 					TagId:     providers.GetTagIdByResource(terraform.GetResourceType(*resource)),
-					TfVersion: tfVersion,
+					TfVersion: args.TFVersion,
 				})
 				if err != nil {
 					return nil, err
@@ -189,7 +202,7 @@ func tagFileResources(path string, dir string, filter string, tags string, tfVer
 		swappedTagsStrings = append(swappedTagsStrings, terratag.Added)
 		text = convert.UnquoteTagsAttribute(swappedTagsStrings, text)
 
-		if err := file.ReplaceWithTerratagFile(path, text, rename); err != nil {
+		if err := file.ReplaceWithTerratagFile(path, text, args.Rename); err != nil {
 			return nil, err
 		}
 		perFileCounters.taggedFiles = 1
