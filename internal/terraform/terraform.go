@@ -76,6 +76,11 @@ func GetResourceType(resource hclwrite.Block) string {
 
 func getRootDir(iacType string) string {
 	if iacType == string(common.Terragrunt) {
+		if _, err := os.Stat("/.terragrunt-cache"); err != nil {
+			if os.IsNotExist(err) {
+				return "/"
+			}
+		}
 		return "/.terragrunt-cache"
 	} else {
 		return "/.terraform"
