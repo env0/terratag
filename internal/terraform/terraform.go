@@ -76,6 +76,7 @@ func GetResourceType(resource hclwrite.Block) string {
 
 func getRootDir(iacType string) string {
 	if iacType == string(common.Terragrunt) {
+		// which mode of terragrunt it is (with or without cache folder).
 		if _, err := os.Stat("/.terragrunt-cache"); err != nil {
 			if os.IsNotExist(err) {
 				return "/"
