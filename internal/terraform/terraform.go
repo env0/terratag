@@ -74,12 +74,12 @@ func GetResourceType(resource hclwrite.Block) string {
 	return resource.Labels()[0]
 }
 
-func getRootDir(iacType string) string {
+func getRootDir(dir string, iacType string) string {
 	if iacType == string(common.Terragrunt) {
 		// which mode of terragrunt it is (with or without cache folder).
-		if _, err := os.Stat("/.terragrunt-cache"); err != nil {
+		if _, err := os.Stat(dir + "/.terragrunt-cache"); err != nil {
 			if os.IsNotExist(err) {
-				return "/"
+				return ""
 			}
 		}
 		return "/.terragrunt-cache"
@@ -89,7 +89,7 @@ func getRootDir(iacType string) string {
 }
 
 func ValidateInitRun(dir string, iacType string) error {
-	path := dir + getRootDir(iacType)
+	path := dir + getRootDir(dir, iacType)
 
 	if _, err := os.Stat(path); err != nil {
 		if os.IsNotExist(err) {
@@ -111,8 +111,6 @@ func GetFilePaths(dir string, iacType string) ([]string, error) {
 }
 
 func getTerragruntFilePath(rootDir string) ([]string, error) {
-	rootDir += getRootDir(string(common.Terragrunt))
-
 	var tfFiles []string
 	if err := filepath.WalkDir(rootDir, func(path string, d fs.DirEntry, err error) error {
 		if err != nil {
