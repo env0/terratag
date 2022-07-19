@@ -85,6 +85,10 @@ func TestTerraform1o2WithFilter(t *testing.T) {
 }
 
 func TestTerragruntWithCache(t *testing.T) {
+	if _, skip := os.LookupEnv("SKIP_INTEGRATION_TESTS"); skip {
+		t.Skip("skipping integration test")
+	}
+
 	g := NewWithT(t)
 
 	entryDir := "./test/tests/terragrunt_with_cache"
