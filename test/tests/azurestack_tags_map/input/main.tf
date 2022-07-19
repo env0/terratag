@@ -6,6 +6,10 @@ terraform {
   }
 }
 
+provider "azurestack" {
+  features {}
+}
+
 resource "azurestack_resource_group" "test" {
   name     = "production"
   location = "West US"
