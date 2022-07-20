@@ -2,7 +2,9 @@ package terratag
 
 import (
 	"bytes"
+	"crypto/sha256"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"log"
 	"os"
@@ -107,7 +109,7 @@ func TestTerragruntWithCache(t *testing.T) {
 	itShouldRunTerragruntInit(out, g)
 	itShouldRunTerratagTerragruntMode(out, g)
 	itShouldRunTerragruntValidate(out, g)
-	//itShouldGenerateExpectedTerratagFiles(tt.suiteDir, g)
+	itShouldGenerateExpectedTerragruntTerratagFiles(entryDir, g)
 }
 
 func testTerraform(t *testing.T, version string) {
@@ -167,6 +169,37 @@ func itShouldGenerateExpectedTerratagFiles(suiteDir string, g *GomegaWithT) {
 		actualFile, _ := os.Open(actualTerratagFile)
 		actualContent, _ := ioutil.ReadAll(actualFile)
 		g.Expect(string(expectedContent)).To(BeEquivalentTo(string(actualContent)), actualTerratagFile+" does not match "+expectedTerratagFile)
+	}
+}
+
+func getFileSha256(filename string, g *GomegaWithT) string {
+	f, err := os.Open(filename)
+	g.Expect(err).To(BeNil())
+	defer f.Close()
+	h := sha256.New()
+	_, err = io.Copy(h, f)
+	g.Expect(err).To(BeNil())
+
+	return string(h.Sum(nil))
+}
+
+func itShouldGenerateExpectedTerragruntTerratagFiles(entryDir string, g *GomegaWithT) {
+	expectedPattern := entryDir + "/expected/**/*.tf"
+	expectedTerratag, _ := doublestar.Glob(expectedPattern)
+
+	actualTerratag, _ := doublestar.Glob(entryDir + "/out/**/.terragrunt-cache/**/*.tf")
+	actualTerratag = filterSymlink(actualTerratag)
+
+	hashmap := make(map[string]string)
+
+	for _, acctualTerratagFile := range actualTerratag {
+		hashmap[getFileSha256(acctualTerratagFile, g)] = acctualTerratagFile
+	}
+
+	for _, expectedTerratagFile := range expectedTerratag {
+		hash := getFileSha256(expectedTerratagFile, g)
+		_, ok := hashmap[hash]
+		g.Expect(ok).To(BeTrue())
 	}
 }
 
