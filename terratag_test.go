@@ -84,6 +84,32 @@ func TestTerraform1o2WithFilter(t *testing.T) {
 	testTerraformWithFilter(t, "15_1.2_filter", "azurerm_resource_group|aws_s3_bucket")
 }
 
+func TestTerragruntWithCache(t *testing.T) {
+	if _, skip := os.LookupEnv("SKIP_INTEGRATION_TESTS"); skip {
+		t.Skip("skipping integration test")
+	}
+
+	g := NewWithT(t)
+
+	entryDir := "./test/tests/terragrunt_with_cache"
+
+	in := entryDir + "/in"
+	out := entryDir + "/out"
+
+	if err := os.RemoveAll(out); err != nil {
+		t.Fatalf("failed to remove out directory: %s %s", out, err.Error())
+	}
+
+	if err := copy.Copy(in, out); err != nil {
+		t.Fatalf("failed to in directory to out directory: %s", err.Error())
+	}
+
+	itShouldRunTerragruntInit(out, g)
+	itShouldRunTerratagTerragruntMode(out, g)
+	itShouldRunTerragruntValidate(out, g)
+	//itShouldGenerateExpectedTerratagFiles(tt.suiteDir, g)
+}
+
 func testTerraform(t *testing.T, version string) {
 	if _, skip := os.LookupEnv("SKIP_INTEGRATION_TESTS"); skip {
 		t.Skip("skipping integration test")
@@ -150,13 +176,28 @@ func itShouldRunTerraformValidate(entryDir string, g *GomegaWithT) {
 }
 
 func itShouldRunTerratag(entryDir string, filter string, g *GomegaWithT) {
-	err := run_terratag(entryDir, filter)
+	err := run_terratag(entryDir, filter, false)
 	g.Expect(err).To(BeNil(), "terratag failed")
+}
+
+func itShouldRunTerratagTerragruntMode(entryDir string, g *GomegaWithT) {
+	err := run_terratag(entryDir, "", true)
+	g.Expect(err).To(BeNil(), "terratag terragrunt mode failed")
 }
 
 func itShouldTerraformInit(entryDir string, g *GomegaWithT) {
 	err := run_terraform(entryDir, "init")
 	g.Expect(err).To(BeNil(), "terraform init failed")
+}
+
+func itShouldRunTerragruntValidate(entryDir string, g *GomegaWithT) {
+	err := run_terragrunt(entryDir, "validate")
+	g.Expect(err).To(BeNil(), "terragrunt validate failed")
+}
+
+func itShouldRunTerragruntInit(entryDir string, g *GomegaWithT) {
+	err := run_terragrunt(entryDir, "init")
+	g.Expect(err).To(BeNil(), "terragrunt init failed")
 }
 
 func getConfig(terraformDir string) (*TestCaseConfig, error) {
@@ -227,7 +268,7 @@ func cloneOutput(inputDirs []string, terraformDir string) {
 	}
 }
 
-func run_terratag(entryDir string, filter string) (err interface{}) {
+func run_terratag(entryDir string, filter string, terragrunt bool) (err interface{}) {
 	defer func() {
 		if innerErr := recover(); innerErr != nil {
 			fmt.Println(innerErr)
@@ -235,11 +276,17 @@ func run_terratag(entryDir string, filter string) (err interface{}) {
 		}
 	}()
 	osArgsLock.Lock()
-	if filter == "" {
-		os.Args = append(args, "-dir="+entryDir)
-	} else {
-		os.Args = append(args, "-dir="+entryDir, "-filter="+filter)
+
+	os.Args = append(args, "-dir="+entryDir)
+
+	if filter != "" {
+		os.Args = append(os.Args, "-filter="+filter)
 	}
+
+	if terragrunt {
+		os.Args = append(os.Args, "-type=terragrunt", "-rename=false")
+	}
+
 	args, err := cli.InitArgs()
 	os.Args = cleanArgs
 	osArgsLock.Unlock()
@@ -251,11 +298,11 @@ func run_terratag(entryDir string, filter string) (err interface{}) {
 	return nil
 }
 
-func run_terraform(entryDir string, cmd string) error {
-	println("terraform", cmd)
+func run(prog string, entryDir string, cmd string) error {
+	println(prog, cmd)
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
-	command := exec.Command("terraform", cmd)
+	command := exec.Command(prog, cmd)
 	command.Dir = entryDir
 	command.Stdout = &stdout
 	command.Stderr = &stderr
@@ -268,6 +315,14 @@ func run_terraform(entryDir string, cmd string) error {
 	println(stdout.String())
 
 	return nil
+}
+
+func run_terraform(entryDir string, cmd string) error {
+	return run("terraform", entryDir, cmd)
+}
+
+func run_terragrunt(entryDir string, cmd string) error {
+	return run("terragrunt", entryDir, cmd)
 }
 
 func filterSymlink(ss []string) (ret []string) {

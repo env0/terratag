@@ -5,7 +5,7 @@ suites:
   - aws_tags_map
   - azurerm_kubernetes_cluster
   - azurerm_tags_map
-  - azurestack_tags_map
+  - azurestack_tags_map_11
   - git_issue_17__tfschema_provider_not_from_prefix
   - git_issue_43__invalid_tf_files_in_subfolders
   - git_issue_56__line_ends_with_closing_paren

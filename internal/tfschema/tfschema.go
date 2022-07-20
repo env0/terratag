@@ -112,8 +112,8 @@ func getTerragruntPluginPath(dir string) string {
 
 func getClient(providerName string, dir string, iacType common.IACType) (tfschema.Client, error) {
 	if iacType == common.Terragrunt {
-		// Check which mode of terragrunt it is (with or without cache folder).
-		if _, err := os.Stat("/.terragrunt-cache"); err == nil {
+		// which mode of terragrunt it is (with or without cache folder).
+		if _, err := os.Stat(dir + "/.terragrunt-cache"); err == nil {
 			dir = getTerragruntPluginPath(dir)
 		}
 	}
