@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"log"
 	"os"
 
@@ -10,13 +11,21 @@ import (
 	"github.com/hashicorp/logutils"
 )
 
+var version = "dev"
+
 func main() {
 	args, err := cli.InitArgs()
 	if err != nil {
-		log.Println(err)
-		log.Println("Usage: terratag -tags='{ \"some_tag\": \"value\" }' [-dir=\".\"]")
+		fmt.Println(err)
+		fmt.Println("Usage: terratag -tags='{ \"some_tag\": \"value\" }' [-dir=\".\"]")
 		return
 	}
+
+	if args.Version {
+		fmt.Printf("Terratag v%s\n", version)
+		return
+	}
+
 	initLogFiltering(args.Verbose)
 
 	if err := terratag.Terratag(args); err != nil {

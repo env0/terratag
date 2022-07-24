@@ -17,6 +17,7 @@ type Args struct {
 	IsSkipTerratagFiles bool
 	Verbose             bool
 	Rename              bool
+	Version             bool
 }
 
 func validate(args Args) error {
@@ -43,9 +44,14 @@ func InitArgs() (Args, error) {
 	fs.BoolVar(&args.Verbose, "verbose", false, "Enable verbose logging")
 	fs.BoolVar(&args.Rename, "rename", true, "Keep the original filename or replace it with <basename>.terratag.tf")
 	fs.StringVar(&args.Type, "type", string(common.Terraform), "The IAC type. Valid values: terraform or terragrunt")
+	fs.BoolVar(&args.Version, "version", false, "Prints the version")
 
 	if err := fs.Parse(programArgs); err != nil {
 		return args, err
+	}
+
+	if args.Version {
+		return args, nil
 	}
 
 	if err := validate(args); err != nil {
