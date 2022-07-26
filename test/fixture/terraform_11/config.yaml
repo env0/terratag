@@ -1,7 +1,4 @@
 suites:
-  - aws_autoscaling_group
-  - aws_submodule
-  - aws_tags_block
   - aws_tags_map_11
   - aws_tags_merge
   - azurerm_kubernetes_cluster_11
