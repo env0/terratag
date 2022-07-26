@@ -71,7 +71,7 @@ EOF
   }
 }
 
-resource "aws_autoscaling_group" "gar" {
+resource "aws_autoscaling_group" "bar_tags" {
   name                      = "foobar3-terraform-test"
   max_size                  = 5
   min_size                  = 2
@@ -100,7 +100,7 @@ EOF
     delete = "15m"
   }
 
-  tags = flatten([local.terratag_added_main, [
+  tags = flatten([[
     {
       key   = "a"
       value = "b"
