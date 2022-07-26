@@ -15,7 +15,7 @@ resource "aws_s3_bucket" "b" {
   bucket = "my-tf-test-bucket"
   acl    = "private"
 
-  tags = merge(tomap({
+  tags = merge({
     "Name"                       = "My bucket"
     "Unquoted1"                  = "I wanna be quoted"
     "AnotherName"                = "Yo"
@@ -27,7 +27,7 @@ resource "aws_s3_bucket" "b" {
     "Yo-${local.localTagKey}"    = "Test variable inside key"
     "Test variable as value"     = "${local.localTagKey}"
     "Test variable inside value" = "Yo-${local.localTagKey}"
-  }), local.terratag_added_main)
+  }, local.terratag_added_main)
 }
 
 resource "aws_s3_bucket" "a" {

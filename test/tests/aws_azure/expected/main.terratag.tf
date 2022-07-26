@@ -21,9 +21,9 @@ provider "aws" {
 resource "azurerm_resource_group" "should_have_tags" {
   name     = "example-resources"
   location = "West Europe"
-  tags = merge(tomap({
+  tags = merge({
     "oh" = "my"
-  }), local.terratag_added_main)
+  }, local.terratag_added_main)
 }
 
 resource "azurerm_virtual_network" "should_not_have_tags" {
@@ -37,9 +37,9 @@ resource "aws_s3_bucket" "should_have_tags" {
   bucket = "my-tf-test-bucket"
   acl    = "private"
 
-  tags = merge(tomap({
+  tags = merge({
     "Name" = "My bucket"
-  }), local.terratag_added_main)
+  }, local.terratag_added_main)
 }
 
 locals {

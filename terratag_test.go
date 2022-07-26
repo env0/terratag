@@ -130,7 +130,7 @@ func testTerraform(t *testing.T, version string) {
 			itShouldTerraformInit(tt.entryDir, g)
 			itShouldRunTerratag(tt.entryDir, "", g)
 			itShouldRunTerraformValidate(tt.entryDir, g)
-			itShouldGenerateExpectedTerratagFiles(tt.entryDir, g)
+			itShouldGenerateExpectedTerratagFiles(tt.suiteDir, g)
 		})
 	}
 }
@@ -148,17 +148,24 @@ func testTerraformWithFilter(t *testing.T, version string, filter string) {
 			itShouldTerraformInit(tt.entryDir, g)
 			itShouldRunTerratag(tt.entryDir, filter, g)
 			itShouldRunTerraformValidate(tt.entryDir, g)
-			itShouldGenerateExpectedTerratagFiles(tt.entryDir, g)
+			itShouldGenerateExpectedTerratagFiles(tt.suiteDir, g)
 		})
 	}
 }
 
 func itShouldGenerateExpectedTerratagFiles(entryDir string, g *GomegaWithT) {
-	expectedPattern := strings.Split(entryDir, "/out/")[0] + "/expected/*.terratag.tf"
+	expectedPattern := strings.Split(entryDir, "/out/")[0] + "/expected/*.tf"
 	var expectedTerratag []string
 	var actualTerratag []string
 	expectedTerratag, _ = doublestar.Glob(expectedPattern)
-	actualTerratag, _ = doublestar.Glob(entryDir + "/*.terratag.tf")
+	if len(expectedTerratag) == 0 {
+		expectedPattern = strings.Split(entryDir, "/out/")[0] + "/expected/**/*.tf"
+		expectedTerratag, _ = doublestar.Glob(expectedPattern)
+	}
+	actualTerratag, _ = doublestar.Glob(entryDir + "/*.tf")
+	if len(actualTerratag) == 0 {
+		actualTerratag, _ = doublestar.Glob(entryDir + "/**/*.tf")
+	}
 	actualTerratag = filterSymlink(actualTerratag)
 
 	g.Expect(len(actualTerratag)).Should(BeNumerically(">", 0))
@@ -277,7 +284,7 @@ func getEntries(t *testing.T, version string) []TestCase {
 		entryDir := strings.TrimSuffix(slashed, "/main.tf")
 		terraformPathSplit := strings.Split(slashed, terraformDir)
 		pathBeforeTerraformDir := terraformPathSplit[0]
-		suiteDir := pathBeforeTerraformDir + terraformDir + "/main.tf"
+		suiteDir := pathBeforeTerraformDir + terraformDir
 		suite := strings.Split(pathBeforeTerraformDir, "/")[2]
 
 		if _, ok := suitesMap[suite]; !ok {
