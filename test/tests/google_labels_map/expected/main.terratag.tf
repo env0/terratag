@@ -22,9 +22,9 @@ resource "google_storage_bucket" "static-site" {
     response_header = ["*"]
     max_age_seconds = 3600
   }
-  labels = merge(tomap({
+  labels = merge({
     "foo" = "bar"
-  }), local.terratag_added_main)
+  }, local.terratag_added_main)
 }
 
 locals {

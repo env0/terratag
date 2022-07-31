@@ -153,19 +153,28 @@ func testTerraformWithFilter(t *testing.T, version string, filter string) {
 	}
 }
 
-func itShouldGenerateExpectedTerratagFiles(suiteDir string, g *GomegaWithT) {
-	expectedPattern := suiteDir + "/expected/**/*.terratag.tf"
+func itShouldGenerateExpectedTerratagFiles(entryDir string, g *GomegaWithT) {
+	expectedPattern := strings.Split(entryDir, "/out/")[0] + "/expected/*.tf"
 	var expectedTerratag []string
 	var actualTerratag []string
 	expectedTerratag, _ = doublestar.Glob(expectedPattern)
-	actualTerratag, _ = doublestar.Glob(suiteDir + "/out/**/*.terratag.tf")
+	if len(expectedTerratag) == 0 {
+		expectedPattern = strings.Split(entryDir, "/out/")[0] + "/expected/**/*.tf"
+		expectedTerratag, _ = doublestar.Glob(expectedPattern)
+	}
+	actualTerratag, _ = doublestar.Glob(entryDir + "/*.tf")
+	if len(actualTerratag) == 0 {
+		actualTerratag, _ = doublestar.Glob(entryDir + "/**/*.tf")
+	}
 	actualTerratag = filterSymlink(actualTerratag)
 
+	g.Expect(len(actualTerratag)).Should(BeNumerically(">", 0))
+	g.Expect(len(expectedTerratag)).Should(BeNumerically(">", 0))
 	g.Expect(len(actualTerratag)).To(BeEquivalentTo(len(expectedTerratag)), "it should generate the same number of terratag files as expected")
-	for _, expectedTerratagFile := range expectedTerratag {
+	for i, expectedTerratagFile := range expectedTerratag {
 		expectedFile, _ := os.Open(expectedTerratagFile)
 		expectedContent, _ := ioutil.ReadAll(expectedFile)
-		actualTerratagFile := strings.ReplaceAll(expectedTerratagFile, "/expected/", "/out/")
+		actualTerratagFile := actualTerratag[i]
 		actualFile, _ := os.Open(actualTerratagFile)
 		actualContent, _ := ioutil.ReadAll(actualFile)
 		g.Expect(string(expectedContent)).To(BeEquivalentTo(string(actualContent)), actualTerratagFile+" does not match "+expectedTerratagFile)
@@ -275,7 +284,7 @@ func getEntries(t *testing.T, version string) []TestCase {
 		entryDir := strings.TrimSuffix(slashed, "/main.tf")
 		terraformPathSplit := strings.Split(slashed, terraformDir)
 		pathBeforeTerraformDir := terraformPathSplit[0]
-		suiteDir := pathBeforeTerraformDir + terraformDir + "/main.tf"
+		suiteDir := pathBeforeTerraformDir + terraformDir
 		suite := strings.Split(pathBeforeTerraformDir, "/")[2]
 
 		if _, ok := suitesMap[suite]; !ok {

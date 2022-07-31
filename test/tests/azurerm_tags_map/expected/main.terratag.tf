@@ -13,9 +13,9 @@ provider "azurerm" {
 resource "azurerm_resource_group" "example" {
   name     = "example-resources"
   location = "West Europe"
-  tags = merge(tomap({
+  tags = merge({
     "oh" = "my"
-  }), local.terratag_added_main)
+  }, local.terratag_added_main)
 }
 
 resource "azurerm_virtual_network" "example" {

@@ -70,6 +70,48 @@ EOF
     propagate_at_launch = true
   }
 }
+
+resource "aws_autoscaling_group" "bar_tags" {
+  name                      = "foobar3-terraform-test"
+  max_size                  = 5
+  min_size                  = 2
+  health_check_grace_period = 300
+  health_check_type         = "ELB"
+  desired_capacity          = 4
+  force_delete              = true
+
+  initial_lifecycle_hook {
+    name                 = "foobar"
+    default_result       = "CONTINUE"
+    heartbeat_timeout    = 2000
+    lifecycle_transition = "autoscaling:EC2_INSTANCE_LAUNCHING"
+
+    notification_metadata = <<EOF
+{
+  "foo": "bar"
+}
+EOF
+
+    notification_target_arn = "arn:aws:sqs:us-east-1:444455556666:queue1*"
+    role_arn                = "arn:aws:iam::123456789012:role/S3Access"
+  }
+
+  timeouts {
+    delete = "15m"
+  }
+
+  tags = flatten([local.terratag_added_main, [
+    {
+      key   = "a"
+      value = "b"
+    },
+    {
+      key   = "c"
+      value = "d"
+    }
+  ]])
+}
+
 locals {
   terratag_added_main = {"env0_environment_id"="40907eff-cf7c-419a-8694-e1c6bf1d1168","env0_project_id"="43fd4ff1-8d37-4d9d-ac97-295bd850bf94"}
 }
