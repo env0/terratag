@@ -156,10 +156,6 @@ func tagFileResources(path string, args *common.TaggingArgs) (*counters, error) 
 				continue
 			}
 
-			if args.InvertFilter {
-				matched = !matched
-			}
-
 			isTaggable, err := tfschema.IsTaggable(args.Dir, args.IACType, *resource)
 			if err != nil {
 				return nil, err
