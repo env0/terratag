@@ -57,6 +57,7 @@ func Terratag(args cli.Args) error {
 
 	taggingArgs := &common.TaggingArgs{
 		Filter:              args.Filter,
+		InvertFilter:        args.InvertFilter,
 		Dir:                 args.Dir,
 		Tags:                args.Tags,
 		Matches:             matches,
@@ -144,9 +145,19 @@ func tagFileResources(path string, args *common.TaggingArgs) (*counters, error) 
 			if err != nil {
 				return nil, err
 			}
+
+			// invert the match if the invert Filter flag is set
+			if args.InvertFilter {
+				matched = !matched
+			}
+
 			if !matched {
 				log.Print("[INFO] Resource excluded by filter, skipping.", resource.Labels())
 				continue
+			}
+
+			if args.InvertFilter {
+				matched = !matched
 			}
 
 			isTaggable, err := tfschema.IsTaggable(args.Dir, args.IACType, *resource)

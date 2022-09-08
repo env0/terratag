@@ -13,6 +13,7 @@ type Args struct {
 	Tags                string
 	Dir                 string
 	Filter              string
+	InvertFilter        bool
 	Type                string
 	IsSkipTerratagFiles bool
 	Verbose             bool
@@ -41,6 +42,7 @@ func InitArgs() (Args, error) {
 	fs.StringVar(&args.Dir, "dir", ".", "Directory to recursively search for .tf files and terratag them")
 	fs.BoolVar(&args.IsSkipTerratagFiles, "skipTerratagFiles", true, "Skips any previously tagged files")
 	fs.StringVar(&args.Filter, "filter", ".*", "Only apply tags to the selected resource types (regex)")
+	fs.BoolVar(&args.InvertFilter, "invertFilter", false, "Inverts the filter")
 	fs.BoolVar(&args.Verbose, "verbose", false, "Enable verbose logging")
 	fs.BoolVar(&args.Rename, "rename", true, "Keep the original filename or replace it with <basename>.terratag.tf")
 	fs.StringVar(&args.Type, "type", string(common.Terraform), "The IAC type. Valid values: terraform or terragrunt")
