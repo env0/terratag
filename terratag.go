@@ -57,7 +57,7 @@ func Terratag(args cli.Args) error {
 
 	taggingArgs := &common.TaggingArgs{
 		Filter:              args.Filter,
-		Skip:              args.Skip,
+		Skip:                args.Skip,
 		Dir:                 args.Dir,
 		Tags:                args.Tags,
 		Matches:             matches,
