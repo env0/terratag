@@ -44,6 +44,7 @@ Maintaining tags across your application is hard, especially when done manually.
    - `-tags` - tags, as valid JSON (NOT HCL) or a comma seperated list of key=value.
    - `-skipTerratagFiles` - optional. Default to `true`. Skips any previously tagged - (files with `terratag.tf` suffix)
    - `-filter` - optional. Only apply tags to the selected resource types (regex)
+   - `-skip` - optional. Skip applying tags to the selected resource types (regex)
 
 ### Example Output
 #### Before Terratag

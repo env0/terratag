@@ -57,7 +57,7 @@ func Terratag(args cli.Args) error {
 
 	taggingArgs := &common.TaggingArgs{
 		Filter:              args.Filter,
-		InvertFilter:        args.InvertFilter,
+		Skip:              args.Skip,
 		Dir:                 args.Dir,
 		Tags:                args.Tags,
 		Matches:             matches,
@@ -146,13 +146,18 @@ func tagFileResources(path string, args *common.TaggingArgs) (*counters, error) 
 				return nil, err
 			}
 
-			// invert the match if the invert Filter flag is set
-			if args.InvertFilter {
-				matched = !matched
-			}
-
 			if !matched {
 				log.Print("[INFO] Resource excluded by filter, skipping.", resource.Labels())
+				continue
+			}
+
+			matched, err = regexp.MatchString(args.Skip, resource.Labels()[0])
+			if err != nil {
+				return nil, err
+			}
+
+			if matched {
+				log.Print("[INFO] Resource excluded by skip, skipping.", resource.Labels())
 				continue
 			}
 

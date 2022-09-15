@@ -16,7 +16,7 @@ type Version struct {
 
 type TaggingArgs struct {
 	Filter              string
-	InvertFilter        bool
+	Skip                string
 	Dir                 string
 	Tags                string
 	Matches             []string
