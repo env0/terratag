@@ -67,7 +67,7 @@ func TestTerraform1o0(t *testing.T) {
 }
 
 func TestTerraform1o0WithFilter(t *testing.T) {
-	testTerraformWithFilter(t, "15_1.0_filter", "azurerm_resource_group|aws_s3_bucket")
+	testTerraformWithFilter(t, "15_1.0_filter", "azurerm_resource_group|aws_s3_bucket", "")
 }
 
 func TestTerraform1o1(t *testing.T) {
@@ -75,7 +75,7 @@ func TestTerraform1o1(t *testing.T) {
 }
 
 func TestTerraform1o1WithFilter(t *testing.T) {
-	testTerraformWithFilter(t, "15_1.1_filter", "azurerm_resource_group|aws_s3_bucket")
+	testTerraformWithFilter(t, "15_1.1_filter", "azurerm_resource_group|aws_s3_bucket", "")
 }
 
 func TestTerraform1o2(t *testing.T) {
@@ -83,7 +83,11 @@ func TestTerraform1o2(t *testing.T) {
 }
 
 func TestTerraform1o2WithFilter(t *testing.T) {
-	testTerraformWithFilter(t, "15_1.2_filter", "azurerm_resource_group|aws_s3_bucket")
+	testTerraformWithFilter(t, "15_1.2_filter", "azurerm_resource_group|aws_s3_bucket", "")
+}
+
+func TestTerraform1o2WithSkip(t *testing.T) {
+	testTerraformWithFilter(t, "15_1.2_skip", ".*", "azurerm_resource_group")
 }
 
 func TestTerragruntWithCache(t *testing.T) {
@@ -128,14 +132,14 @@ func testTerraform(t *testing.T, version string) {
 			t.Parallel() // marks each test case as capable of running in parallel with each other
 			g := NewWithT(t)
 			itShouldTerraformInit(tt.entryDir, g)
-			itShouldRunTerratag(tt.entryDir, "", g)
+			itShouldRunTerratag(tt.entryDir, "", "", g)
 			itShouldRunTerraformValidate(tt.entryDir, g)
 			itShouldGenerateExpectedTerratagFiles(tt.suiteDir, g)
 		})
 	}
 }
 
-func testTerraformWithFilter(t *testing.T, version string, filter string) {
+func testTerraformWithFilter(t *testing.T, version string, filter string, skip string) {
 	if _, skip := os.LookupEnv("SKIP_INTEGRATION_TESTS"); skip {
 		t.Skip("skipping integration test")
 	}
@@ -146,7 +150,7 @@ func testTerraformWithFilter(t *testing.T, version string, filter string) {
 			t.Parallel() // marks each test case as capable of running in parallel with each other
 			g := NewWithT(t)
 			itShouldTerraformInit(tt.entryDir, g)
-			itShouldRunTerratag(tt.entryDir, filter, g)
+			itShouldRunTerratag(tt.entryDir, filter, skip, g)
 			itShouldRunTerraformValidate(tt.entryDir, g)
 			itShouldGenerateExpectedTerratagFiles(tt.suiteDir, g)
 		})
@@ -217,13 +221,13 @@ func itShouldRunTerraformValidate(entryDir string, g *GomegaWithT) {
 	g.Expect(err).To(BeNil(), "terraform validate failed")
 }
 
-func itShouldRunTerratag(entryDir string, filter string, g *GomegaWithT) {
-	err := run_terratag(entryDir, filter, false)
+func itShouldRunTerratag(entryDir string, filter string, skip string, g *GomegaWithT) {
+	err := run_terratag(entryDir, filter, skip, false)
 	g.Expect(err).To(BeNil(), "terratag failed")
 }
 
 func itShouldRunTerratagTerragruntMode(entryDir string, g *GomegaWithT) {
-	err := run_terratag(entryDir, "", true)
+	err := run_terratag(entryDir, "", "", true)
 	g.Expect(err).To(BeNil(), "terratag terragrunt mode failed")
 }
 
@@ -310,7 +314,7 @@ func cloneOutput(inputDirs []string, terraformDir string) {
 	}
 }
 
-func run_terratag(entryDir string, filter string, terragrunt bool) (err interface{}) {
+func run_terratag(entryDir string, filter string, skip string, terragrunt bool) (err interface{}) {
 	defer func() {
 		if innerErr := recover(); innerErr != nil {
 			fmt.Println(innerErr)
@@ -323,6 +327,10 @@ func run_terratag(entryDir string, filter string, terragrunt bool) (err interfac
 
 	if filter != "" {
 		os.Args = append(os.Args, "-filter="+filter)
+	}
+
+	if skip != "" {
+		os.Args = append(os.Args, "-skip="+skip)
 	}
 
 	if terragrunt {

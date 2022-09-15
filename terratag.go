@@ -57,6 +57,7 @@ func Terratag(args cli.Args) error {
 
 	taggingArgs := &common.TaggingArgs{
 		Filter:              args.Filter,
+		Skip:                args.Skip,
 		Dir:                 args.Dir,
 		Tags:                args.Tags,
 		Matches:             matches,
@@ -144,9 +145,21 @@ func tagFileResources(path string, args *common.TaggingArgs) (*counters, error) 
 			if err != nil {
 				return nil, err
 			}
+
 			if !matched {
 				log.Print("[INFO] Resource excluded by filter, skipping.", resource.Labels())
 				continue
+			}
+
+			if args.Skip != "" {
+				matched, err = regexp.MatchString(args.Skip, resource.Labels()[0])
+				if err != nil {
+					return nil, err
+				}
+				if matched {
+					log.Print("[INFO] Resource excluded by skip, skipping.", resource.Labels())
+					continue
+				}
 			}
 
 			isTaggable, err := tfschema.IsTaggable(args.Dir, args.IACType, *resource)
