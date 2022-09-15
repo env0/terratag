@@ -151,14 +151,15 @@ func tagFileResources(path string, args *common.TaggingArgs) (*counters, error) 
 				continue
 			}
 
-			matched, err = regexp.MatchString(args.Skip, resource.Labels()[0])
-			if err != nil {
-				return nil, err
-			}
-
-			if matched {
-				log.Print("[INFO] Resource excluded by skip, skipping.", resource.Labels())
-				continue
+			if args.Skip != "" {
+				matched, err = regexp.MatchString(args.Skip, resource.Labels()[0])
+				if err != nil {
+					return nil, err
+				}
+				if matched {
+					log.Print("[INFO] Resource excluded by skip, skipping.", resource.Labels())
+					continue
+				}
 			}
 
 			isTaggable, err := tfschema.IsTaggable(args.Dir, args.IACType, *resource)
