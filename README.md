@@ -17,7 +17,7 @@ Maintaining tags across your application is hard, especially when done manually.
 
 ## How?
 ### Prerequisites
-- Terraform 0.11 through 1.2
+- Terraform 0.11 through 1.3
 
 ### Usage
 1. Install from homebrew:
@@ -37,7 +37,7 @@ Maintaining tags across your application is hard, especially when done manually.
    or
       ```bash
        terratag -dir=foo/bar -tags="environment_id=prod,some-tag=value"
-   ```   
+   ```
 
    Terratag supports the following arguments:
    - `-dir` - optional, the directory to recursively search for any `.tf` file and try to terratag it.
@@ -193,9 +193,9 @@ my_test
 All commands will be executed wherever down the hierarchy where `main.tf` is located.
 We do that to allow cases where complex nested submodule resolution may take place, and one would like to test how a directory higher up the hierarchy gets resolved.
 - `expected` is a directory in which all `.terratag.tf` files will be matched with the output directory
-  
+
 Each terraform version has it's own config file containing the list of test suites to run.
-The config file is under `test/fixtures/terraform_xx/config.yaml` where `xx` is the terraform version. 
+The config file is under `test/fixtures/terraform_xx/config.yaml` where `xx` is the terraform version.
 
 #### What's being tested?
 Each test will run:
