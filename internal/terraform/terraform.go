@@ -43,7 +43,7 @@ func GetTerraformVersion() (*common.Version, error) {
 		return nil, err
 	}
 
-	if (majorVersion == 0 && minorVersion < 11 || minorVersion > 15) || majorVersion == 1 {
+	if (majorVersion == 0 && minorVersion < 11 || minorVersion > 15) || majorVersion > 1 {
 		return nil, fmt.Errorf("terratag only supports Terraform from version 0.11.x and up to 1.x.x - your version says %s", outputAsString)
 	}
 
