@@ -190,6 +190,7 @@ func itShouldGenerateExpectedTerragruntTerratagFiles(entryDir string, g *GomegaW
 
 	for _, expectedTerratagFile := range expectedTerratag {
 		hash := getFileSha256(expectedTerratagFile, g)
+		fmt.Println(expectedTerratagFile)
 		_, ok := hashmap[hash]
 		g.Expect(ok).To(BeTrue())
 	}

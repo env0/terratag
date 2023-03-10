@@ -1,6 +1,7 @@
 package file
 
 import (
+	"io/ioutil"
 	"log"
 	"os"
 	"path/filepath"
@@ -37,7 +38,7 @@ func ReplaceWithTerratagFile(path string, textContent string, rename bool) error
 
 func CreateFile(path string, textContent string) error {
 	log.Print("[INFO] Creating file ", path)
-	return os.WriteFile(path, []byte(textContent), 0644)
+	return ioutil.WriteFile(path, []byte(textContent), 0644)
 }
 
 func GetFilename(path string) string {
@@ -48,7 +49,7 @@ func GetFilename(path string) string {
 }
 
 func ReadHCLFile(path string) (*hclwrite.File, error) {
-	src, err := os.ReadFile(path)
+	src, err := ioutil.ReadFile(path)
 	if err != nil {
 		return nil, err
 	}
