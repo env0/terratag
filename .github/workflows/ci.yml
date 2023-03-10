@@ -79,7 +79,7 @@ jobs:
         id: test-suite
         env:
           TF_VERSION: ${{ matrix.terraform_version }}
-        uses: actions/github-script@v4
+        uses: actions/github-script@v6
         with:
           script: |
             console.log(`Setting test suite version based on ${process.env.TF_VERSION}`)
