@@ -5,6 +5,7 @@ import (
 	"crypto/sha256"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"log"
 	"os"
 	"os/exec"
@@ -156,10 +157,10 @@ func itShouldGenerateExpectedTerratagFiles(entryDir string, g *GomegaWithT) {
 	g.Expect(len(actualTerratag)).To(BeEquivalentTo(len(expectedTerratag)), "it should generate the same number of terratag files as expected")
 	for i, expectedTerratagFile := range expectedTerratag {
 		expectedFile, _ := os.Open(expectedTerratagFile)
-		expectedContent, _ := io.ReadAll(expectedFile)
+		expectedContent, _ := ioutil.ReadAll(expectedFile)
 		actualTerratagFile := actualTerratag[i]
 		actualFile, _ := os.Open(actualTerratagFile)
-		actualContent, _ := io.ReadAll(actualFile)
+		actualContent, _ := ioutil.ReadAll(actualFile)
 		g.Expect(string(expectedContent)).To(BeEquivalentTo(string(actualContent)), actualTerratagFile+" does not match "+expectedTerratagFile)
 	}
 }
@@ -190,7 +191,6 @@ func itShouldGenerateExpectedTerragruntTerratagFiles(entryDir string, g *GomegaW
 
 	for _, expectedTerratagFile := range expectedTerratag {
 		hash := getFileSha256(expectedTerratagFile, g)
-		fmt.Println(expectedTerratagFile)
 		_, ok := hashmap[hash]
 		g.Expect(ok).To(BeTrue())
 	}
