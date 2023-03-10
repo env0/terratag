@@ -57,15 +57,15 @@ func TestTerraform14(t *testing.T) {
 	testTerraform(t, "13_14")
 }
 
-func TestTerraformLatestWithFilter(t *testing.T) {
+func TestTerraformlatestWithFilter(t *testing.T) {
 	testTerraformWithFilter(t, "latest_filter", "azurerm_resource_group|aws_s3_bucket", "")
 }
 
-func TestTerraformLatestWithSkip(t *testing.T) {
+func TestTerraformlatestWithSkip(t *testing.T) {
 	testTerraformWithFilter(t, "latest_skip", ".*", "azurerm_resource_group")
 }
 
-func TestTerraformLatest(t *testing.T) {
+func TestTerraformlatest(t *testing.T) {
 	testTerraform(t, "latest")
 }
 
