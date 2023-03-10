@@ -90,7 +90,7 @@ jobs:
 
       - name: Test
         run: |
-          go test -v -run ^TestTerraform${{ steps.test-suite.outputs.result }}$
+          go test -v -run ^TestTerraform${{ steps.test-suite.outputs.result }}
 
   terragrunt-integration-tests:
     name: Terragrunt Integration Tests
