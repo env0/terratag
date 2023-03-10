@@ -5,7 +5,6 @@ import (
 	"crypto/sha256"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"log"
 	"os"
 	"os/exec"
@@ -58,48 +57,16 @@ func TestTerraform14(t *testing.T) {
 	testTerraform(t, "13_14")
 }
 
-func TestTerraform15(t *testing.T) {
-	testTerraform(t, "15_1.0")
+func TestTerraformLatestWithFilter(t *testing.T) {
+	testTerraformWithFilter(t, "latest_filter", "azurerm_resource_group|aws_s3_bucket", "")
 }
 
-func TestTerraform1o0(t *testing.T) {
-	testTerraform(t, "15_1.0")
+func TestTerraformLatestWithSkip(t *testing.T) {
+	testTerraformWithFilter(t, "latest_skip", ".*", "azurerm_resource_group")
 }
 
-func TestTerraform1o0WithFilter(t *testing.T) {
-	testTerraformWithFilter(t, "15_1.0_filter", "azurerm_resource_group|aws_s3_bucket", "")
-}
-
-func TestTerraform1o1(t *testing.T) {
-	testTerraform(t, "15_1.1")
-}
-
-func TestTerraform1o1WithFilter(t *testing.T) {
-	testTerraformWithFilter(t, "15_1.1_filter", "azurerm_resource_group|aws_s3_bucket", "")
-}
-
-func TestTerraform1o2(t *testing.T) {
-	testTerraform(t, "15_1.2")
-}
-
-func TestTerraform1o2WithFilter(t *testing.T) {
-	testTerraformWithFilter(t, "15_1.2_filter", "azurerm_resource_group|aws_s3_bucket", "")
-}
-
-func TestTerraform1o2WithSkip(t *testing.T) {
-	testTerraformWithFilter(t, "15_1.2_skip", ".*", "azurerm_resource_group")
-}
-
-func TestTerraform1o3(t *testing.T) {
-	testTerraform(t, "15_1.3")
-}
-
-func TestTerraform1o3WithFilter(t *testing.T) {
-	testTerraformWithFilter(t, "15_1.3_filter", "azurerm_resource_group|aws_s3_bucket", "")
-}
-
-func TestTerraform1o3WithSkip(t *testing.T) {
-	testTerraformWithFilter(t, "15_1.3_skip", ".*", "azurerm_resource_group")
+func TestTerraformLatest(t *testing.T) {
+	testTerraform(t, "latest")
 }
 
 func TestTerragruntWithCache(t *testing.T) {
@@ -189,10 +156,10 @@ func itShouldGenerateExpectedTerratagFiles(entryDir string, g *GomegaWithT) {
 	g.Expect(len(actualTerratag)).To(BeEquivalentTo(len(expectedTerratag)), "it should generate the same number of terratag files as expected")
 	for i, expectedTerratagFile := range expectedTerratag {
 		expectedFile, _ := os.Open(expectedTerratagFile)
-		expectedContent, _ := ioutil.ReadAll(expectedFile)
+		expectedContent, _ := io.ReadAll(expectedFile)
 		actualTerratagFile := actualTerratag[i]
 		actualFile, _ := os.Open(actualTerratagFile)
-		actualContent, _ := ioutil.ReadAll(actualFile)
+		actualContent, _ := io.ReadAll(actualFile)
 		g.Expect(string(expectedContent)).To(BeEquivalentTo(string(actualContent)), actualTerratagFile+" does not match "+expectedTerratagFile)
 	}
 }
