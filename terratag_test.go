@@ -102,6 +102,18 @@ func TestTerraform1o3WithSkip(t *testing.T) {
 	testTerraformWithFilter(t, "15_1.3_skip", ".*", "azurerm_resource_group")
 }
 
+func TestTerraform1o4(t *testing.T) {
+	testTerraform(t, "15_1.4")
+}
+
+func TestTerraform1o4WithFilter(t *testing.T) {
+	testTerraformWithFilter(t, "15_1.4_filter", "azurerm_resource_group|aws_s3_bucket", "")
+}
+
+func TestTerraform1o4WithSkip(t *testing.T) {
+	testTerraformWithFilter(t, "15_1.4_skip", ".*", "azurerm_resource_group")
+}
+
 func TestTerragruntWithCache(t *testing.T) {
 	if _, skip := os.LookupEnv("SKIP_INTEGRATION_TESTS"); skip {
 		t.Skip("skipping integration test")
