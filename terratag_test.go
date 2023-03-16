@@ -57,6 +57,10 @@ func TestTerraform14(t *testing.T) {
 	testTerraform(t, "13_14")
 }
 
+func TestTerraform15(t *testing.T) {
+	testTerraform(t, "15_1.0")
+}
+
 func TestTerraformlatestWithFilter(t *testing.T) {
 	testTerraformWithFilter(t, "latest_filter", "azurerm_resource_group|aws_s3_bucket", "")
 }
