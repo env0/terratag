@@ -133,18 +133,18 @@ func getResourceSchema(resourceType string, dir string, iacType common.IACType) 
 		}
 
 		// Remove any command output "junk" in the prefix.
-		if start := bytes.Index(out, []byte("{")); start != -1 {
+		if start := bytes.IndexByte(out, '{'); start != -1 {
 			out = out[start:]
 		}
 
 		// Remove any command output "junk" in the suffix.
-		if end := bytes.LastIndex(out, []byte("}")); end != -1 {
-			out = out[0 : end+1]
+		if end := bytes.LastIndexByte(out, '}'); end != -1 {
+			out = out[:end+1]
 		}
 
 		if err := json.Unmarshal(out, providerSchemas); err != nil {
 			if e, ok := err.(*json.SyntaxError); ok {
-				log.Printf("syntax error at byte offset %d %s", e.Offset, string(out)[e.Offset-100:e.Offset+1])
+				log.Printf("syntax error at byte offset %d", e.Offset)
 			}
 			return nil, fmt.Errorf("failed to unmarshal returned provider schemas: %w", err)
 		}

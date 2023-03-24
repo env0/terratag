@@ -36,7 +36,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        terraform_version: ['latest']
+        terraform_version: ['12','13','14','15','latest']
 
     steps:
       - name: Set up Go
