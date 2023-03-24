@@ -132,6 +132,7 @@ func getResourceSchema(resourceType string, dir string, iacType common.IACType) 
 			return nil, fmt.Errorf("failed to execute 'terraform providers schema -json' command: %w", err)
 		}
 
+		// Output can vary between operating systems. Get the correct output line.
 		for _, line := range bytes.Split(out, []byte("\n")) {
 			if len(line) > 0 && line[0] == '{' {
 				out = line
@@ -141,7 +142,7 @@ func getResourceSchema(resourceType string, dir string, iacType common.IACType) 
 
 		if err := json.Unmarshal(out, providerSchemas); err != nil {
 			if e, ok := err.(*json.SyntaxError); ok {
-				log.Printf("syntax error at byte offset %d %s", e.Offset, string(out)[e.Offset-100:e.Offset+100])
+				log.Printf("syntax error at byte offset %d", e.Offset)
 			}
 			return nil, fmt.Errorf("failed to unmarshal returned provider schemas: %w", err)
 		}
