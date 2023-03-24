@@ -187,7 +187,7 @@ Issues and Pull Requests are very welcome!
 
 ### Prerequisites
 
-- Go > 1.18
+- Go > 1.20
 
 ### Build
 
