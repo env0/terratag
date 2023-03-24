@@ -144,7 +144,7 @@ func getResourceSchema(resourceType string, dir string, iacType common.IACType) 
 
 		if err := json.Unmarshal(out, providerSchemas); err != nil {
 			if e, ok := err.(*json.SyntaxError); ok {
-				log.Printf("syntax error at byte offset %d", e.Offset)
+				log.Printf("syntax error at byte offset %d %s", e.Offset, string(out)[e.Offset-100:e.Offset+1])
 			}
 			return nil, fmt.Errorf("failed to unmarshal returned provider schemas: %w", err)
 		}
