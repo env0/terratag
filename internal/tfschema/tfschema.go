@@ -137,6 +137,11 @@ func getResourceSchema(resourceType string, dir string, iacType common.IACType) 
 			out = out[start:]
 		}
 
+		// Remove any command output "junk" in the suffix.
+		if end := bytes.LastIndex(out, []byte("}")); end != -1 {
+			out = out[0 : end+1]
+		}
+
 		if err := json.Unmarshal(out, providerSchemas); err != nil {
 			if e, ok := err.(*json.SyntaxError); ok {
 				log.Printf("syntax error at byte offset %d", e.Offset)
