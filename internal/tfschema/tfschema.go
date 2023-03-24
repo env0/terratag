@@ -139,8 +139,11 @@ func getResourceSchema(resourceType string, dir string, iacType common.IACType) 
 
 		// Remove any command output "junk" in the suffix.
 		if end := bytes.LastIndexByte(out, '}'); end != -1 {
+			log.Printf("!!!!!!!!!! %d\n", end)
 			out = out[:end+1]
 		}
+
+		log.Printf("!!!!!!@@@@@@@@@ %s\n", string(out)[len(out)-100:])
 
 		if err := json.Unmarshal(out, providerSchemas); err != nil {
 			if e, ok := err.(*json.SyntaxError); ok {
