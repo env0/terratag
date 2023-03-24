@@ -37,7 +37,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        terraform_version: ['11','12','13','14','15','latest']
+        terraform_version: ['12','13','14','15','latest']
 
     steps:
       - name: Set up Go
@@ -52,13 +52,6 @@ jobs:
       - name: Get dependencies
         run: |
           go mod tidy
-
-      - name: Install tfschema
-        run: |
-          wget https://github.com/minamijoyo/tfschema/releases/download/v0.3.0/tfschema_0.3.0_linux_amd64.tar.gz
-          mkdir $GITHUB_WORKSPACE/.tfschema
-          tar -xvf tfschema_0.3.0_linux_amd64.tar.gz -C $GITHUB_WORKSPACE/.tfschema
-          echo "$GITHUB_WORKSPACE/.tfschema" >> $GITHUB_PATH
 
       - name: Install tfenv
         run: |

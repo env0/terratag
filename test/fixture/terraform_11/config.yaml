@@ -1,9 +1,0 @@
-suites:
-  - aws_tags_map_11
-  - aws_tags_merge
-  - azurerm_kubernetes_cluster_11
-  - azurerm_tags_map_11
-  - azurestack_tags_map_11
-  - git_issue_88__corrupt_hcl_file
-  - google_container_cluster_11
-  - google_labels_map_11

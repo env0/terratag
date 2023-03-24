@@ -41,10 +41,6 @@ type TestCaseConfig struct {
 	Suites []string
 }
 
-func TestTerraform11(t *testing.T) {
-	testTerraform(t, "11")
-}
-
 func TestTerraform12(t *testing.T) {
 	testTerraform(t, "12")
 }
