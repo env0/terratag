@@ -132,9 +132,11 @@ func getResourceSchema(resourceType string, dir string, iacType common.IACType) 
 			return nil, fmt.Errorf("failed to execute 'terraform providers schema -json' command: %w", err)
 		}
 
-		// Remove any command output "junk" in the prefix.
-		if start := bytes.IndexByte(out, '{'); start != -1 {
-			out = out[start:]
+		for _, line := range bytes.Split(out, []byte("\n")) {
+			if len(line) > 0 && line[0] == '{' {
+				out = line
+				break
+			}
 		}
 
 		if err := json.Unmarshal(out, providerSchemas); err != nil {
