@@ -1,6 +1,7 @@
 package tfschema
 
 import (
+	"bytes"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -131,7 +132,15 @@ func getResourceSchema(resourceType string, dir string, iacType common.IACType) 
 			return nil, fmt.Errorf("failed to execute 'terraform providers schema -json' command: %w", err)
 		}
 
+		// Remove any command output "junk" in the prefix.
+		if start := bytes.Index(out, []byte("{")); start != -1 {
+			out = out[start:]
+		}
+
 		if err := json.Unmarshal(out, providerSchemas); err != nil {
+			if e, ok := err.(*json.SyntaxError); ok {
+				log.Printf("syntax error at byte offset %d", e.Offset)
+			}
 			return nil, fmt.Errorf("failed to unmarshal returned provider schemas: %w", err)
 		}
 

@@ -30,7 +30,6 @@ jobs:
       - name: Go Test
         run: SKIP_INTEGRATION_TESTS=1 go test -v ./...
 
-
   integration-tests:
     name: Integration Tests
     runs-on: ubuntu-latest
