@@ -23,7 +23,7 @@ Maintaining tags across your application is hard, especially when done manually.
 
 ### Prerequisites
 
-- Terraform 0.12 through 1.3
+- Terraform 0.12 through 1.x
 
 ### Usage
 
