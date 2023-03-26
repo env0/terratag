@@ -1,10 +1,14 @@
 package tfschema
 
 import (
+	"bytes"
+	"encoding/json"
+	"errors"
 	"fmt"
 	"io/fs"
 	"log"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strings"
 	"sync"
@@ -13,32 +17,50 @@ import (
 	"github.com/env0/terratag/internal/providers"
 	"github.com/env0/terratag/internal/tagging"
 	"github.com/env0/terratag/internal/terraform"
-	"github.com/thoas/go-funk"
 
-	"github.com/hashicorp/go-hclog"
 	"github.com/hashicorp/hcl/v2/hclwrite"
-	"github.com/minamijoyo/tfschema/tfschema"
+	"github.com/zclconf/go-cty/cty"
 )
 
-var providerToClientMap = map[string]tfschema.Client{}
-var providerToClientMapLock sync.Mutex
+var ErrResourceTypeNotFound = errors.New("resource type not found")
 
-var customSupportedProviderNames = [...]string{"google-beta"}
+var providerSchemasMap map[string]*ProviderSchemas = map[string]*ProviderSchemas{}
+var providerSchemasMapLock sync.Mutex
+
+//var customSupportedProviderNames = [...]string{"google-beta"}
+
+type Attribute struct {
+	Type      cty.Type `json:"type"`
+	Required  bool     `json:"required"`
+	Optional  bool     `json:"optional"`
+	Computed  bool     `json:"computed"`
+	Sensitive bool     `json:"sensitive"`
+}
+
+type Block struct {
+	Attributes map[string]*Attribute `json:"attributes"`
+}
+
+type ResourceSchema struct {
+	Block Block `json:"block"`
+}
+
+type ProviderSchema struct {
+	ResourceSchemas map[string]*ResourceSchema `json:"resource_schemas"`
+}
+
+type ProviderSchemas struct {
+	ProviderSchemas map[string]*ProviderSchema `json:"provider_schemas"`
+}
 
 func IsTaggable(dir string, iacType common.IACType, resource hclwrite.Block) (bool, error) {
 	var isTaggable bool
 	resourceType := terraform.GetResourceType(resource)
 
 	if providers.IsSupportedResource(resourceType) {
-		providerName, _ := detectProviderName(resource)
-		client, err := getClient(providerName, dir, iacType)
+		resourceSchema, err := getResourceSchema(resourceType, dir, iacType)
 		if err != nil {
-			return false, err
-		}
-		typeSchema, err := client.GetResourceTypeSchema(resourceType)
-		if err != nil {
-			if strings.Contains(err.Error(), "Failed to find resource type") {
-				// short circuiting unfound resource due to: https://github.com/env0/terratag/issues/17
+			if err == ErrResourceTypeNotFound {
 				log.Print("[WARN] Skipped ", resourceType, " as it is not YET supported")
 				return false, nil
 			}
@@ -46,8 +68,7 @@ func IsTaggable(dir string, iacType common.IACType, resource hclwrite.Block) (bo
 			return false, err
 		}
 
-		attributes := typeSchema.Attributes
-		for attribute := range attributes {
+		for attribute := range resourceSchema.Block.Attributes {
 			if providers.IsTaggableByAttribute(resourceType, attribute) {
 				isTaggable = true
 			}
@@ -64,28 +85,6 @@ func IsTaggable(dir string, iacType common.IACType, resource hclwrite.Block) (bo
 type TfSchemaAttribute struct {
 	Name string
 	Type string
-}
-
-func extractProviderNameFromResourceType(resourceType string) (string, error) {
-	s := strings.SplitN(resourceType, "_", 2)
-	if len(s) < 2 {
-		return "", fmt.Errorf("failed to detect a provider name: %s", resourceType)
-	}
-	return s[0], nil
-}
-
-func detectProviderName(resource hclwrite.Block) (string, error) {
-	providerAttribute := resource.Body().GetAttribute("provider")
-
-	if providerAttribute != nil {
-		providerTokens := providerAttribute.Expr().BuildTokens(hclwrite.Tokens{})
-		providerName := strings.Trim(string(providerTokens.Bytes()), "\" ")
-		if funk.Contains(customSupportedProviderNames, providerName) {
-			return providerName, nil
-		}
-	}
-
-	return extractProviderNameFromResourceType(terraform.GetResourceType(resource))
 }
 
 func getTerragruntPluginPath(dir string) string {
@@ -110,7 +109,7 @@ func getTerragruntPluginPath(dir string) string {
 	return ret
 }
 
-func getClient(providerName string, dir string, iacType common.IACType) (tfschema.Client, error) {
+func getResourceSchema(resourceType string, dir string, iacType common.IACType) (*ResourceSchema, error) {
 	if iacType == common.Terragrunt {
 		// which mode of terragrunt it is (with or without cache folder).
 		if _, err := os.Stat(dir + "/.terragrunt-cache"); err == nil {
@@ -118,33 +117,45 @@ func getClient(providerName string, dir string, iacType common.IACType) (tfschem
 		}
 	}
 
-	providerToClientMapLock.Lock()
-	defer providerToClientMapLock.Unlock()
+	providerSchemasMapLock.Lock()
+	defer providerSchemasMapLock.Unlock()
 
-	client, exists := providerToClientMap[providerName]
-	if exists {
-		return client, nil
+	providerSchemas, ok := providerSchemasMap[dir]
+	if !ok {
+		providerSchemas = &ProviderSchemas{}
+
+		cmd := exec.Command("terraform", "providers", "schema", "-json")
+		cmd.Dir = dir
+
+		out, err := cmd.Output()
+		if err != nil {
+			return nil, fmt.Errorf("failed to execute 'terraform providers schema -json' command: %w", err)
+		}
+
+		// Output can vary between operating systems. Get the correct output line.
+		for _, line := range bytes.Split(out, []byte("\n")) {
+			if len(line) > 0 && line[0] == '{' {
+				out = line
+				break
+			}
+		}
+
+		if err := json.Unmarshal(out, providerSchemas); err != nil {
+			if e, ok := err.(*json.SyntaxError); ok {
+				log.Printf("syntax error at byte offset %d", e.Offset)
+			}
+			return nil, fmt.Errorf("failed to unmarshal returned provider schemas: %w", err)
+		}
+
+		providerSchemasMap[dir] = providerSchemas
 	}
 
-	logger := hclog.New(&hclog.LoggerOptions{
-		Name:   "plugin",
-		Level:  hclog.Trace,
-		Output: hclog.DefaultOutput,
-		// this annoyance - both tfschema and go-plugin open output
-		// directly to os.Stderr, bypassing our log level filter.
-		// weird to need to bypass the issue by assigning the default
-		// output ¯\_(ツ)_/¯
-	})
-
-	newClient, err := tfschema.NewClient(providerName, tfschema.Option{
-		RootDir: dir,
-		Logger:  logger,
-	})
-	if err != nil {
-		return nil, err
+	for _, providerSchema := range providerSchemas.ProviderSchemas {
+		resourceSchema, ok := providerSchema.ResourceSchemas[resourceType]
+		if ok {
+			return resourceSchema, nil
+		}
 	}
 
-	providerToClientMap[providerName] = newClient
-
-	return newClient, nil
+	return nil, ErrResourceTypeNotFound
 }

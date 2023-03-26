@@ -16,95 +16,12 @@ import (
 )
 
 func GetExistingTagsExpression(tokens hclwrite.Tokens, tfVersion common.Version) string {
-	// NOTE: consider removing buildMapExpression in case tf v0.11.0 support is removed.
-	if isHclMap(tokens) && tfVersion.Major == 0 && tfVersion.Minor <= 11 {
-		return buildMapExpression(tokens, tfVersion)
-	} else {
-		return stringifyExpression(tokens)
-	}
+	return stringifyExpression(tokens)
 }
 
 func isHclMap(tokens hclwrite.Tokens) bool {
 	maybeHclMap := strings.TrimSpace(string(tokens.Bytes()))
 	return strings.HasPrefix(maybeHclMap, "{") && strings.HasSuffix(maybeHclMap, "}")
-}
-
-func trimTokens(tokens hclwrite.Tokens) hclwrite.Tokens {
-	tokenTypesToRemove := []hclsyntax.TokenType{hclsyntax.TokenOBrace, hclsyntax.TokenNewline, hclsyntax.TokenCBrace}
-
-	var startIndex int
-	var endIndex int
-
-	for index, token := range tokens {
-		if !funk.Contains(tokenTypesToRemove, token.Type) {
-			startIndex = index
-			break
-		}
-	}
-
-	for index, token := range funk.Reverse(tokens).([]*hclwrite.Token) {
-		if !funk.Contains(tokenTypesToRemove, token.Type) {
-			endIndex = index
-			break
-		}
-	}
-
-	return tokens[startIndex : len(tokens)-endIndex]
-}
-
-func buildMapExpression(tokens hclwrite.Tokens, tfVersion common.Version) string {
-	if tfVersion.Major == 0 && tfVersion.Minor >= 15 || tfVersion.Major == 1 {
-		mapContent := strings.TrimSpace(string(tokens.Bytes()))
-		return "tomap(" + mapContent + ")"
-	}
-
-	// Need to convert to inline map expression
-
-	// First, we get rid of the opening/closing newlines and {}
-	tokens = trimTokens(tokens)
-
-	// Then, we normalize the key-value paris so that they would be seperated by comma
-	// That's cause HCL supports both newline, comma or a combination of the two in seperating values
-	// This will make it easier to split the key-value pairs later
-	var tokensToRemove hclwrite.Tokens
-	for i, token := range tokens {
-		if token.Type == hclsyntax.TokenNewline {
-			// make sure there is (or was) no comma before
-			if i > 0 && tokens[i-1].Type != hclsyntax.TokenComma && !funk.Contains(tokensToRemove, tokens[i-1]) {
-				tokens[i] = &hclwrite.Token{
-					Type:         hclsyntax.TokenComma,
-					Bytes:        []byte(","),
-					SpacesBefore: 1,
-				}
-			} else { // if there is, we should remove this new line, so we'll only have the comma
-				tokensToRemove = append(tokensToRemove, token)
-			}
-		}
-	}
-
-	// Remove tall the new lines we marked for removal
-	for _, tokenToRemove := range tokensToRemove {
-		indexToRemove := funk.IndexOf(tokens, tokenToRemove)
-		tokens = append(tokens[:indexToRemove], tokens[indexToRemove+1:]...)
-	}
-
-	// At this point there should be no new lines, only a single comma seperating between key values
-	// Since the map() gets a flat set of pairs as map("key1","value1","key2","value2"),
-	// we can just replace any assignment operator (=) with comma
-	for i, token := range tokens {
-		if token.Type == hclsyntax.TokenEqual {
-			tokens[i] = &hclwrite.Token{
-				Type:         hclsyntax.TokenComma,
-				Bytes:        []byte(","),
-				SpacesBefore: token.SpacesBefore,
-			}
-		}
-	}
-
-	mapContent := string(tokens.Bytes())
-	mapContent = strings.Replace(mapContent, " ", "", -1) // trim spaces
-	mapContent = strings.TrimSuffix(mapContent, ",")      // remove any traling commas due to newline replaced
-	return "map(" + mapContent + ")"
 }
 
 func stringifyExpression(tokens hclwrite.Tokens) string {
