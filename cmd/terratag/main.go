@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"strings"
 
 	"github.com/env0/terratag"
 	"github.com/env0/terratag/cli"
@@ -22,7 +23,11 @@ func main() {
 	}
 
 	if args.Version {
-		fmt.Printf("Terratag v%s\n", version)
+		var versionPrefix string
+		if !strings.HasPrefix(version, "v") {
+			versionPrefix = "v"
+		}
+		fmt.Printf("Terratag %s%s\n", versionPrefix, version)
 		return
 	}
 

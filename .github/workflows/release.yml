@@ -48,7 +48,7 @@ jobs:
       - name: Build project
         run: |
           mkdir out
-          CGO_ENABLED=0 go build -a -installsuffix cgo -o ./out/terratag/terratag ./cmd/terratag
+          CGO_ENABLED=0 go build -ldflags "-X main.version=${{github.ref_name}}" -a -installsuffix cgo -o ./out/terratag/terratag ./cmd/terratag
 
       # Setup .npmrc file to publish to GitHub Packages
       - name: Setup Node
