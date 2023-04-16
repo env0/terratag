@@ -15,3 +15,4 @@ suites:
   - google_beta_resource_skip
   - google_container_cluster
   - google_labels_map
+  - google_vs_google_beta
