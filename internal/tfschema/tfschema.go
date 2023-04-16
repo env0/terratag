@@ -17,6 +17,7 @@ import (
 	"github.com/env0/terratag/internal/providers"
 	"github.com/env0/terratag/internal/tagging"
 	"github.com/env0/terratag/internal/terraform"
+	"github.com/thoas/go-funk"
 
 	"github.com/hashicorp/hcl/v2/hclwrite"
 	"github.com/zclconf/go-cty/cty"
@@ -27,7 +28,7 @@ var ErrResourceTypeNotFound = errors.New("resource type not found")
 var providerSchemasMap map[string]*ProviderSchemas = map[string]*ProviderSchemas{}
 var providerSchemasMapLock sync.Mutex
 
-//var customSupportedProviderNames = [...]string{"google-beta"}
+var customSupportedProviderNames = [...]string{"google-beta"}
 
 type Attribute struct {
 	Type      cty.Type `json:"type"`
@@ -58,7 +59,7 @@ func IsTaggable(dir string, iacType common.IACType, resource hclwrite.Block) (bo
 	resourceType := terraform.GetResourceType(resource)
 
 	if providers.IsSupportedResource(resourceType) {
-		resourceSchema, err := getResourceSchema(resourceType, dir, iacType)
+		resourceSchema, err := getResourceSchema(resourceType, resource, dir, iacType)
 		if err != nil {
 			if err == ErrResourceTypeNotFound {
 				log.Print("[WARN] Skipped ", resourceType, " as it is not YET supported")
@@ -109,7 +110,29 @@ func getTerragruntPluginPath(dir string) string {
 	return ret
 }
 
-func getResourceSchema(resourceType string, dir string, iacType common.IACType) (*ResourceSchema, error) {
+func extractProviderNameFromResourceType(resourceType string) (string, error) {
+	s := strings.SplitN(resourceType, "_", 2)
+	if len(s) < 2 {
+		return "", fmt.Errorf("failed to detect a provider name: %s", resourceType)
+	}
+	return s[0], nil
+}
+
+func detectProviderName(resource hclwrite.Block) (string, error) {
+	providerAttribute := resource.Body().GetAttribute("provider")
+
+	if providerAttribute != nil {
+		providerTokens := providerAttribute.Expr().BuildTokens(hclwrite.Tokens{})
+		providerName := strings.Trim(string(providerTokens.Bytes()), "\" ")
+		if funk.Contains(customSupportedProviderNames, providerName) {
+			return providerName, nil
+		}
+	}
+
+	return extractProviderNameFromResourceType(terraform.GetResourceType(resource))
+}
+
+func getResourceSchema(resourceType string, resource hclwrite.Block, dir string, iacType common.IACType) (*ResourceSchema, error) {
 	if iacType == common.Terragrunt {
 		// which mode of terragrunt it is (with or without cache folder).
 		if _, err := os.Stat(dir + "/.terragrunt-cache"); err == nil {
@@ -150,6 +173,19 @@ func getResourceSchema(resourceType string, dir string, iacType common.IACType) 
 		providerSchemasMap[dir] = providerSchemas
 	}
 
+	providerName, _ := detectProviderName(resource)
+	// The resource has a provider name field. Use it.
+	if len(providerName) > 0 {
+		providerSchema, ok := providerSchemas.ProviderSchemas[providerName]
+		if ok {
+			resourceSchema, ok := providerSchema.ResourceSchemas[resourceType]
+			if ok {
+				return resourceSchema, nil
+			}
+		}
+	}
+
+	// Search through all providers.
 	for _, providerSchema := range providerSchemas.ProviderSchemas {
 		resourceSchema, ok := providerSchema.ResourceSchemas[resourceType]
 		if ok {
