@@ -23,9 +23,9 @@ jobs:
         run: |
           ! go vet ./... | read
       - name: Go staticcheck
-        uses: dominikh/staticcheck-action@v1.2.0
+        uses: dominikh/staticcheck-action@v1.3.0
         with:
-          version: "2022.1"
+          version: "2023.1.3"
           install-go: false
       - name: Go Test
         run: SKIP_INTEGRATION_TESTS=1 go test -v ./...
