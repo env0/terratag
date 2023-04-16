@@ -174,10 +174,9 @@ func getResourceSchema(resourceType string, resource hclwrite.Block, dir string,
 	}
 
 	detectedProviderName, _ := detectProviderName(resource)
-
 	// Search through all providers.
 	for providerName, providerSchema := range providerSchemas.ProviderSchemas {
-		if len(detectedProviderName) > 0 && !strings.HasSuffix(providerName, "/"+detectedProviderName) {
+		if len(detectedProviderName) > 0 && providerName != detectedProviderName && !strings.HasSuffix(providerName, "/"+detectedProviderName) {
 			// Not the correct provider (based on name). Skip.
 			continue
 		}
