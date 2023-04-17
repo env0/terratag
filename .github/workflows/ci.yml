@@ -39,34 +39,28 @@ jobs:
         terraform_version: ['12','13','14','15','latest']
 
     steps:
+      - name: Check out code into the Go module directory
+        uses: actions/checkout@v3
       - name: Set up Go
         uses: actions/setup-go@v4
         with:
           go-version: 1.19
         id: go
-
-      - name: Check out code into the Go module directory
-        uses: actions/checkout@v3
-
       - name: Get dependencies
         run: |
           go mod tidy
-
       - name: Install tfenv
         run: |
           git clone https://github.com/tfutils/tfenv.git $GITHUB_WORKSPACE/.tfenv
           echo "$GITHUB_WORKSPACE/.tfenv/bin" >> $GITHUB_PATH
-
       - name: Install terraform
         working-directory: test/tfenvconf/terraform_${{ matrix.terraform_version }}
         run: |
           tfenv install
           tfenv use
-
       - name: Print Terraform version
         run: |
           terraform --version
-
       - name: Set Test-Suite
         id: test-suite
         env:
@@ -87,39 +81,31 @@ jobs:
   terragrunt-integration-tests:
     name: Terragrunt Integration Tests
     runs-on: ubuntu-latest
-
     steps:
+      - name: Check out code into the Go module directory
+        uses: actions/checkout@v3
       - name: Set up Go
         uses: actions/setup-go@v4
         with:
           go-version: 1.19
         id: go
-
-      - name: Check out code into the Go module directory
-        uses: actions/checkout@v3
-
       - name: Get dependencies
         run: |
           go mod tidy
-
       - name: Install Terraform
         uses: hashicorp/setup-terraform@v2
         with:
           terraform_version: 1.2.5
-
       - name: Print Terraform version
         run: |
           terraform --version
-
       - name: Install Terragrunt
         uses: autero1/action-terragrunt@v1.3.1
         with:
           terragrunt_version: 0.38.5
-
       - name: Print Terragrunt version
         run: |
           terragrunt --version
-
       - name: Test
         run: |
           go test -v -run ^TestTerragruntWithCache$
