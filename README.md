@@ -175,6 +175,19 @@ locals {
 - `-filter=<regular expression>` - defaults to `.*`. Only apply tags to the resource types matched by the regular expression
 - `-type=<terraform or terragrunt>` - defaults to `terraform`. If `terragrunt` is used, tags the files under `.terragrunt-cache` folder. Note: if Terragrunt does not create a `.terragrunt-cache` folder, use the default or omit.
 
+Setting options via enviroment variables is also supported. CLI flags have a precedence over envrionment variable.
+
+```
+TERRATAG_TAGS
+TERRATAG_DIR
+TERRATAG_SKIPTERRATAGFILES
+TERRATAG_FILTER
+TERRATAG_SKIP
+TERRATAG_VERBOSE
+TERRATAG_RENAME
+TERRATAG_TYPE
+```
+
 ##### See more samples [here](https://github.com/env0/terratag/tree/master/test/fixture)
 
 ## Notes
