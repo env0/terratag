@@ -15,10 +15,12 @@ import (
 
 	"github.com/bmatcuk/doublestar"
 	"github.com/env0/terratag/cli"
+	"github.com/env0/terratag/internal/common"
 	. "github.com/onsi/gomega"
 	"github.com/otiai10/copy"
 	"github.com/spf13/viper"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 var cleanArgs = append([]string(nil), os.Args...)
@@ -396,4 +398,50 @@ func TestToHclMap(t *testing.T) {
 			assert.Error(t, err)
 		})
 	}
+}
+
+func TestEnvVariables(t *testing.T) {
+	os.Setenv("TERRATAG_TAGS", `{"a":"b"}`)
+	os.Setenv("TERRATAG_DIR", "./dir")
+	os.Setenv("TERRATAG_SKIPTERRATAGFILES", "true")
+	os.Setenv("TERRATAG_FILTER", "filter")
+	os.Setenv("TERRATAG_SKIP", "skip")
+	os.Setenv("TERRATAG_VERBOSE", "true")
+	os.Setenv("TERRATAG_RENAME", "false")
+	os.Setenv("TERRATAG_TYPE", string(common.Terragrunt))
+
+	defer func() {
+		os.Unsetenv("TERRATAG_TAGS")
+		os.Unsetenv("TERRATAG_DIR")
+		os.Unsetenv("TERRATAG_SKIPTERRATAGFILES")
+		os.Unsetenv("TERRATAG_FILTER")
+		os.Unsetenv("TERRATAG_SKIP")
+		os.Unsetenv("TERRATAG_VERBOSE")
+		os.Unsetenv("TERRATAG_RENAME")
+		os.Unsetenv("TERRATAG_TYPE")
+	}()
+
+	osArgsLock.Lock()
+	defer osArgsLock.Unlock()
+
+	os.Args = []string{programName}
+	args, err := cli.InitArgs()
+	os.Args = cleanArgs
+	require.Nil(t, err)
+
+	assert.Equal(t, `{"a":"b"}`, args.Tags)
+	assert.Equal(t, "./dir", args.Dir)
+	assert.Equal(t, true, args.IsSkipTerratagFiles)
+	assert.Equal(t, "filter", args.Filter)
+	assert.Equal(t, "skip", args.Skip)
+	assert.Equal(t, true, args.Verbose)
+	assert.Equal(t, false, args.Rename)
+	assert.Equal(t, string(common.Terragrunt), args.Type)
+
+	// The command line flags have precedence over environment variables.
+	os.Args = []string{programName, `-tags={"c":"d"}`}
+	args, err = cli.InitArgs()
+	os.Args = cleanArgs
+	require.Nil(t, err)
+	assert.Equal(t, `{"c":"d"}`, args.Tags)
 }

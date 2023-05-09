@@ -5,6 +5,7 @@ import (
 	"flag"
 	"fmt"
 	"os"
+	"strings"
 
 	"github.com/env0/terratag/internal/common"
 )
@@ -47,6 +48,21 @@ func InitArgs() (Args, error) {
 	fs.BoolVar(&args.Rename, "rename", true, "Keep the original filename or replace it with <basename>.terratag.tf")
 	fs.StringVar(&args.Type, "type", string(common.Terraform), "The IAC type. Valid values: terraform or terragrunt")
 	fs.BoolVar(&args.Version, "version", false, "Prints the version")
+
+	// Set cli args based on environment variables.
+	//The command line flags have precedence over environment variables.
+	fs.VisitAll(func(f *flag.Flag) {
+		if f.Name == "version" {
+			return
+		}
+
+		name := "TERRATAG_" + strings.ToUpper(strings.ReplaceAll(f.Name, "-", "_"))
+		if value, ok := os.LookupEnv(name); ok {
+			if err := fs.Set(f.Name, value); err != nil {
+				fmt.Printf("[WARN] failed to set command arg flag '%s' from environment variable '%s': %v\n", f.Name, name, err)
+			}
+		}
+	})
 
 	if err := fs.Parse(programArgs); err != nil {
 		return args, err
