@@ -24,6 +24,7 @@ type TaggingArgs struct {
 	Rename              bool
 	IACType             IACType
 	TFVersion           Version
+	DryRun              bool
 }
 
 type TerratagLocal struct {

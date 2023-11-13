@@ -20,10 +20,11 @@ type Args struct {
 	Verbose             bool
 	Rename              bool
 	Version             bool
+	DryRun              bool
 }
 
 func validate(args Args) error {
-	if args.Tags == "" {
+	if args.Tags == "" && !args.DryRun {
 		return errors.New("missing tags")
 	}
 	if args.Type != string(common.Terraform) && args.Type != string(common.Terragrunt) {
@@ -48,9 +49,10 @@ func InitArgs() (Args, error) {
 	fs.BoolVar(&args.Rename, "rename", true, "Keep the original filename or replace it with <basename>.terratag.tf")
 	fs.StringVar(&args.Type, "type", string(common.Terraform), "The IAC type. Valid values: terraform or terragrunt")
 	fs.BoolVar(&args.Version, "version", false, "Prints the version")
+	fs.BoolVar(&args.DryRun, "dryrun", false, "Dry run and report of any files and resources without tags (does not modify the files). Non zero exit code is returned if such files and resources are found")
 
 	// Set cli args based on environment variables.
-	//The command line flags have precedence over environment variables.
+	// The command line flags have precedence over environment variables.
 	fs.VisitAll(func(f *flag.Flag) {
 		if f.Name == "version" {
 			return

@@ -59,6 +59,19 @@ func HasResourceTagFn(resourceType string) bool {
 	return resourceTypeToFnMap[resourceType] != nil
 }
 
+func HasTags(args TagBlockArgs) (bool, error) {
+	// First we try to find tags as attribute
+	tagsAttribute := args.Block.Body().GetAttribute(args.TagId)
+
+	if tagsAttribute != nil {
+		return true, nil
+	}
+
+	// Otherwise, we try to get tags as block
+	tagsBlock := args.Block.Body().FirstMatchingBlock(args.TagId, nil)
+	return tagsBlock != nil, nil
+}
+
 func TagResource(args TagBlockArgs) (*Result, error) {
 	resourceType := terraform.GetResourceType(*args.Block)
 

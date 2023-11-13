@@ -35,6 +35,7 @@ func main() {
 
 	if err := terratag.Terratag(args); err != nil {
 		log.Printf("[ERROR] execution failed due to an error\n%v", err)
+		os.Exit(1)
 	}
 }
 

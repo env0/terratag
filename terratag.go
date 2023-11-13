@@ -2,6 +2,7 @@ package terratag
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"log"
 	"regexp"
@@ -23,10 +24,11 @@ import (
 )
 
 type counters struct {
-	totalResources  uint32
-	taggedResources uint32
-	totalFiles      uint32
-	taggedFiles     uint32
+	totalResources    uint32
+	taggedResources   uint32
+	totalFiles        uint32
+	taggedFiles       uint32
+	untaggedResources uint32 // For dryrun.
 }
 
 var pairRegex = regexp.MustCompile(`^([a-zA-Z][\w-]*)=([\w-]+)$`)
@@ -38,6 +40,7 @@ func (c *counters) Add(other counters) {
 	atomic.AddUint32(&c.taggedResources, other.taggedResources)
 	atomic.AddUint32(&c.totalFiles, other.totalFiles)
 	atomic.AddUint32(&c.taggedFiles, other.taggedFiles)
+	atomic.AddUint32(&c.untaggedResources, other.untaggedResources)
 }
 
 func Terratag(args cli.Args) error {
@@ -65,12 +68,23 @@ func Terratag(args cli.Args) error {
 		Rename:              args.Rename,
 		IACType:             common.IACType(args.Type),
 		TFVersion:           *tfVersion,
+		DryRun:              args.DryRun,
 	}
 
 	counters := tagDirectoryResources(taggingArgs)
 	log.Print("[INFO] Summary:")
-	log.Print("[INFO] Tagged ", counters.taggedResources, " resource/s (out of ", counters.totalResources, " resource/s processed)")
-	log.Print("[INFO] In ", counters.taggedFiles, " file/s (out of ", counters.totalFiles, " file/s processed)")
+	if args.DryRun {
+		log.Printf("[INFO] Scanned %d files", counters.totalFiles)
+		log.Printf("[INFO] Detected %d untagged resources (out of %d resource/s)", counters.untaggedResources, counters.totalResources)
+
+		if counters.untaggedResources > 0 {
+			return errors.New("dry run detected untagged resources")
+		}
+
+	} else {
+		log.Print("[INFO] Tagged ", counters.taggedResources, " resource/s (out of ", counters.totalResources, " resource/s processed)")
+		log.Print("[INFO] In ", counters.taggedFiles, " file/s (out of ", counters.totalFiles, " file/s processed)")
+	}
 
 	return nil
 }
@@ -80,7 +94,7 @@ func tagDirectoryResources(args *common.TaggingArgs) counters {
 	var total counters
 	for _, path := range args.Matches {
 		if args.IsSkipTerratagFiles && strings.HasSuffix(path, "terratag.tf") {
-			log.Print("[INFO] Skipping file ", path, " as it's already tagged")
+			log.Print("[INFO] Skipping file ", path, " as it's already tagged by terratag")
 		} else {
 			matchWaitGroup.Add(1)
 
@@ -125,14 +139,16 @@ func tagFileResources(path string, args *common.TaggingArgs) (*counters, error) 
 
 	filename := file.GetFilename(path)
 
-	hclMap, err := toHclMap(args.Tags)
-	if err != nil {
-		return nil, err
-	}
-
 	terratag := common.TerratagLocal{
 		Found: map[string]hclwrite.Tokens{},
-		Added: hclMap,
+	}
+
+	if !args.DryRun {
+		hclMap, err := toHclMap(args.Tags)
+		if err != nil {
+			return nil, err
+		}
+		terratag.Added = hclMap
 	}
 
 	for _, resource := range hcl.Body().Blocks() {
@@ -169,24 +185,46 @@ func tagFileResources(path string, args *common.TaggingArgs) (*counters, error) 
 
 			if isTaggable {
 				log.Print("[INFO] Resource taggable, processing...", resource.Labels())
+
 				perFileCounters.taggedResources += 1
-				result, err := tagging.TagResource(tagging.TagBlockArgs{
+
+				taggingArgs := tagging.TagBlockArgs{
 					Filename:  filename,
 					Block:     resource,
 					Tags:      args.Tags,
 					Terratag:  terratag,
 					TagId:     providers.GetTagIdByResource(terraform.GetResourceType(*resource)),
 					TfVersion: args.TFVersion,
-				})
-				if err != nil {
-					return nil, err
 				}
 
-				swappedTagsStrings = append(swappedTagsStrings, result.SwappedTagsStrings...)
+				if args.DryRun {
+					hasTags, err := tagging.HasTags(taggingArgs)
+					if err != nil {
+						return nil, err
+					}
+
+					if !hasTags {
+						log.Printf("[WARN] Resource %s is taggable but does not have tags", resource.Labels())
+						perFileCounters.untaggedResources += 1
+					} else {
+						log.Printf("[INFO] Resource %s is taggable and tagged", resource.Labels())
+					}
+				} else {
+					result, err := tagging.TagResource(taggingArgs)
+					if err != nil {
+						return nil, err
+					}
+
+					swappedTagsStrings = append(swappedTagsStrings, result.SwappedTagsStrings...)
+				}
 			} else {
 				log.Print("[INFO] Resource not taggable, skipping.", resource.Labels())
 			}
 		case "locals":
+			if args.DryRun {
+				break
+			}
+
 			// Checks if terratag_added_* exists.
 			// If it exists no need to append it again to Terratag file.
 			// Instead should override it.
@@ -220,7 +258,9 @@ func tagFileResources(path string, args *common.TaggingArgs) (*counters, error) 
 		}
 		perFileCounters.taggedFiles = 1
 	} else {
-		log.Print("[INFO] No taggable resources found in file ", path, " - skipping")
+		if !args.DryRun {
+			log.Print("[INFO] No taggable resources found in file ", path, " - skipping")
+		}
 	}
 	return &perFileCounters, nil
 }
