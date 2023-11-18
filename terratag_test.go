@@ -212,7 +212,7 @@ func itShouldRunTerratag(entryDir string, filter string, skip string, g *GomegaW
 func itShouldRunTerratagDryRun(fail bool, entryDir string, filter string, skip string, g *GomegaWithT) {
 	err := run_terratag(entryDir, filter, skip, false, true)
 	if fail {
-		g.Expect(err).ToNot(BeNil(), "terratag dry run expected to fail by passed")
+		g.Expect(err).ToNot(BeNil(), "terratag dry run expected to fail but passed")
 	} else {
 		g.Expect(err).To(BeNil(), "terratag dry run failed")
 	}
@@ -339,7 +339,10 @@ func run_terratag(entryDir string, filter string, skip string, terragrunt bool, 
 	if err != nil {
 		return err
 	}
-	Terratag(args)
+
+	if err := Terratag(args); err != nil {
+		return err
+	}
 
 	return nil
 }
