@@ -113,9 +113,11 @@ func testTerraform(t *testing.T, version string) {
 			t.Parallel() // marks each test case as capable of running in parallel with each other
 			g := NewWithT(t)
 			itShouldTerraformInit(tt.entryDir, g)
+			itShouldRunTerratagDryRun(true, tt.entryDir, "", "", g)
 			itShouldRunTerratag(tt.entryDir, "", "", g)
 			itShouldRunTerraformValidate(tt.entryDir, g)
 			itShouldGenerateExpectedTerratagFiles(tt.suiteDir, g)
+			itShouldRunTerratagDryRun(false, tt.entryDir, "", "", g)
 		})
 	}
 }
@@ -203,12 +205,21 @@ func itShouldRunTerraformValidate(entryDir string, g *GomegaWithT) {
 }
 
 func itShouldRunTerratag(entryDir string, filter string, skip string, g *GomegaWithT) {
-	err := run_terratag(entryDir, filter, skip, false)
+	err := run_terratag(entryDir, filter, skip, false, false)
 	g.Expect(err).To(BeNil(), "terratag failed")
 }
 
+func itShouldRunTerratagDryRun(fail bool, entryDir string, filter string, skip string, g *GomegaWithT) {
+	err := run_terratag(entryDir, filter, skip, false, true)
+	if fail {
+		g.Expect(err).ToNot(BeNil(), "terratag dry run expected to fail by passed")
+	} else {
+		g.Expect(err).To(BeNil(), "terratag dry run failed")
+	}
+}
+
 func itShouldRunTerratagTerragruntMode(entryDir string, g *GomegaWithT) {
-	err := run_terratag(entryDir, "", "", true)
+	err := run_terratag(entryDir, "", "", true, false)
 	g.Expect(err).To(BeNil(), "terratag terragrunt mode failed")
 }
 
@@ -295,7 +306,7 @@ func cloneOutput(inputDirs []string, terraformDir string) {
 	}
 }
 
-func run_terratag(entryDir string, filter string, skip string, terragrunt bool) (err interface{}) {
+func run_terratag(entryDir string, filter string, skip string, terragrunt bool, dryRun bool) (err interface{}) {
 	defer func() {
 		if innerErr := recover(); innerErr != nil {
 			fmt.Println(innerErr)
@@ -312,6 +323,10 @@ func run_terratag(entryDir string, filter string, skip string, terragrunt bool) 
 
 	if skip != "" {
 		os.Args = append(os.Args, "-skip="+skip)
+	}
+
+	if dryRun {
+		os.Args = append(os.Args, "-dryrun")
 	}
 
 	if terragrunt {
