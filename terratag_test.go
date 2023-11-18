@@ -95,6 +95,7 @@ func TestTerragruntWithCache(t *testing.T) {
 	itShouldRunTerratagTerragruntMode(out, g)
 	itShouldRunTerragruntValidate(out, g)
 	itShouldGenerateExpectedTerragruntTerratagFiles(entryDir, g)
+	itShouldRunTerratagTerragruntModeDryRun(out, g)
 }
 
 func testTerraform(t *testing.T, version string) {
@@ -135,6 +136,7 @@ func testTerraformWithFilter(t *testing.T, version string, filter string, skip s
 			itShouldRunTerratag(tt.entryDir, filter, skip, g)
 			itShouldRunTerraformValidate(tt.entryDir, g)
 			itShouldGenerateExpectedTerratagFiles(tt.suiteDir, g)
+			itShouldRunTerratagDryRun(tt.entryDir, filter, skip, g)
 		})
 	}
 }
@@ -216,6 +218,11 @@ func itShouldRunTerratagDryRun(entryDir string, filter string, skip string, g *G
 func itShouldRunTerratagTerragruntMode(entryDir string, g *GomegaWithT) {
 	err := run_terratag(entryDir, "", "", true, false)
 	g.Expect(err).To(BeNil(), "terratag terragrunt mode failed")
+}
+
+func itShouldRunTerratagTerragruntModeDryRun(entryDir string, g *GomegaWithT) {
+	err := run_terratag(entryDir, "", "", true, true)
+	g.Expect(err).To(BeNil(), "terratag terragrunt mode dry run failed")
 }
 
 func itShouldTerraformInit(entryDir string, g *GomegaWithT) {
