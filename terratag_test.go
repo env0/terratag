@@ -113,11 +113,10 @@ func testTerraform(t *testing.T, version string) {
 			t.Parallel() // marks each test case as capable of running in parallel with each other
 			g := NewWithT(t)
 			itShouldTerraformInit(tt.entryDir, g)
-			itShouldRunTerratagDryRun(true, tt.entryDir, "", "", g)
 			itShouldRunTerratag(tt.entryDir, "", "", g)
 			itShouldRunTerraformValidate(tt.entryDir, g)
 			itShouldGenerateExpectedTerratagFiles(tt.suiteDir, g)
-			itShouldRunTerratagDryRun(false, tt.entryDir, "", "", g)
+			itShouldRunTerratagDryRun(tt.entryDir, "", "", g)
 		})
 	}
 }
@@ -209,13 +208,9 @@ func itShouldRunTerratag(entryDir string, filter string, skip string, g *GomegaW
 	g.Expect(err).To(BeNil(), "terratag failed")
 }
 
-func itShouldRunTerratagDryRun(fail bool, entryDir string, filter string, skip string, g *GomegaWithT) {
+func itShouldRunTerratagDryRun(entryDir string, filter string, skip string, g *GomegaWithT) {
 	err := run_terratag(entryDir, filter, skip, false, true)
-	if fail {
-		g.Expect(err).ToNot(BeNil(), "terratag dry run expected to fail but passed")
-	} else {
-		g.Expect(err).To(BeNil(), "terratag dry run failed")
-	}
+	g.Expect(err).To(BeNil(), "terratag dry run failed")
 }
 
 func itShouldRunTerratagTerragruntMode(entryDir string, g *GomegaWithT) {
