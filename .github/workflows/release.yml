@@ -3,29 +3,29 @@ name: release
 on:
   push:
     tags:
-    - "v[0-9]+.*"
+      - "v[0-9]+.*"
 
 jobs:
   goreleaser:
     runs-on: ubuntu-latest
     steps:
-    - name: Checkout
-      uses: actions/checkout@v3
-      with:
-        fetch-depth: 0
-    - name: Set up Go
-      uses: actions/setup-go@v4
-      with:
-        go-version: 1.19
-    - name: Run GoReleaser
-      uses: goreleaser/goreleaser-action@v4
-      with:
-        version: latest
-        args: release --rm-dist
-      env:
-        CGO_ENABLED: 0
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        HOMEBREW_TAP_GITHUB_TOKEN: ${{ secrets.HOMEBREW_TAP_GITHUB_TOKEN }}
+      - name: Checkout
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+      - name: Set up Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: 1.21
+      - name: Run GoReleaser
+        uses: goreleaser/goreleaser-action@v4
+        with:
+          version: latest
+          args: release --rm-dist
+        env:
+          CGO_ENABLED: 0
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          HOMEBREW_TAP_GITHUB_TOKEN: ${{ secrets.HOMEBREW_TAP_GITHUB_TOKEN }}
 
   npmbuild:
     name: Build for Alpine and publish node artifact
@@ -34,10 +34,10 @@ jobs:
     steps:
       - name: Check out code into the Go module directory
         uses: actions/checkout@v3
-      - name: Set up Go 1.19
+      - name: Set up Go 1.21
         uses: actions/setup-go@v4
         with:
-          go-version: 1.19
+          go-version: 1.21
         id: go
       - name: Get dependencies
         run: |
@@ -50,9 +50,9 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@v3
         with:
-          node-version: '12.x'
-          registry-url: 'https://registry.npmjs.org'          
-          scope: '@env0'
+          node-version: "12.x"
+          registry-url: "https://registry.npmjs.org"
+          scope: "@env0"
       - run: |
           npm init --yes --scope @env0
           ref=${{ github.ref }}
