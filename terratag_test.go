@@ -95,6 +95,7 @@ func TestTerragruntWithCache(t *testing.T) {
 	itShouldRunTerratagTerragruntMode(out, g)
 	itShouldRunTerragruntValidate(out, g)
 	itShouldGenerateExpectedTerragruntTerratagFiles(entryDir, g)
+	itShouldRunTerratagTerragruntModeDryRun(out, g)
 }
 
 func testTerraform(t *testing.T, version string) {
@@ -116,6 +117,7 @@ func testTerraform(t *testing.T, version string) {
 			itShouldRunTerratag(tt.entryDir, "", "", g)
 			itShouldRunTerraformValidate(tt.entryDir, g)
 			itShouldGenerateExpectedTerratagFiles(tt.suiteDir, g)
+			itShouldRunTerratagDryRun(tt.entryDir, "", "", g)
 		})
 	}
 }
@@ -134,6 +136,7 @@ func testTerraformWithFilter(t *testing.T, version string, filter string, skip s
 			itShouldRunTerratag(tt.entryDir, filter, skip, g)
 			itShouldRunTerraformValidate(tt.entryDir, g)
 			itShouldGenerateExpectedTerratagFiles(tt.suiteDir, g)
+			itShouldRunTerratagDryRun(tt.entryDir, filter, skip, g)
 		})
 	}
 }
@@ -203,13 +206,23 @@ func itShouldRunTerraformValidate(entryDir string, g *GomegaWithT) {
 }
 
 func itShouldRunTerratag(entryDir string, filter string, skip string, g *GomegaWithT) {
-	err := run_terratag(entryDir, filter, skip, false)
+	err := run_terratag(entryDir, filter, skip, false, false)
 	g.Expect(err).To(BeNil(), "terratag failed")
 }
 
+func itShouldRunTerratagDryRun(entryDir string, filter string, skip string, g *GomegaWithT) {
+	err := run_terratag(entryDir, filter, skip, false, true)
+	g.Expect(err).To(BeNil(), "terratag dry run failed")
+}
+
 func itShouldRunTerratagTerragruntMode(entryDir string, g *GomegaWithT) {
-	err := run_terratag(entryDir, "", "", true)
+	err := run_terratag(entryDir, "", "", true, false)
 	g.Expect(err).To(BeNil(), "terratag terragrunt mode failed")
+}
+
+func itShouldRunTerratagTerragruntModeDryRun(entryDir string, g *GomegaWithT) {
+	err := run_terratag(entryDir, "", "", true, true)
+	g.Expect(err).To(BeNil(), "terratag terragrunt mode dry run failed")
 }
 
 func itShouldTerraformInit(entryDir string, g *GomegaWithT) {
@@ -295,7 +308,7 @@ func cloneOutput(inputDirs []string, terraformDir string) {
 	}
 }
 
-func run_terratag(entryDir string, filter string, skip string, terragrunt bool) (err interface{}) {
+func run_terratag(entryDir string, filter string, skip string, terragrunt bool, dryRun bool) (err interface{}) {
 	defer func() {
 		if innerErr := recover(); innerErr != nil {
 			fmt.Println(innerErr)
@@ -314,6 +327,10 @@ func run_terratag(entryDir string, filter string, skip string, terragrunt bool) 
 		os.Args = append(os.Args, "-skip="+skip)
 	}
 
+	if dryRun {
+		os.Args = append(os.Args, "-dryrun")
+	}
+
 	if terragrunt {
 		os.Args = append(os.Args, "-type=terragrunt", "-rename=false")
 	}
@@ -324,7 +341,10 @@ func run_terratag(entryDir string, filter string, skip string, terragrunt bool) 
 	if err != nil {
 		return err
 	}
-	Terratag(args)
+
+	if err := Terratag(args); err != nil {
+		return err
+	}
 
 	return nil
 }
