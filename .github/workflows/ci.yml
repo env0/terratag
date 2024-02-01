@@ -11,9 +11,9 @@ jobs:
     runs-on: ubuntu-20.04
     steps:
       - name: Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
       - name: Install Go
-        uses: actions/setup-go@v4
+        uses: actions/checkout@v5
         with:
           go-version: 1.21
       - name: Go fmt
@@ -40,9 +40,9 @@ jobs:
 
     steps:
       - name: Check out code into the Go module directory
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
       - name: Set up Go
-        uses: actions/setup-go@v4
+        uses: actions/checkout@v5
         with:
           go-version: 1.21
         id: go
@@ -83,9 +83,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Check out code into the Go module directory
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
       - name: Set up Go
-        uses: actions/setup-go@v4
+        uses: actions/checkout@v5
         with:
           go-version: 1.21
         id: go
@@ -93,19 +93,42 @@ jobs:
         run: |
           go mod tidy
       - name: Install Terraform
-        uses: hashicorp/setup-terraform@v2
+        uses: hashicorp/setup-terraform@v3
         with:
           terraform_version: 1.2.5
       - name: Print Terraform version
         run: |
           terraform --version
       - name: Install Terragrunt
-        uses: autero1/action-terragrunt@v1.3.1
+        uses: autero1/action-terragrunt@v1.3.2
         with:
-          terragrunt_version: 0.38.5
+          terragrunt_version: 0.54.22
       - name: Print Terragrunt version
         run: |
           terragrunt --version
       - name: Test
         run: |
           go test -v -run ^TestTerragruntWithCache$
+  
+  opentofu-integration-tests:
+    name: OpenTofu Integration Tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out code into the Go module directory
+        uses: actions/checkout@v4
+      - name: Set up Go
+        uses: actions/checkout@v5
+        with:
+          go-version: 1.21
+        id: go
+      - name: Get dependencies
+        run: |
+          go mod tidy
+      - name: Install OpenTofu
+        uses: opentofu/setup-opentofu@v1
+      - name: Print OpenTofu version
+        run: |
+          tofu --version
+      - name: Test
+        run: |
+          go test -v -run ^TestOpenTofu$
