@@ -12,8 +12,8 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-      - name: Install Go
-        uses: actions/checkout@v5
+      - name: Set up Go
+        uses: actions/setup-go@v5
         with:
           go-version: 1.21
       - name: Go fmt
@@ -42,7 +42,7 @@ jobs:
       - name: Check out code into the Go module directory
         uses: actions/checkout@v4
       - name: Set up Go
-        uses: actions/checkout@v5
+        uses: actions/setup-go@v5
         with:
           go-version: 1.21
         id: go
@@ -85,7 +85,7 @@ jobs:
       - name: Check out code into the Go module directory
         uses: actions/checkout@v4
       - name: Set up Go
-        uses: actions/checkout@v5
+        uses: actions/setup-go@v5
         with:
           go-version: 1.21
         id: go
@@ -117,7 +117,7 @@ jobs:
       - name: Check out code into the Go module directory
         uses: actions/checkout@v4
       - name: Set up Go
-        uses: actions/checkout@v5
+        uses: actions/setup-go@v5
         with:
           go-version: 1.21
         id: go
