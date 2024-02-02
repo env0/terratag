@@ -23,7 +23,6 @@ type TaggingArgs struct {
 	IsSkipTerratagFiles bool
 	Rename              bool
 	IACType             IACType
-	TFVersion           Version
 }
 
 type TerratagLocal struct {

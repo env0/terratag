@@ -9,7 +9,7 @@
 
 ## What?
 
-Terratag is a CLI tool allowing for tags or labels to be applied across an entire set of Terraform files. Terratag will apply tags or labels to any AWS, GCP and Azure resources.
+Terratag is a CLI tool allowing for tags or labels to be applied across an entire set of OpenTofu/Terraform files. Terratag will apply tags or labels to any AWS, GCP and Azure resources.
 
 ### Terratag in action
 
@@ -17,13 +17,13 @@ Terratag is a CLI tool allowing for tags or labels to be applied across an entir
 
 ## Why?
 
-Maintaining tags across your application is hard, especially when done manually. Terratag enables you to easily add tags to your existing IaC and benefit from some cross-resource tag applications you wish you had thought of when you had just started writing your Terraform, saving you tons of time and making future updates easy. [Read more](https://d1.awsstatic.com/whitepapers/aws-tagging-best-practices.pdf) on why tagging is important.
+Maintaining tags across your application is hard, especially when done manually. Terratag enables you to easily add tags to your existing IaC and benefit from some cross-resource tag applications you wish you had thought of when you had just started writing your OpenTofu/Terraform, saving you tons of time and making future updates easy. [Read more](https://d1.awsstatic.com/whitepapers/aws-tagging-best-practices.pdf) on why tagging is important.
 
 ## How?
 
 ### Prerequisites
 
-- Terraform 0.12 through 1.x
+- OpenTofu 1.x or Terraform 0.12 through 1.x.
 
 ### Usage
 
@@ -35,7 +35,11 @@ Maintaining tags across your application is hard, especially when done manually.
 
    Or download the latest [release binary](https://github.com/env0/terratag/releases) .
 
-1. Initialize Terraform modules to get provider schema and pull child modules:
+1. Initialize Opentofu/Terraform modules to get provider schema and pull child modules:
+   ```bash
+    tofu init
+   ```
+
    ```bash
     terraform init
    ```
@@ -168,12 +172,12 @@ locals {
 
 ### Optional CLI flags
 
-- `-dir=<path>` - defaults to `.`. Sets the terraform folder to tag `.tf` files in
+- `-dir=<path>` - defaults to `.`. Sets the opentofu/terraform folder to tag `.tf` files in
 - `-skipTerratagFiles=false` - Dont skip processing `*.terratag.tf` files (when running terratag a second time for the same directory)
 - `-verbose=true` - Turn on verbose logging
 - `-rename=false` - Instead of replacing files named `<basename>.tf` with `<basename>.terratag.tf`, keep the original filename
 - `-filter=<regular expression>` - defaults to `.*`. Only apply tags to the resource types matched by the regular expression
-- `-type=<terraform or terragrunt>` - defaults to `terraform`. If `terragrunt` is used, tags the files under `.terragrunt-cache` folder. Note: if Terragrunt does not create a `.terragrunt-cache` folder, use the default or omit.
+- `-type=<terraform or terragrunt>` - defaults to `terraform` (and `opentofu`). If `terragrunt` is used, tags the files under `.terragrunt-cache` folder. Note: if Terragrunt does not create a `.terragrunt-cache` folder, use the default or omit.
 
 Setting options via enviroment variables is also supported. CLI flags have a precedence over envrionment variables.
 

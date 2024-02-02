@@ -71,6 +71,31 @@ func TestTerraformlatest(t *testing.T) {
 	testTerraform(t, "latest")
 }
 
+func TestOpenTofu(t *testing.T) {
+	if _, skip := os.LookupEnv("SKIP_INTEGRATION_TESTS"); skip {
+		t.Skip("skipping integration test")
+	}
+
+	version := "latest"
+
+	entries := getEntries(t, version)
+	if len(entries) == 0 {
+		t.Fatalf("test entries not found for version %s", version)
+	}
+
+	for _, tt := range entries {
+		tt := tt // NOTE: https://github.com/golang/go/wiki/CommonMistakes#using-goroutines-on-loop-iterator-variables
+		t.Run(tt.suite, func(t *testing.T) {
+			t.Parallel() // marks each test case as capable of running in parallel with each other
+			g := NewWithT(t)
+			itShouldOpenTofuInit(tt.entryDir, g)
+			itShouldRunTerratag(tt.entryDir, "", "", g)
+			itShouldRunOpenTofuValidate(tt.entryDir, g)
+			itShouldGenerateExpectedTerratagFiles(tt.suiteDir, g)
+		})
+	}
+}
+
 func TestTerragruntWithCache(t *testing.T) {
 	if _, skip := os.LookupEnv("SKIP_INTEGRATION_TESTS"); skip {
 		t.Skip("skipping integration test")
@@ -197,6 +222,11 @@ func itShouldGenerateExpectedTerragruntTerratagFiles(entryDir string, g *GomegaW
 	}
 }
 
+func itShouldRunOpenTofuValidate(entryDir string, g *GomegaWithT) {
+	err := run_opentofu(entryDir, "validate")
+	g.Expect(err).To(BeNil(), "opentofu validate failed")
+}
+
 func itShouldRunTerraformValidate(entryDir string, g *GomegaWithT) {
 	err := run_terraform(entryDir, "validate")
 	g.Expect(err).To(BeNil(), "terraform validate failed")
@@ -210,6 +240,11 @@ func itShouldRunTerratag(entryDir string, filter string, skip string, g *GomegaW
 func itShouldRunTerratagTerragruntMode(entryDir string, g *GomegaWithT) {
 	err := run_terratag(entryDir, "", "", true)
 	g.Expect(err).To(BeNil(), "terratag terragrunt mode failed")
+}
+
+func itShouldOpenTofuInit(entryDir string, g *GomegaWithT) {
+	err := run_opentofu(entryDir, "init")
+	g.Expect(err).To(BeNil(), "opentofu init failed")
 }
 
 func itShouldTerraformInit(entryDir string, g *GomegaWithT) {
@@ -350,6 +385,10 @@ func run(prog string, entryDir string, cmd string) error {
 
 func run_terraform(entryDir string, cmd string) error {
 	return run("terraform", entryDir, cmd)
+}
+
+func run_opentofu(entryDir string, cmd string) error {
+	return run("tofu", entryDir, cmd)
 }
 
 func run_terragrunt(entryDir string, cmd string) error {

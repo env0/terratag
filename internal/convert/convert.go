@@ -15,7 +15,7 @@ import (
 	"github.com/zclconf/go-cty/cty"
 )
 
-func GetExistingTagsExpression(tokens hclwrite.Tokens, tfVersion common.Version) string {
+func GetExistingTagsExpression(tokens hclwrite.Tokens) string {
 	return stringifyExpression(tokens)
 }
 
