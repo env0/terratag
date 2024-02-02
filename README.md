@@ -55,14 +55,6 @@ Maintaining tags across your application is hard, especially when done manually.
     terratag -dir=foo/bar -tags="environment_id=prod,some-tag=value"
    ```
 
-   Terratag supports the following arguments:
-
-   - `-dir` - optional, the directory to recursively search for any `.tf` file and try to terratag it.
-   - `-tags` - tags, as valid JSON (NOT HCL) or a comma seperated list of key=value.
-   - `-skipTerratagFiles` - optional. Default to `true`. Skips any previously tagged - (files with `terratag.tf` suffix)
-   - `-filter` - optional. Only apply tags to the selected resource types (regex)
-   - `-skip` - optional. Skip applying tags to the selected resource types (regex)
-
 ### Example Output
 
 #### Before Terratag
@@ -174,10 +166,11 @@ locals {
 
 - `-dir=<path>` - defaults to `.`. Sets the opentofu/terraform folder to tag `.tf` files in
 - `-skipTerratagFiles=false` - Dont skip processing `*.terratag.tf` files (when running terratag a second time for the same directory)
-- `-verbose=true` - Turn on verbose logging
 - `-rename=false` - Instead of replacing files named `<basename>.tf` with `<basename>.terratag.tf`, keep the original filename
 - `-filter=<regular expression>` - defaults to `.*`. Only apply tags to the resource types matched by the regular expression
 - `-type=<terraform or terragrunt>` - defaults to `terraform` (and `opentofu`). If `terragrunt` is used, tags the files under `.terragrunt-cache` folder. Note: if Terragrunt does not create a `.terragrunt-cache` folder, use the default or omit.
+- `-verbose` - Turn on verbose logging
+- `-default-to-terraform` By default uses OpenTofu (if installed), if set will use Terraform even when Opentofu is installed
 
 Setting options via enviroment variables is also supported. CLI flags have a precedence over envrionment variables.
 
@@ -190,6 +183,7 @@ TERRATAG_SKIP
 TERRATAG_VERBOSE
 TERRATAG_RENAME
 TERRATAG_TYPE
+TERRATAG_DEFAULT_TO_TERRAFORM
 ```
 
 ##### See more samples [here](https://github.com/env0/terratag/tree/master/test/fixture)

@@ -59,6 +59,7 @@ func Terratag(args cli.Args) error {
 		IsSkipTerratagFiles: args.IsSkipTerratagFiles,
 		Rename:              args.Rename,
 		IACType:             common.IACType(args.Type),
+		DefaultToTerraform:  args.DefaultToTerraform,
 	}
 
 	counters := tagDirectoryResources(taggingArgs)
@@ -155,7 +156,7 @@ func tagFileResources(path string, args *common.TaggingArgs) (*counters, error) 
 				}
 			}
 
-			isTaggable, err := tfschema.IsTaggable(args.Dir, args.IACType, *resource)
+			isTaggable, err := tfschema.IsTaggable(args.Dir, args.IACType, args.DefaultToTerraform, *resource)
 			if err != nil {
 				return nil, err
 			}
