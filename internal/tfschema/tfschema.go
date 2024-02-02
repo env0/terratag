@@ -147,7 +147,13 @@ func getResourceSchema(resourceType string, resource hclwrite.Block, dir string,
 	if !ok {
 		providerSchemas = &ProviderSchemas{}
 
-		cmd := exec.Command("terraform", "providers", "schema", "-json")
+		// Use tofu by default (if it exists).
+		name := "terraform"
+		if _, err := exec.LookPath("tofu"); err == nil {
+			name = "tofu"
+		}
+
+		cmd := exec.Command(name, "providers", "schema", "-json")
 		cmd.Dir = dir
 
 		out, err := cmd.Output()
