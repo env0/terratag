@@ -22,8 +22,8 @@ type TaggingArgs struct {
 	Matches             []string
 	IsSkipTerratagFiles bool
 	Rename              bool
+	DefaultToTerraform  bool
 	IACType             IACType
-	TFVersion           Version
 }
 
 type TerratagLocal struct {

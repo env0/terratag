@@ -20,6 +20,7 @@ type Args struct {
 	Verbose             bool
 	Rename              bool
 	Version             bool
+	DefaultToTerraform  bool
 }
 
 func validate(args Args) error {
@@ -48,6 +49,7 @@ func InitArgs() (Args, error) {
 	fs.BoolVar(&args.Rename, "rename", true, "Keep the original filename or replace it with <basename>.terratag.tf")
 	fs.StringVar(&args.Type, "type", string(common.Terraform), "The IAC type. Valid values: terraform or terragrunt")
 	fs.BoolVar(&args.Version, "version", false, "Prints the version")
+	fs.BoolVar(&args.DefaultToTerraform, "default-to-terraform", false, "By default uses OpenTofu (if installed), if set will use Terraform even when Opentofu is installed")
 
 	// Set cli args based on environment variables.
 	//The command line flags have precedence over environment variables.

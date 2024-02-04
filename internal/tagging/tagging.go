@@ -41,12 +41,8 @@ func TagBlock(args TagBlockArgs) (string, error) {
 
 	if hasExistingTags {
 		existingTagsKey := tag_keys.GetResourceExistingTagsKey(args.Filename, args.Block)
-		existingTagsExpression := convert.GetExistingTagsExpression(args.Terratag.Found[existingTagsKey], args.TfVersion)
+		existingTagsExpression := convert.GetExistingTagsExpression(args.Terratag.Found[existingTagsKey])
 		newTagsValue = "merge( " + existingTagsExpression + ", " + terratagAddedKey + ")"
-	}
-
-	if args.TfVersion.Major == 0 && args.TfVersion.Minor == 11 {
-		newTagsValue = "\"${" + newTagsValue + "}\""
 	}
 
 	newTagsValueTokens := ParseHclValueStringToTokens(newTagsValue)
@@ -78,12 +74,11 @@ var resourceTypeToFnMap = map[string]TagResourceFn{
 }
 
 type TagBlockArgs struct {
-	Filename  string
-	Block     *hclwrite.Block
-	Tags      string
-	Terratag  common.TerratagLocal
-	TagId     string
-	TfVersion common.Version
+	Filename string
+	Block    *hclwrite.Block
+	Tags     string
+	Terratag common.TerratagLocal
+	TagId    string
 }
 
 type TagResourceFn func(args TagBlockArgs) (*Result, error)

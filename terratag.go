@@ -41,11 +41,6 @@ func (c *counters) Add(other counters) {
 }
 
 func Terratag(args cli.Args) error {
-	tfVersion, err := terraform.GetTerraformVersion()
-	if err != nil {
-		return err
-	}
-
 	if err := terraform.ValidateInitRun(args.Dir, args.Type); err != nil {
 		return err
 	}
@@ -64,7 +59,7 @@ func Terratag(args cli.Args) error {
 		IsSkipTerratagFiles: args.IsSkipTerratagFiles,
 		Rename:              args.Rename,
 		IACType:             common.IACType(args.Type),
-		TFVersion:           *tfVersion,
+		DefaultToTerraform:  args.DefaultToTerraform,
 	}
 
 	counters := tagDirectoryResources(taggingArgs)
@@ -75,7 +70,6 @@ func Terratag(args cli.Args) error {
 	return nil
 }
 
-// dir string, filter string, matches []string, tags string, isSkipTerratagFiles bool, tfVersion convert.Version, rename bool, iacType string
 func tagDirectoryResources(args *common.TaggingArgs) counters {
 	var total counters
 	for _, path := range args.Matches {
@@ -162,7 +156,7 @@ func tagFileResources(path string, args *common.TaggingArgs) (*counters, error) 
 				}
 			}
 
-			isTaggable, err := tfschema.IsTaggable(args.Dir, args.IACType, *resource)
+			isTaggable, err := tfschema.IsTaggable(args.Dir, args.IACType, args.DefaultToTerraform, *resource)
 			if err != nil {
 				return nil, err
 			}
@@ -171,12 +165,11 @@ func tagFileResources(path string, args *common.TaggingArgs) (*counters, error) 
 				log.Print("[INFO] Resource taggable, processing...", resource.Labels())
 				perFileCounters.taggedResources += 1
 				result, err := tagging.TagResource(tagging.TagBlockArgs{
-					Filename:  filename,
-					Block:     resource,
-					Tags:      args.Tags,
-					Terratag:  terratag,
-					TagId:     providers.GetTagIdByResource(terraform.GetResourceType(*resource)),
-					TfVersion: args.TFVersion,
+					Filename: filename,
+					Block:    resource,
+					Tags:     args.Tags,
+					Terratag: terratag,
+					TagId:    providers.GetTagIdByResource(terraform.GetResourceType(*resource)),
 				})
 				if err != nil {
 					return nil, err

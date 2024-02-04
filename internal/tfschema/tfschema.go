@@ -54,12 +54,12 @@ type ProviderSchemas struct {
 	ProviderSchemas map[string]*ProviderSchema `json:"provider_schemas"`
 }
 
-func IsTaggable(dir string, iacType common.IACType, resource hclwrite.Block) (bool, error) {
+func IsTaggable(dir string, iacType common.IACType, defaultToTerraform bool, resource hclwrite.Block) (bool, error) {
 	var isTaggable bool
 	resourceType := terraform.GetResourceType(resource)
 
 	if providers.IsSupportedResource(resourceType) {
-		resourceSchema, err := getResourceSchema(resourceType, resource, dir, iacType)
+		resourceSchema, err := getResourceSchema(resourceType, resource, dir, iacType, defaultToTerraform)
 		if err != nil {
 			if err == ErrResourceTypeNotFound {
 				log.Print("[WARN] Skipped ", resourceType, " as it is not YET supported")
@@ -132,7 +132,7 @@ func detectProviderName(resource hclwrite.Block) (string, error) {
 	return extractProviderNameFromResourceType(terraform.GetResourceType(resource))
 }
 
-func getResourceSchema(resourceType string, resource hclwrite.Block, dir string, iacType common.IACType) (*ResourceSchema, error) {
+func getResourceSchema(resourceType string, resource hclwrite.Block, dir string, iacType common.IACType, defaultToTerraform bool) (*ResourceSchema, error) {
 	if iacType == common.Terragrunt {
 		// which mode of terragrunt it is (with or without cache folder).
 		if _, err := os.Stat(dir + "/.terragrunt-cache"); err == nil {
@@ -147,12 +147,18 @@ func getResourceSchema(resourceType string, resource hclwrite.Block, dir string,
 	if !ok {
 		providerSchemas = &ProviderSchemas{}
 
-		cmd := exec.Command("terraform", "providers", "schema", "-json")
+		// Use tofu by default (if it exists).
+		name := "terraform"
+		if _, err := exec.LookPath("tofu"); !defaultToTerraform && err == nil {
+			name = "tofu"
+		}
+
+		cmd := exec.Command(name, "providers", "schema", "-json")
 		cmd.Dir = dir
 
 		out, err := cmd.Output()
 		if err != nil {
-			return nil, fmt.Errorf("failed to execute 'terraform providers schema -json' command: %w", err)
+			return nil, fmt.Errorf("failed to execute '%s providers schema -json' command: %w", name, err)
 		}
 
 		// Output can vary between operating systems. Get the correct output line.
