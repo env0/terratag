@@ -69,6 +69,7 @@ func TagResource(args TagBlockArgs) (*Result, error) {
 
 var resourceTypeToFnMap = map[string]TagResourceFn{
 	"aws_autoscaling_group":      tagAutoscalingGroup,
+	"aws_instance":               tagAwsInstance,
 	"google_container_cluster":   tagContainerCluster,
 	"azurerm_kubernetes_cluster": tagAksK8sCluster,
 }

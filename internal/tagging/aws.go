@@ -9,6 +9,26 @@ import (
 	"github.com/hashicorp/hcl/v2/hclwrite"
 )
 
+func tagAwsInstance(args TagBlockArgs) (*Result, error) {
+	var swappedTagsStrings []string
+
+	tagBlock, err := TagBlock(args)
+	if err != nil {
+		return nil, err
+	}
+	swappedTagsStrings = append(swappedTagsStrings, tagBlock)
+
+	volumeTagBlockArgs := args
+	volumeTagBlockArgs.TagId = "volume_tags"
+	volumeTagBlock, err := TagBlock(volumeTagBlockArgs)
+	if err != nil {
+		return nil, err
+	}
+	swappedTagsStrings = append(swappedTagsStrings, volumeTagBlock)
+
+	return &Result{SwappedTagsStrings: swappedTagsStrings}, nil
+}
+
 func tagAutoscalingGroup(args TagBlockArgs) (*Result, error) {
 	// https://www.terraform.io/docs/providers/aws/r/autoscaling_group.html
 
