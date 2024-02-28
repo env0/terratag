@@ -141,12 +141,12 @@ func detectProviderName(resource hclwrite.Block) (string, error) {
 
 func getResourceSchema(resourceType string, resource hclwrite.Block, dir string, iacType common.IACType, defaultToTerraform bool) (*ResourceSchema, error) {
 	if iacType == common.Terragrunt {
-		// try to locate a terragrunt cache folder.
+		// try to locate a .terragrunt-cache cache folder.
 		dir = getTerragruntCacheFolderPath(dir)
 
 		// which mode of terragrunt it is (with or without cache folder).
 		if _, err := os.Stat(dir + "/.terragrunt-cache"); err == nil {
-			// try to locate a .terrafrom cache folder with the terragrunt cache folder.
+			// try to locate a .terrafrom cache folder within the .terragrunt-cache cache folder.
 			dir = getTerragruntPluginPath(dir)
 		}
 	}
