@@ -88,8 +88,7 @@ type TfSchemaAttribute struct {
 	Type string
 }
 
-func getTerragruntPluginPath(dir string) string {
-	dir += "/.terragrunt-cache"
+func getFolderPathHelper(dir string, suffix string) string {
 	ret := dir
 	found := false
 
@@ -98,9 +97,8 @@ func getTerragruntPluginPath(dir string) string {
 			return filepath.SkipDir
 		}
 
-		// E.g. ./.terragrunt-cache/yHtqnMrVQOISIYxobafVvZbAAyU/ThyYwttwki6d6AS3aD5OwoyqIWA/.terraform
-		if strings.HasSuffix(path, "/.terraform") {
-			ret = strings.TrimSuffix(path, "/.terraform")
+		if strings.HasSuffix(path, suffix) {
+			ret = strings.TrimSuffix(path, suffix)
 			found = true
 		}
 
@@ -108,6 +106,15 @@ func getTerragruntPluginPath(dir string) string {
 	})
 
 	return ret
+}
+
+func getTerragruntCacheFolderPath(dir string) string {
+	return getFolderPathHelper(dir, "/.terragrunt-cache")
+}
+
+func getTerragruntPluginPath(dir string) string {
+	dir += "/.terragrunt-cache"
+	return getFolderPathHelper(dir, "/.terraform")
 }
 
 func extractProviderNameFromResourceType(resourceType string) (string, error) {
@@ -134,8 +141,12 @@ func detectProviderName(resource hclwrite.Block) (string, error) {
 
 func getResourceSchema(resourceType string, resource hclwrite.Block, dir string, iacType common.IACType, defaultToTerraform bool) (*ResourceSchema, error) {
 	if iacType == common.Terragrunt {
+		// try to locate a terragrunt cache folder.
+		dir = getTerragruntCacheFolderPath(dir)
+
 		// which mode of terragrunt it is (with or without cache folder).
 		if _, err := os.Stat(dir + "/.terragrunt-cache"); err == nil {
+			// try to locate a .terrafrom cache folder with the terragrunt cache folder.
 			dir = getTerragruntPluginPath(dir)
 		}
 	}
