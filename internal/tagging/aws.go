@@ -18,13 +18,24 @@ func tagAwsInstance(args TagBlockArgs) (*Result, error) {
 	}
 	swappedTagsStrings = append(swappedTagsStrings, tagBlock)
 
-	volumeTagBlockArgs := args
-	volumeTagBlockArgs.TagId = "volume_tags"
-	volumeTagBlock, err := TagBlock(volumeTagBlockArgs)
-	if err != nil {
-		return nil, err
+	rootBlockDevice := args.Block.Body().FirstMatchingBlock("root_block_device", nil)
+
+	if rootBlockDevice == nil {
+		volumeTagBlockArgs := args
+		volumeTagBlockArgs.TagId = "volume_tags"
+		volumeTagBlock, err := TagBlock(volumeTagBlockArgs)
+		if err != nil {
+			return nil, err
+		}
+		swappedTagsStrings = append(swappedTagsStrings, volumeTagBlock)
+	} else {
+		args.Block = rootBlockDevice
+		tagBlock, err := TagBlock(args)
+		if err != nil {
+			return nil, err
+		}
+		swappedTagsStrings = append(swappedTagsStrings, tagBlock)
 	}
-	swappedTagsStrings = append(swappedTagsStrings, volumeTagBlock)
 
 	return &Result{SwappedTagsStrings: swappedTagsStrings}, nil
 }
