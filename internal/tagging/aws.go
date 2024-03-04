@@ -46,7 +46,6 @@ func tagAwsInstance(args TagBlockArgs) (*Result, error) {
 		swappedTagsStrings = append(swappedTagsStrings, volumeTagBlock)
 	} else {
 		// tag 'root_block_device' block (if it exists).
-
 		if rootBlockDevice := args.Block.Body().FirstMatchingBlock("root_block_device", nil); rootBlockDevice != nil {
 			origArgsBlock := args.Block
 			args.Block = rootBlockDevice
