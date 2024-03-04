@@ -18,9 +18,30 @@ func tagAwsInstance(args TagBlockArgs) (*Result, error) {
 	}
 	swappedTagsStrings = append(swappedTagsStrings, tagBlock)
 
-	rootBlockDevice := args.Block.Body().FirstMatchingBlock("root_block_device", nil)
+	useVolumeTags := true
 
-	if rootBlockDevice == nil {
+	rootBlockDevice := args.Block.Body().FirstMatchingBlock("root_block_device", nil)
+	ebsBlockDevice := args.Block.Body().FirstMatchingBlock("ebs_block_device", nil)
+
+	// Use volume tags if tags aren't used in both 'root_block_device' and 'ebs_block_device'.
+	// See tag guide for additional details: https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/instance#tag-guide
+
+	if rootBlockDevice != nil || ebsBlockDevice != nil {
+		for _, block := range args.Block.Body().Blocks() {
+			if block.Type() != "root_block_device" && block.Type() != "ebs_block_device" {
+				continue
+			}
+
+			if block.Body().GetAttribute("tags") != nil {
+				// found at least one device block with 'tags' attribute. Cannot use 'volume_tags'.
+				useVolumeTags = false
+				break
+			}
+		}
+	}
+
+	if useVolumeTags {
+		// tag 'volume_tags'.
 		volumeTagBlockArgs := args
 		volumeTagBlockArgs.TagId = "volume_tags"
 		volumeTagBlock, err := TagBlock(volumeTagBlockArgs)
@@ -29,12 +50,31 @@ func tagAwsInstance(args TagBlockArgs) (*Result, error) {
 		}
 		swappedTagsStrings = append(swappedTagsStrings, volumeTagBlock)
 	} else {
-		args.Block = rootBlockDevice
-		tagBlock, err := TagBlock(args)
-		if err != nil {
-			return nil, err
+		// tag 'root_block_device' block (if it exists).
+		if rootBlockDevice != nil {
+			origArgsBlock := args.Block
+			args.Block = rootBlockDevice
+			tagBlock, err := TagBlock(args)
+			if err != nil {
+				return nil, err
+			}
+			swappedTagsStrings = append(swappedTagsStrings, tagBlock)
+			args.Block = origArgsBlock
 		}
-		swappedTagsStrings = append(swappedTagsStrings, tagBlock)
+
+		// tag 'ebs_block_device' blocks (if any exist).
+		for _, block := range args.Block.Body().Blocks() {
+			if block.Type() != "ebs_block_device" {
+				continue
+			}
+
+			args.Block = block
+			tagBlock, err := TagBlock(args)
+			if err != nil {
+				return nil, err
+			}
+			swappedTagsStrings = append(swappedTagsStrings, tagBlock)
+		}
 	}
 
 	return &Result{SwappedTagsStrings: swappedTagsStrings}, nil
