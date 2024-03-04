@@ -20,23 +20,18 @@ func tagAwsInstance(args TagBlockArgs) (*Result, error) {
 
 	useVolumeTags := true
 
-	rootBlockDevice := args.Block.Body().FirstMatchingBlock("root_block_device", nil)
-	ebsBlockDevice := args.Block.Body().FirstMatchingBlock("ebs_block_device", nil)
-
 	// Use volume tags if tags aren't used in both 'root_block_device' and 'ebs_block_device'.
 	// See tag guide for additional details: https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/instance#tag-guide
 
-	if rootBlockDevice != nil || ebsBlockDevice != nil {
-		for _, block := range args.Block.Body().Blocks() {
-			if block.Type() != "root_block_device" && block.Type() != "ebs_block_device" {
-				continue
-			}
+	for _, block := range args.Block.Body().Blocks() {
+		if block.Type() != "root_block_device" && block.Type() != "ebs_block_device" {
+			continue
+		}
 
-			if block.Body().GetAttribute("tags") != nil {
-				// found at least one device block with 'tags' attribute. Cannot use 'volume_tags'.
-				useVolumeTags = false
-				break
-			}
+		if block.Body().GetAttribute("tags") != nil {
+			// found at least one device block with 'tags' attribute. Cannot use 'volume_tags'.
+			useVolumeTags = false
+			break
 		}
 	}
 
