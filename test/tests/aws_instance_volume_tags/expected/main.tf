@@ -2,7 +2,7 @@ terraform {
   required_providers {
     aws = {
       source  = "hashicorp/aws"
-      version = "~> 2.0"
+      version = "~> 5.0"
     }
   }
 }
@@ -11,17 +11,87 @@ provider "aws" {
   region = "us-east-1"
 }
 
-resource "aws_instance" "ubuntu" {
+resource "aws_instance" "no_volume_tags" {
   ami               = "dasdasD"
   instance_type     = "t3.micro"
   availability_zone = "us-west-2"
 
+  tags = merge({
+    "a" = "b"
+  }, local.terratag_added_main)
+  root_block_device {
+    tags = local.terratag_added_main
+  }
+}
+
+resource "aws_instance" "volume_tags" {
+  ami               = "dasdasD"
+  instance_type     = "t3.micro"
+  availability_zone = "us-west-2"
+
+  root_block_device {
+    volume_size = 8
+  }
+
+  ebs_block_device {
+    device_name = "abcdefg"
+  }
+
+  volume_tags = merge({
+    "c" = "d"
+  }, local.terratag_added_main)
 
   tags = merge({
-    "Name" = "terratag-test"
-    "env"  = "test"
+    "a" = "b"
   }, local.terratag_added_main)
-  volume_tags = local.terratag_added_main
+}
+
+resource "aws_instance" "root_block_device" {
+  ami               = "dasdasD"
+  instance_type     = "t3.micro"
+  availability_zone = "us-west-2"
+
+  root_block_device {
+    volume_size = 8
+    tags = merge({
+      "a" = "b"
+    }, local.terratag_added_main)
+  }
+  tags = local.terratag_added_main
+}
+
+resource "aws_instance" "root_block_device_does_not_exist" {
+  ami               = "dasdasD"
+  instance_type     = "t3.micro"
+  availability_zone = "us-west-2"
+  tags              = local.terratag_added_main
+  root_block_device {
+    tags = local.terratag_added_main
+  }
+}
+
+resource "aws_instance" "multiple_tags" {
+  ami               = "dasdasD"
+  instance_type     = "t3.micro"
+  availability_zone = "us-west-2"
+
+  ebs_block_device {
+    device_name = "abcdefg"
+    tags = merge({
+      "a" = "b"
+    }, local.terratag_added_main)
+  }
+
+  ebs_block_device {
+    device_name = "abcdefg"
+    tags = merge({
+      "c" = "d"
+    }, local.terratag_added_main)
+  }
+  tags = local.terratag_added_main
+  root_block_device {
+    tags = local.terratag_added_main
+  }
 }
 
 locals {
