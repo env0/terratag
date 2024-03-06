@@ -11,7 +11,7 @@ provider "aws" {
   region = "us-east-1"
 }
 
-resource "aws_instance" "instance_tags" {
+resource "aws_instance" "no_volume_tags" {
   ami               = "dasdasD"
   instance_type     = "t3.micro"
   availability_zone = "us-west-2"
@@ -43,58 +43,23 @@ resource "aws_instance" "volume_tags" {
   }
 }
 
-resource "aws_instance" "tags_in_root_block" {
+resource "aws_instance" "root_block_device" {
   ami               = "dasdasD"
   instance_type     = "t3.micro"
   availability_zone = "us-west-2"
 
   root_block_device {
     volume_size = 8
-    tags = {
-      a = "b"
-    }
-  }
-
-  ebs_block_device {
-    device_name = "abcdefg"
-  }
-}
-
-resource "aws_instance" "tags_in_ebs_block" {
-  ami               = "dasdasD"
-  instance_type     = "t3.micro"
-  availability_zone = "us-west-2"
-
-  root_block_device {
-    volume_size = 8
-  }
-
-  ebs_block_device {
-    device_name = "abcdefg"
     tags = {
       a = "b"
     }
   }
 }
 
-resource "aws_instance" "tags_in_both_blocks" {
+resource "aws_instance" "root_block_device_does_not_exist" {
   ami               = "dasdasD"
   instance_type     = "t3.micro"
   availability_zone = "us-west-2"
-
-  root_block_device {
-    volume_size = 8
-    tags = {
-      c = "d"
-    }
-  }
-
-  ebs_block_device {
-    device_name = "abcdefg"
-    tags = {
-      a = "b"
-    }
-  }
 }
 
 resource "aws_instance" "multiple_tags" {

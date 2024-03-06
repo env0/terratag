@@ -11,7 +11,7 @@ provider "aws" {
   region = "us-east-1"
 }
 
-resource "aws_instance" "instance_tags" {
+resource "aws_instance" "no_volume_tags" {
   ami               = "dasdasD"
   instance_type     = "t3.micro"
   availability_zone = "us-west-2"
@@ -19,7 +19,9 @@ resource "aws_instance" "instance_tags" {
   tags = merge({
     "a" = "b"
   }, local.terratag_added_main)
-  volume_tags = local.terratag_added_main
+  root_block_device {
+    tags = local.terratag_added_main
+  }
 }
 
 resource "aws_instance" "volume_tags" {
@@ -44,37 +46,13 @@ resource "aws_instance" "volume_tags" {
   }, local.terratag_added_main)
 }
 
-resource "aws_instance" "tags_in_root_block" {
+resource "aws_instance" "root_block_device" {
   ami               = "dasdasD"
   instance_type     = "t3.micro"
   availability_zone = "us-west-2"
 
   root_block_device {
     volume_size = 8
-    tags = merge({
-      "a" = "b"
-    }, local.terratag_added_main)
-  }
-
-  ebs_block_device {
-    device_name = "abcdefg"
-    tags        = local.terratag_added_main
-  }
-  tags = local.terratag_added_main
-}
-
-resource "aws_instance" "tags_in_ebs_block" {
-  ami               = "dasdasD"
-  instance_type     = "t3.micro"
-  availability_zone = "us-west-2"
-
-  root_block_device {
-    volume_size = 8
-    tags        = local.terratag_added_main
-  }
-
-  ebs_block_device {
-    device_name = "abcdefg"
     tags = merge({
       "a" = "b"
     }, local.terratag_added_main)
@@ -82,25 +60,14 @@ resource "aws_instance" "tags_in_ebs_block" {
   tags = local.terratag_added_main
 }
 
-resource "aws_instance" "tags_in_both_blocks" {
+resource "aws_instance" "root_block_device_does_not_exist" {
   ami               = "dasdasD"
   instance_type     = "t3.micro"
   availability_zone = "us-west-2"
-
+  tags              = local.terratag_added_main
   root_block_device {
-    volume_size = 8
-    tags = merge({
-      "c" = "d"
-    }, local.terratag_added_main)
+    tags = local.terratag_added_main
   }
-
-  ebs_block_device {
-    device_name = "abcdefg"
-    tags = merge({
-      "a" = "b"
-    }, local.terratag_added_main)
-  }
-  tags = local.terratag_added_main
 }
 
 resource "aws_instance" "multiple_tags" {
@@ -122,6 +89,9 @@ resource "aws_instance" "multiple_tags" {
     }, local.terratag_added_main)
   }
   tags = local.terratag_added_main
+  root_block_device {
+    tags = local.terratag_added_main
+  }
 }
 
 locals {
