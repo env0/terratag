@@ -11,4 +11,3 @@ suites:
   - git_issue_66_aws_aliased_provider
   - git_issue_88__corrupt_hcl_file
   - google_beta_resource_skip
-  - google_vs_google_beta
