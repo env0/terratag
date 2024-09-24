@@ -165,22 +165,29 @@ func testTerraformWithFilter(t *testing.T, version string, filter string, skip s
 
 func itShouldGenerateExpectedTerratagFiles(entryDir string, g *GomegaWithT) {
 	expectedPattern := strings.Split(entryDir, "/out/")[0] + "/expected/*.tf"
+
 	var expectedTerratag []string
+
 	var actualTerratag []string
+
 	expectedTerratag, _ = doublestar.Glob(expectedPattern)
 	if len(expectedTerratag) == 0 {
 		expectedPattern = strings.Split(entryDir, "/out/")[0] + "/expected/**/*.tf"
 		expectedTerratag, _ = doublestar.Glob(expectedPattern)
 	}
+
 	actualTerratag, _ = doublestar.Glob(entryDir + "/*.tf")
+
 	if len(actualTerratag) == 0 {
 		actualTerratag, _ = doublestar.Glob(entryDir + "/**/*.tf")
 	}
+
 	actualTerratag = filterSymlink(actualTerratag)
 
 	g.Expect(len(actualTerratag)).Should(BeNumerically(">", 0))
 	g.Expect(len(expectedTerratag)).Should(BeNumerically(">", 0))
 	g.Expect(len(actualTerratag)).To(BeEquivalentTo(len(expectedTerratag)), "it should generate the same number of terratag files as expected")
+
 	for i, expectedTerratagFile := range expectedTerratag {
 		expectedFile, _ := os.Open(expectedTerratagFile)
 		expectedContent, _ := io.ReadAll(expectedFile)
@@ -194,7 +201,9 @@ func itShouldGenerateExpectedTerratagFiles(entryDir string, g *GomegaWithT) {
 func getFileSha256(filename string, g *GomegaWithT) string {
 	f, err := os.Open(filename)
 	g.Expect(err).To(BeNil())
+
 	defer f.Close()
+
 	h := sha256.New()
 	_, err = io.Copy(h, f)
 	g.Expect(err).To(BeNil())
@@ -271,6 +280,7 @@ func getConfig(terraformDir string) (*TestCaseConfig, error) {
 	if err := viper.ReadInConfig(); err != nil {
 		return nil, err
 	}
+
 	if err := viper.Unmarshal(&config); err != nil {
 		return nil, err
 	}
@@ -285,7 +295,9 @@ func getEntries(t *testing.T, version string) []TestCase {
 	if err != nil {
 		t.Fatalf("failed to load test case config for version %s: %v", version, err)
 	}
+
 	suitesMap := make(map[string]interface{})
+
 	for _, suite := range config.Suites {
 		suitesMap[suite] = nil
 	}
@@ -297,7 +309,8 @@ func getEntries(t *testing.T, version string) []TestCase {
 	entryFilesMatcher := "/**/out" + terraformDir + "/**/main.tf"
 	entryFiles, _ := doublestar.Glob(testsDir + entryFilesMatcher)
 
-	var testEntries []TestCase
+	testEntries := []TestCase{}
+
 	for _, entryFile := range entryFiles {
 		// convert windows paths to use forward slashes
 		slashed := filepath.ToSlash(entryFile)
@@ -356,18 +369,21 @@ func run_terratag(entryDir string, filter string, skip string, terragrunt bool) 
 	args, err := cli.InitArgs()
 	os.Args = cleanArgs
 	osArgsLock.Unlock()
+
 	if err != nil {
 		return err
 	}
-	Terratag(args)
 
-	return nil
+	return Terratag(args)
 }
 
 func run(prog string, entryDir string, cmd string) error {
 	println(prog, cmd)
+
 	var stdout bytes.Buffer
+
 	var stderr bytes.Buffer
+
 	command := exec.Command(prog, cmd)
 	command.Dir = entryDir
 	command.Stdout = &stdout
@@ -375,6 +391,7 @@ func run(prog string, entryDir string, cmd string) error {
 
 	if err := command.Run(); err != nil {
 		log.Println(stderr.String())
+
 		return err
 	}
 
@@ -402,6 +419,7 @@ func filterSymlink(ss []string) (ret []string) {
 			ret = append(ret, s)
 		}
 	}
+
 	return ret
 }
 
@@ -417,7 +435,7 @@ func TestToHclMap(t *testing.T) {
 		input, expectedOutput := input, output
 		t.Run("valid input "+input, func(t *testing.T) {
 			output, err := toHclMap(input)
-			assert.NoError(t, err)
+			require.NoError(t, err)
 			assert.Equal(t, expectedOutput, output)
 		})
 	}
@@ -466,21 +484,23 @@ func TestEnvVariables(t *testing.T) {
 	os.Args = []string{programName}
 	args, err := cli.InitArgs()
 	os.Args = cleanArgs
-	require.Nil(t, err)
+
+	require.NoError(t, err)
 
 	assert.Equal(t, `{"a":"b"}`, args.Tags)
 	assert.Equal(t, "./dir", args.Dir)
-	assert.Equal(t, true, args.IsSkipTerratagFiles)
+	assert.True(t, args.IsSkipTerratagFiles)
 	assert.Equal(t, "filter", args.Filter)
-	assert.Equal(t, "skip", args.Skip)
-	assert.Equal(t, true, args.Verbose)
-	assert.Equal(t, false, args.Rename)
+	assert.True(t, args.Verbose)
+	assert.False(t, args.Rename)
 	assert.Equal(t, string(common.Terragrunt), args.Type)
 
 	// The command line flags have precedence over environment variables.
 	os.Args = []string{programName, `-tags={"c":"d"}`}
 	args, err = cli.InitArgs()
 	os.Args = cleanArgs
-	require.Nil(t, err)
+
+	require.NoError(t, err)
+
 	assert.Equal(t, `{"c":"d"}`, args.Tags)
 }

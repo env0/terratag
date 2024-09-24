@@ -56,13 +56,15 @@ type ProviderSchemas struct {
 
 func IsTaggable(dir string, iacType common.IACType, defaultToTerraform bool, resource hclwrite.Block) (bool, error) {
 	var isTaggable bool
+
 	resourceType := terraform.GetResourceType(resource)
 
 	if providers.IsSupportedResource(resourceType) {
 		resourceSchema, err := getResourceSchema(resourceType, resource, dir, iacType, defaultToTerraform)
 		if err != nil {
-			if err == ErrResourceTypeNotFound {
+			if errors.Is(err, ErrResourceTypeNotFound) {
 				log.Print("[WARN] Skipped ", resourceType, " as it is not YET supported")
+
 				return false, nil
 			}
 
@@ -114,6 +116,7 @@ func getTerragruntCacheFolderPath(dir string) string {
 
 func getTerragruntPluginPath(dir string) string {
 	dir += "/.terragrunt-cache"
+
 	return getFolderPathHelper(dir, "/.terraform")
 }
 
@@ -122,6 +125,7 @@ func extractProviderNameFromResourceType(resourceType string) (string, error) {
 	if len(s) < 2 {
 		return "", fmt.Errorf("failed to detect a provider name: %s", resourceType)
 	}
+
 	return s[0], nil
 }
 
@@ -131,6 +135,7 @@ func detectProviderName(resource hclwrite.Block) (string, error) {
 	if providerAttribute != nil {
 		providerTokens := providerAttribute.Expr().BuildTokens(hclwrite.Tokens{})
 		providerName := strings.Trim(string(providerTokens.Bytes()), "\" ")
+
 		if funk.Contains(customSupportedProviderNames, providerName) {
 			return providerName, nil
 		}
@@ -176,6 +181,7 @@ func getResourceSchema(resourceType string, resource hclwrite.Block, dir string,
 		for _, line := range bytes.Split(out, []byte("\n")) {
 			if len(line) > 0 && line[0] == '{' {
 				out = line
+
 				break
 			}
 		}
@@ -184,6 +190,7 @@ func getResourceSchema(resourceType string, resource hclwrite.Block, dir string,
 			if e, ok := err.(*json.SyntaxError); ok {
 				log.Printf("syntax error at byte offset %d", e.Offset)
 			}
+
 			return nil, fmt.Errorf("failed to unmarshal returned provider schemas: %w", err)
 		}
 

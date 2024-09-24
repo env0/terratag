@@ -26,7 +26,9 @@ func ParseHclValueStringToTokens(hclValueString string) hclwrite.Tokens {
 		log.Print("error parsing hcl value string " + hclValueString)
 		panic(diags.Errs()[0])
 	}
+
 	tempAttribute := file.Body().GetAttribute("tempKey")
+
 	return tempAttribute.Expr().BuildTokens(hclwrite.Tokens{})
 }
 
