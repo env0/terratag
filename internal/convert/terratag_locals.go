@@ -34,11 +34,13 @@ func decodeTerratagLocals(locals Locals, s string) error {
 func encodeTerratagLocals(locals Locals) string {
 	ret := "{"
 
-	// Return it in ordered manner for order consistency (primarly when running tests).
-	var keys []string
+	// Return it in ordered manner for order consistency (primarily when running tests).
+	keys := []string{}
+
 	for key := range locals {
 		keys = append(keys, key)
 	}
+
 	sort.Strings(keys)
 
 	for _, key := range keys {
@@ -47,6 +49,7 @@ func encodeTerratagLocals(locals Locals) string {
 
 	ret = strings.TrimSuffix(ret, ", ")
 	ret += "}"
+
 	return ret
 }
 
@@ -54,6 +57,7 @@ func MergeTerratagLocals(attribute *hclwrite.Attribute, added string) (string, e
 	localsAttribute := Locals{}
 	tokens := hclwrite.Tokens{}
 	existingLocalsExpression := stringifyExpression(attribute.BuildTokens(tokens))
+
 	if err := decodeTerratagLocals(localsAttribute, existingLocalsExpression); err != nil {
 		return "", err
 	}

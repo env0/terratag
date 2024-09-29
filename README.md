@@ -36,6 +36,7 @@ Maintaining tags across your application is hard, especially when done manually.
    Or download the latest [release binary](https://github.com/env0/terratag/releases) .
 
 1. Initialize Opentofu/Terraform modules to get provider schema and pull child modules:
+
    ```bash
     tofu init
    ```
@@ -43,6 +44,7 @@ Maintaining tags across your application is hard, especially when done manually.
    ```bash
     terraform init
    ```
+
 1. Run Terratag
 
    ```bash
@@ -198,7 +200,7 @@ Issues and Pull Requests are very welcome!
 
 ### Prerequisites
 
-- Go > 1.21
+- Go > 1.23
 
 ### Build
 

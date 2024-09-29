@@ -27,9 +27,11 @@ func validate(args Args) error {
 	if args.Tags == "" {
 		return errors.New("missing tags")
 	}
+
 	if args.Type != string(common.Terraform) && args.Type != string(common.Terragrunt) {
 		return fmt.Errorf("invalid type %s, must be either 'terratag' or 'terragrunt'", args.Type)
 	}
+
 	return nil
 }
 
@@ -52,7 +54,7 @@ func InitArgs() (Args, error) {
 	fs.BoolVar(&args.DefaultToTerraform, "default-to-terraform", false, "By default uses OpenTofu (if installed), if set will use Terraform even when Opentofu is installed")
 
 	// Set cli args based on environment variables.
-	//The command line flags have precedence over environment variables.
+	// The command line flags have precedence over environment variables.
 	fs.VisitAll(func(f *flag.Flag) {
 		if f.Name == "version" {
 			return

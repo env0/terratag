@@ -21,6 +21,7 @@ func GetExistingTagsExpression(tokens hclwrite.Tokens) string {
 
 func isHclMap(tokens hclwrite.Tokens) bool {
 	maybeHclMap := strings.TrimSpace(string(tokens.Bytes()))
+
 	return strings.HasPrefix(maybeHclMap, "{") && strings.HasSuffix(maybeHclMap, "}")
 }
 
@@ -42,6 +43,7 @@ func AppendLocalsBlock(file *hclwrite.File, filename string, terratag common.Ter
 		if block.Type() != "locals" {
 			continue
 		}
+
 		if block.Body().GetAttribute(key) == nil {
 			continue
 		}
@@ -64,7 +66,9 @@ func AppendTagBlocks(resource *hclwrite.Block, tags string) error {
 	if err := json.Unmarshal([]byte(tags), &tagsMap); err != nil {
 		return err
 	}
+
 	keys := utils.SortObjectKeys(tagsMap)
+
 	for _, key := range keys {
 		resource.Body().AppendNewline()
 		tagBlock := resource.Body().AppendNewBlock("tag", nil)
@@ -91,6 +95,7 @@ func UnquoteTagsAttribute(swappedTagsStrings []string, text string) string {
 
 		text = strings.ReplaceAll(text, escapedByWriter, swappedTagString)
 	}
+
 	return text
 }
 
@@ -103,6 +108,7 @@ func MoveExistingTags(filename string, terratag common.TerratagLocal, block *hcl
 	if tagsAttribute != nil {
 		// If attribute found, get its value
 		log.Print("Pre-existing " + tagId + " ATTRIBUTE found on resource. Merging.")
+
 		existingTags = quoteAttributeKeys(tagsAttribute)
 	} else {
 		// Otherwise, we try to get tags as block
@@ -120,8 +126,10 @@ func MoveExistingTags(filename string, terratag common.TerratagLocal, block *hcl
 
 	if existingTags != nil {
 		terratag.Found[tag_keys.GetResourceExistingTagsKey(filename, block)] = existingTags
+
 		return true, nil
 	}
+
 	return false, nil
 }
 
@@ -132,6 +140,7 @@ func quoteBlockKeys(tagsBlock *hclwrite.Block) *hclwrite.Block {
 	for key, value := range tagsBlock.Body().Attributes() {
 		quotedTagBlock.Body().SetAttributeRaw("\""+key+"\"", value.Expr().BuildTokens(hclwrite.Tokens{}))
 	}
+
 	return quotedTagBlock
 }
 
@@ -141,6 +150,7 @@ func isTagKeyUnquoted(tags hclwrite.Tokens, index int) bool {
 
 func quoteAttributeKeys(tagsAttribute *hclwrite.Attribute) hclwrite.Tokens {
 	var newTags hclwrite.Tokens
+
 	tags := tagsAttribute.Expr().BuildTokens(hclwrite.Tokens{})
 
 	// if attribute is a variable

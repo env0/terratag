@@ -4,18 +4,23 @@ import (
 	"strings"
 )
 
+const AWS = "aws"
+const GCP = "gcp"
+const AZURE = "azure"
+
 var resourcesToSkip = []string{"azurerm_api_management_named_value"}
 
 func getProviderByResource(resourceType string) Provider {
-	if strings.HasPrefix(resourceType, "aws_") {
-		return "aws"
-	} else if strings.HasPrefix(resourceType, "google_") {
-		return "gcp"
-	} else if strings.HasPrefix(resourceType, "azurerm_") || strings.HasPrefix(resourceType, "azurestack_") {
-		return "azure"
+	switch {
+	case strings.HasPrefix(resourceType, "aws_"):
+		return AWS
+	case strings.HasPrefix(resourceType, "google_"):
+		return GCP
+	case strings.HasPrefix(resourceType, "azurerm_") || strings.HasPrefix(resourceType, "azurestack_"):
+		return AZURE
+	default:
+		return ""
 	}
-
-	return ""
 }
 
 func IsTaggableByAttribute(resourceType string, attribute string) bool {
@@ -25,6 +30,7 @@ func IsTaggableByAttribute(resourceType string, attribute string) bool {
 	if (provider != "") && attribute == tagBlockId {
 		return true
 	}
+
 	return false
 }
 

@@ -16,6 +16,7 @@ func tagAwsInstance(args TagBlockArgs) (*Result, error) {
 	if err != nil {
 		return nil, err
 	}
+
 	swappedTagsStrings = append(swappedTagsStrings, tagBlock)
 
 	// Tag 'volume_tags' if it exists.
@@ -28,10 +29,12 @@ func tagAwsInstance(args TagBlockArgs) (*Result, error) {
 		// Add tags to 'volume_tags' attribute.
 		volumeTagBlockArgs := args
 		volumeTagBlockArgs.TagId = "volume_tags"
+
 		volumeTagBlock, err := TagBlock(volumeTagBlockArgs)
 		if err != nil {
 			return nil, err
 		}
+
 		swappedTagsStrings = append(swappedTagsStrings, volumeTagBlock)
 	} else {
 		rootBlockDevice := args.Block.Body().FirstMatchingBlock("root_block_device", nil)
@@ -43,11 +46,14 @@ func tagAwsInstance(args TagBlockArgs) (*Result, error) {
 		// Add tags to 'root_block_device' block.
 		origArgsBlock := args.Block
 		args.Block = rootBlockDevice
+
 		tagBlock, err := TagBlock(args)
 		if err != nil {
 			return nil, err
 		}
+
 		swappedTagsStrings = append(swappedTagsStrings, tagBlock)
+
 		args.Block = origArgsBlock
 
 		// Add tags to any 'ebs_block_device' blocks (if any exist).
@@ -58,10 +64,12 @@ func tagAwsInstance(args TagBlockArgs) (*Result, error) {
 
 			origArgsBlock := args.Block
 			args.Block = block
+
 			tagBlock, err := TagBlock(args)
 			if err != nil {
 				return nil, err
 			}
+
 			swappedTagsStrings = append(swappedTagsStrings, tagBlock)
 			args.Block = origArgsBlock
 		}
@@ -72,7 +80,6 @@ func tagAwsInstance(args TagBlockArgs) (*Result, error) {
 
 func tagAutoscalingGroup(args TagBlockArgs) (*Result, error) {
 	// https://www.terraform.io/docs/providers/aws/r/autoscaling_group.html
-
 	var tagsMap map[string]string
 	if err := json.Unmarshal([]byte(args.Tags), &tagsMap); err != nil {
 		return nil, err

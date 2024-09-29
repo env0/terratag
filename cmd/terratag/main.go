@@ -19,15 +19,19 @@ func main() {
 	if err != nil {
 		fmt.Println(err)
 		fmt.Println("Usage: terratag -tags='{ \"some_tag\": \"value\" }' [-dir=\".\"]")
+
 		return
 	}
 
 	if args.Version {
 		var versionPrefix string
+
 		if !strings.HasPrefix(version, "v") {
 			versionPrefix = "v"
 		}
+
 		fmt.Printf("Terratag %s%s\n", versionPrefix, version)
+
 		return
 	}
 

@@ -22,6 +22,7 @@ func ReplaceWithTerratagFile(path string, textContent string, rename bool) error
 	}
 
 	log.Print("[INFO] Backing up ", path, " to ", backupFilename)
+
 	if err := os.Rename(path, backupFilename); err != nil {
 		return err
 	}
@@ -37,6 +38,7 @@ func ReplaceWithTerratagFile(path string, textContent string, rename bool) error
 
 func CreateFile(path string, textContent string) error {
 	log.Print("[INFO] Creating file ", path)
+
 	return os.WriteFile(path, []byte(textContent), 0644)
 }
 
@@ -44,6 +46,7 @@ func GetFilename(path string) string {
 	_, filename := filepath.Split(path)
 	filename = strings.TrimSuffix(filename, filepath.Ext(path))
 	filename = strings.ReplaceAll(filename, ".", "-")
+
 	return filename
 }
 

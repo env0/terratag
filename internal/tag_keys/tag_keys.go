@@ -1,8 +1,9 @@
 package tag_keys
 
 import (
-	"github.com/hashicorp/hcl/v2/hclwrite"
 	"strings"
+
+	"github.com/hashicorp/hcl/v2/hclwrite"
 )
 
 func GetTerratagAddedKey(filname string) string {
@@ -11,5 +12,6 @@ func GetTerratagAddedKey(filname string) string {
 
 func GetResourceExistingTagsKey(filename string, resource *hclwrite.Block) string {
 	delimiter := "__"
+
 	return "terratag_found_" + filename + delimiter + strings.Join(resource.Labels(), delimiter)
 }

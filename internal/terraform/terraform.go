@@ -28,6 +28,7 @@ func getRootDir(dir string, iacType string) string {
 				return ""
 			}
 		}
+
 		return "/.terragrunt-cache"
 	} else {
 		return "/.terraform"
@@ -42,7 +43,7 @@ func ValidateInitRun(dir string, iacType string) error {
 			return fmt.Errorf("%s init must run before running terratag", iacType)
 		}
 
-		return fmt.Errorf("couldn't determine if %s init has run: %v", iacType, err)
+		return fmt.Errorf("couldn't determine if %s init has run: %w", iacType, err)
 	}
 
 	return nil
@@ -58,9 +59,11 @@ func GetFilePaths(dir string, iacType string) ([]string, error) {
 
 func getTerragruntFilePath(rootDir string) ([]string, error) {
 	var tfFiles []string
+
 	if err := filepath.WalkDir(rootDir, func(path string, d fs.DirEntry, err error) error {
 		if err != nil {
 			log.Printf("[WARN] skipping %s due to an error: %v", path, err)
+
 			return filepath.SkipDir
 		}
 
@@ -111,10 +114,11 @@ func getTerraformFilePaths(rootDir string) ([]string, error) {
 }
 
 func getTerraformModulesDirPaths(dir string) ([]string, error) {
-	var paths []string
-	var modulesJson ModulesJson
+	paths := []string{}
+	modulesJson := ModulesJson{}
 
 	jsonFile, err := os.Open(dir + "/.terraform/modules/modules.json")
+
 	//lint:ignore SA5001 not required to check file close status.
 	defer jsonFile.Close()
 
@@ -135,6 +139,7 @@ func getTerraformModulesDirPaths(dir string) ([]string, error) {
 		modulePath, err := filepath.EvalSymlinks(dir + "/" + module.Dir)
 		if os.IsNotExist(err) {
 			log.Print("[WARN] Module not found, skipping.", dir+"/"+module.Dir)
+
 			continue
 		}
 
