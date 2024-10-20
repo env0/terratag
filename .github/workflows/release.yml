@@ -20,7 +20,7 @@ jobs:
       - name: Run GoReleaser
         uses: goreleaser/goreleaser-action@v5
         with:
-          version: latest
+          version: ~> v1
           args: release --clean
         env:
           CGO_ENABLED: 0
@@ -48,9 +48,9 @@ jobs:
           CGO_ENABLED=0 go build -ldflags "-X main.version=${{github.ref_name}}" -a -installsuffix cgo -o ./out/terratag/terratag ./cmd/terratag
       # Setup .npmrc file to publish to GitHub Packages
       - name: Setup Node
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v4
         with:
-          node-version: "12.x"
+          node-version: 20
           registry-url: "https://registry.npmjs.org"
           scope: "@env0"
       - run: |

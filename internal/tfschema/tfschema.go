@@ -174,7 +174,18 @@ func getResourceSchema(resourceType string, resource hclwrite.Block, dir string,
 
 		out, err := cmd.Output()
 		if err != nil {
-			return nil, fmt.Errorf("failed to execute '%s providers schema -json' command: %w", name, err)
+			var ee *exec.ExitError
+			if errors.As(err, &ee) && ee.Stderr != nil {
+				log.Println("===============================================")
+				log.Printf("Error output: %s\n", string(ee.Stderr))
+				log.Println("===============================================")
+			}
+
+			log.Println("===============================================")
+			log.Printf("Standard output: %s\n", string(out))
+			log.Println("===============================================")
+
+			return nil, fmt.Errorf("failed to execute '%s providers schema -json' command in directory '%s': %w", name, dir, err)
 		}
 
 		// Output can vary between operating systems. Get the correct output line.
