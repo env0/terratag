@@ -5,11 +5,8 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io/fs"
 	"log"
-	"os"
 	"os/exec"
-	"path/filepath"
 	"strings"
 	"sync"
 
@@ -90,36 +87,6 @@ type TfSchemaAttribute struct {
 	Type string
 }
 
-func getFolderPathHelper(dir string, suffix string) string {
-	ret := dir
-	found := false
-
-	filepath.WalkDir(dir, func(path string, d fs.DirEntry, err error) error {
-		if found || err != nil {
-			return filepath.SkipDir
-		}
-
-		if strings.HasSuffix(path, suffix) {
-			ret = strings.TrimSuffix(path, suffix)
-			found = true
-		}
-
-		return nil
-	})
-
-	return ret
-}
-
-func getTerragruntCacheFolderPath(dir string) string {
-	return getFolderPathHelper(dir, "/.terragrunt-cache")
-}
-
-func getTerragruntPluginPath(dir string) string {
-	dir += "/.terragrunt-cache"
-
-	return getFolderPathHelper(dir, "/.terraform")
-}
-
 func extractProviderNameFromResourceType(resourceType string) (string, error) {
 	s := strings.SplitN(resourceType, "_", 2)
 	if len(s) < 2 {
@@ -145,17 +112,6 @@ func detectProviderName(resource hclwrite.Block) (string, error) {
 }
 
 func getResourceSchema(resourceType string, resource hclwrite.Block, dir string, iacType common.IACType, defaultToTerraform bool) (*ResourceSchema, error) {
-	if iacType == common.Terragrunt {
-		// try to locate a .terragrunt-cache cache folder.
-		dir = getTerragruntCacheFolderPath(dir)
-
-		// which mode of terragrunt it is (with or without cache folder).
-		if _, err := os.Stat(dir + "/.terragrunt-cache"); err == nil {
-			// try to locate a .terrafrom cache folder within the .terragrunt-cache cache folder.
-			dir = getTerragruntPluginPath(dir)
-		}
-	}
-
 	providerSchemasMapLock.Lock()
 	defer providerSchemasMapLock.Unlock()
 
@@ -164,8 +120,12 @@ func getResourceSchema(resourceType string, resource hclwrite.Block, dir string,
 		providerSchemas = &ProviderSchemas{}
 
 		// Use tofu by default (if it exists).
+
 		name := "terraform"
-		if _, err := exec.LookPath("tofu"); !defaultToTerraform && err == nil {
+		// For terragrunt - use terragrunt.
+		if iacType == common.Terragrunt {
+			name = "terragrunt"
+		} else if _, err := exec.LookPath("tofu"); !defaultToTerraform && err == nil {
 			name = "tofu"
 		}
 
