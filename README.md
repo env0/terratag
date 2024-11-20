@@ -193,6 +193,11 @@ TERRATAG_DEFAULT_TO_TERRAFORM
 ## Notes
 
 - Resources already having the exact same tag as the one being appended will be overridden
+- Supported providers
+  - `aws`
+  - `google`
+  - `azurerm`
+  - `azurestack`
 
 ## Develop
 
