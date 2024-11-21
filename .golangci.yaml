@@ -3,7 +3,6 @@ linters:
     - errname
     - errorlint
     - gocheckcompilerdirectives
-    - gochecknoglobals
     - gochecknoinits
     - goconst
     - gocritic

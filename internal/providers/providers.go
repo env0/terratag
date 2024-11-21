@@ -10,17 +10,22 @@ const AZURE = "azure"
 
 var resourcesToSkip = []string{"azurerm_api_management_named_value"}
 
+var prefixes = map[string]Provider{
+	"aws_":        AWS,
+	"google_":     GCP,
+	"azurerm_":    AZURE,
+	"azurestack_": AZURE,
+	"azapi_":      AZURE,
+}
+
 func getProviderByResource(resourceType string) Provider {
-	switch {
-	case strings.HasPrefix(resourceType, "aws_"):
-		return AWS
-	case strings.HasPrefix(resourceType, "google_"):
-		return GCP
-	case strings.HasPrefix(resourceType, "azurerm_") || strings.HasPrefix(resourceType, "azurestack_"):
-		return AZURE
-	default:
-		return ""
+	for prefix, provider := range prefixes {
+		if strings.HasPrefix(resourceType, prefix) {
+			return provider
+		}
 	}
+
+	return ""
 }
 
 func IsTaggableByAttribute(resourceType string, attribute string) bool {
