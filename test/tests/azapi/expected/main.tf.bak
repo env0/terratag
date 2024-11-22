@@ -50,3 +50,26 @@ resource "azapi_resource" "example" {
 
   response_export_values = ["properties.loginServer", "properties.policies.quarantinePolicy.status"]
 }
+
+resource "azapi_resource" "example2" {
+  type      = "Microsoft.ContainerRegistry/registries@2020-11-01-preview"
+  name      = "registry2"
+  parent_id = azurerm_resource_group.example.id
+
+  location = azurerm_resource_group.example.location
+  identity {
+    type         = "SystemAssigned, UserAssigned"
+    identity_ids = [azurerm_user_assigned_identity.example.id]
+  }
+
+  body = {
+    sku = {
+      name = "Standard"
+    }
+    properties = {
+      adminUserEnabled = true
+    }
+  }
+
+  response_export_values = ["properties.loginServer", "properties.policies.quarantinePolicy.status"]
+}
