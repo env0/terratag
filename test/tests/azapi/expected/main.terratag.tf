@@ -122,8 +122,8 @@ variable "enabled" {
 
 resource "azurerm_spring_cloud_service" "test" {
   name                = "example-spring"
-  resource_group_name = azurerm_resource_group.test.name
-  location            = azurerm_resource_group.test.location
+  resource_group_name = azurerm_resource_group.example.name
+  location            = azurerm_resource_group.example.location
   sku_name            = "S0"
   tags                = local.terratag_added_main
 }
