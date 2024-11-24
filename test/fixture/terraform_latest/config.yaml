@@ -18,3 +18,4 @@ suites:
   - google_vs_google_beta
   - aws_instance_volume_tags
   - provider_function
+  - azapi

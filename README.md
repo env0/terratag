@@ -198,6 +198,7 @@ TERRATAG_DEFAULT_TO_TERRAFORM
   - `google`
   - `azurerm`
   - `azurestack`
+  - `azapi`
 
 ## Develop
 
