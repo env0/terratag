@@ -131,7 +131,7 @@ resource "azapi_resource_action" "start" {
   response_export_values = ["*"]
 
   count = var.enabled ? 1 : 0
-  }
+}
 
 resource "azapi_resource_action" "stop" {
   type                   = "Microsoft.AppPlatform/Spring@2022-05-01-preview"
@@ -189,4 +189,44 @@ resource "azapi_update_resource" "example" {
   depends_on = [
     azurerm_lb_nat_rule.example,
   ]
+}
+
+resource "azapi_resource" "example4" {
+  type      = "Microsoft.App/containerApps/authConfigs@2024-03-01"
+  name      = "current"
+  parent_id = data.azurerm_container_app.example.id
+  body = {
+    properties = {
+      globalValidation = {
+        redirectToProvider          = "azureactivedirectory"
+        unauthenticatedClientAction = "RedirectToLoginPage"
+      }
+      identityProviders = {
+        azureActiveDirectory = {
+          enabled           = true
+          isAutoProvisioned = false
+          registration = {
+            clientId                = "example"
+            clientSecretSettingName = "microsoft-provider-authentication-secret"
+            openIdIssuer            = "https://sts.windows.net/${data.azurerm_client_config.current.tenant_id}/v2.0"
+          }
+          validation = {
+            allowedAudiences = [
+              "example",
+            ]
+            defaultAuthorizationPolicy = {
+              allowedApplications = [
+                "example",
+              ]
+            }
+          }
+        }
+      }
+      login = {}
+      platform = {
+        enabled        = true
+        runtimeVersion = "~2"
+      }
+    }
+  }
 }

@@ -196,6 +196,47 @@ resource "azapi_update_resource" "example" {
     azurerm_lb_nat_rule.example,
   ]
 }
+
+resource "azapi_resource" "example4" {
+  type      = "Microsoft.App/containerApps/authConfigs@2024-03-01"
+  name      = "current"
+  parent_id = data.azurerm_container_app.example.id
+  body = {
+    properties = {
+      globalValidation = {
+        redirectToProvider          = "azureactivedirectory"
+        unauthenticatedClientAction = "RedirectToLoginPage"
+      }
+      identityProviders = {
+        azureActiveDirectory = {
+          enabled           = true
+          isAutoProvisioned = false
+          registration = {
+            clientId                = "example"
+            clientSecretSettingName = "microsoft-provider-authentication-secret"
+            openIdIssuer            = "https://sts.windows.net/${data.azurerm_client_config.current.tenant_id}/v2.0"
+          }
+          validation = {
+            allowedAudiences = [
+              "example",
+            ]
+            defaultAuthorizationPolicy = {
+              allowedApplications = [
+                "example",
+              ]
+            }
+          }
+        }
+      }
+      login = {}
+      platform = {
+        enabled        = true
+        runtimeVersion = "~2"
+      }
+    }
+  }
+}
+
 locals {
   terratag_added_main = {"env0_environment_id"="40907eff-cf7c-419a-8694-e1c6bf1d1168","env0_project_id"="43fd4ff1-8d37-4d9d-ac97-295bd850bf94"}
 }
