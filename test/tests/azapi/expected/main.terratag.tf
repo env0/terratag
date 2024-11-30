@@ -214,7 +214,7 @@ resource "azapi_resource" "example4" {
           registration = {
             clientId                = "example"
             clientSecretSettingName = "microsoft-provider-authentication-secret"
-            openIdIssuer            = "https://sts.windows.net/${data.azurerm_client_config.current.tenant_id}/v2.0"
+            openIdIssuer            = "https://sts.windows.net/v2.0"
           }
           validation = {
             allowedAudiences = [
