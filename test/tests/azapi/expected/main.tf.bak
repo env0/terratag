@@ -194,7 +194,7 @@ resource "azapi_update_resource" "example" {
 resource "azapi_resource" "example4" {
   type      = "Microsoft.App/containerApps/authConfigs@2024-03-01"
   name      = "current"
-  parent_id = data.azurerm_container_app.example.id
+  parent_id = azurerm_resource_group.example.id
   body = {
     properties = {
       globalValidation = {
