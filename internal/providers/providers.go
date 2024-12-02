@@ -95,7 +95,8 @@ func isSimpleStringLiteral(tokens hclwrite.Tokens) (string, bool) {
 	return "", false
 }
 
-func azureTypeIsTaggable(resource hclwrite.Block) bool {
+// For more details check: https://github.com/env0/terratag/issues/209
+func isAzureTypeTaggable(resource hclwrite.Block) bool {
 	typeAttr := resource.Body().GetAttribute("type")
 
 	if typeAttr == nil {
@@ -138,7 +139,7 @@ func IsSupportedResource(resourceType string, resource hclwrite.Block) bool {
 		return false
 	}
 
-	if strings.HasPrefix(resourceType, "azapi_") && !azureTypeIsTaggable(resource) {
+	if strings.HasPrefix(resourceType, "azapi_") && !isAzureTypeTaggable(resource) {
 		return false
 	}
 
