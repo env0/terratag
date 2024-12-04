@@ -56,7 +56,7 @@ func IsTaggable(dir string, iacType common.IACType, defaultToTerraform bool, res
 
 	resourceType := terraform.GetResourceType(resource)
 
-	if providers.IsSupportedResource(resourceType) {
+	if providers.IsSupportedResource(resourceType, resource) {
 		resourceSchema, err := getResourceSchema(resourceType, resource, dir, iacType, defaultToTerraform)
 		if err != nil {
 			if errors.Is(err, ErrResourceTypeNotFound) {

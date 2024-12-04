@@ -1,7 +1,14 @@
 package providers
 
 import (
+	"bytes"
+	_ "embed"
+	"encoding/csv"
 	"strings"
+	"sync"
+
+	"github.com/hashicorp/hcl/v2/hclsyntax"
+	"github.com/hashicorp/hcl/v2/hclwrite"
 )
 
 const AWS = "aws"
@@ -16,6 +23,32 @@ var prefixes = map[string]Provider{
 	"azurerm_":    AZURE,
 	"azurestack_": AZURE,
 	"azapi_":      AZURE,
+}
+
+//go:embed azure_resource_tag_support.csv
+var azureTagSupport []byte
+
+var (
+	azureTaggableResources map[string]bool
+	once                   sync.Once
+)
+
+func getAzureTaggableResources() map[string]bool {
+	once.Do(func() {
+		reader := csv.NewReader(bytes.NewReader(azureTagSupport))
+		records, err := reader.ReadAll()
+
+		if err != nil {
+			panic(err) // Or handle the error appropriately
+		}
+
+		azureTaggableResources = make(map[string]bool)
+		for _, record := range records {
+			azureTaggableResources[record[0]] = true
+		}
+	})
+
+	return azureTaggableResources
 }
 
 func getProviderByResource(resourceType string) Provider {
@@ -51,14 +84,66 @@ func GetTagIdByResource(resourceType string) string {
 	return ""
 }
 
-func IsSupportedResource(resourceType string) bool {
+func isSimpleStringLiteral(tokens hclwrite.Tokens) (string, bool) {
+	if len(tokens) == 3 &&
+		tokens[0].Type == hclsyntax.TokenOQuote &&
+		tokens[1].Type == hclsyntax.TokenQuotedLit &&
+		tokens[2].Type == hclsyntax.TokenCQuote {
+		return string(tokens[1].Bytes), true // Quoted
+	}
+
+	return "", false
+}
+
+// For more details check: https://github.com/env0/terratag/issues/209
+func isAzureTypeTaggable(resource hclwrite.Block) bool {
+	typeAttr := resource.Body().GetAttribute("type")
+
+	if typeAttr == nil {
+		return false
+	}
+
+	typeTokens := typeAttr.Expr().BuildTokens(nil)
+
+	typeValue, ok := isSimpleStringLiteral(typeTokens)
+
+	if !ok || typeValue == "" {
+		return false
+	}
+
+	// split the type value to get the resource type, get everything before "@" lower cased.
+	parts := strings.Split(typeValue, "@")
+	if len(parts) != 2 {
+		return false
+	}
+
+	resourceType := strings.ToLower(parts[0])
+
+	// check if the resource type is taggable based on the on list of supported azure tags.
+	azureTaggableResources := getAzureTaggableResources()
+	if _, ok := azureTaggableResources[resourceType]; !ok {
+		return false
+	}
+
+	return true
+}
+
+func IsSupportedResource(resourceType string, resource hclwrite.Block) bool {
 	for _, resourceToSkip := range resourcesToSkip {
 		if resourceType == resourceToSkip {
 			return false
 		}
 	}
 
-	return isSupportedProvider(getProviderByResource(resourceType))
+	if !isSupportedProvider(getProviderByResource(resourceType)) {
+		return false
+	}
+
+	if strings.HasPrefix(resourceType, "azapi_") && !isAzureTypeTaggable(resource) {
+		return false
+	}
+
+	return true
 }
 
 func isSupportedProvider(provider Provider) bool {
