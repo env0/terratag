@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"log"
 	"os/exec"
-	"regexp"
 	"strings"
 
 	"github.com/env0/terratag/internal/common"
@@ -25,9 +24,6 @@ var ErrResourceTypeNotFound = errors.New("resource type not found")
 var providerSchemasMap map[string]*ProviderSchemas = map[string]*ProviderSchemas{}
 
 var customSupportedProviderNames = [...]string{"google-beta"}
-
-// jsonRegex matches JSON objects in mixed output
-var jsonRegex = regexp.MustCompile(`(?s)\{.*?\}`)
 
 type Attribute struct {
 	Type      cty.Type `json:"type"`
@@ -99,21 +95,29 @@ func InitProviderSchemas(dir string, iacType common.IACType, defaultToTerraform 
 
 	if iacType == common.Terragrunt && isRunAll {
 		// In run-all mode, we need to parse multiple JSON objects from the output
-		jsonMatches := jsonRegex.FindAll(out, -1)
-		log.Printf("[INFO] Found %d JSON schema objects in terragrunt run-all output", len(jsonMatches))
+		lines := bytes.Split(out, []byte("\n"))
+		jsonCount := 0
 
-		for i, jsonData := range jsonMatches {
-			log.Printf("[INFO] Processing schema object %d", i+1)
+		for i, line := range lines {
+			// Skip empty lines and non-JSON lines
+			if len(line) == 0 || line[0] != '{' {
+				continue
+			}
+
+			jsonCount++
+			log.Printf("[INFO] Processing JSON schema object %d from line %d", jsonCount, i+1)
 
 			providerSchemas := &ProviderSchemas{}
-			if err := json.Unmarshal(jsonData, providerSchemas); err != nil {
-				log.Printf("[WARN] Failed to unmarshal schema object %d: %v", i+1, err)
+			if err := json.Unmarshal(line, providerSchemas); err != nil {
+				log.Printf("[WARN] Failed to unmarshal schema from line %d: %v", i+1, err)
 				continue
 			}
 
 			// Merge this schema into our accumulated schemas
 			mergeProviderSchemas(mergedProviderSchemas, providerSchemas)
 		}
+
+		log.Printf("[INFO] Successfully processed %d valid JSON schema objects", jsonCount)
 	} else {
 		// Standard mode - just parse the single JSON object
 		// Output can vary between operating systems. Get the correct output line.
