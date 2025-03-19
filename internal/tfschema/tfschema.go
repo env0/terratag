@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"log"
 	"os/exec"
+	"regexp"
 	"strings"
 
 	"github.com/env0/terratag/internal/common"
@@ -24,6 +25,9 @@ var ErrResourceTypeNotFound = errors.New("resource type not found")
 var providerSchemasMap map[string]*ProviderSchemas = map[string]*ProviderSchemas{}
 
 var customSupportedProviderNames = [...]string{"google-beta"}
+
+// jsonRegex matches JSON objects in mixed output
+var jsonRegex = regexp.MustCompile(`(?s)\{.*?\}`)
 
 type Attribute struct {
 	Type      cty.Type `json:"type"`
@@ -51,7 +55,7 @@ type ProviderSchemas struct {
 
 // InitProviderSchemas fetches and stores the provider schemas for a directory
 // This can be called ahead of time to pre-populate the schemas cache
-func InitProviderSchemas(dir string, iacType common.IACType, defaultToTerraform bool) error {
+func InitProviderSchemas(dir string, iacType common.IACType, defaultToTerraform bool, isRunAll bool) error {
 	// Use tofu by default (if it exists).
 	name := "terraform"
 	// For terragrunt - use terragrunt.
@@ -62,7 +66,14 @@ func InitProviderSchemas(dir string, iacType common.IACType, defaultToTerraform 
 	}
 
 	log.Print("[INFO] Fetching provider schemas for directory: ", dir)
-	cmd := exec.Command(name, "providers", "schema", "-json")
+
+	var cmd *exec.Cmd
+	if iacType == common.Terragrunt && isRunAll {
+		log.Print("[INFO] Using terragrunt run-all mode")
+		cmd = exec.Command(name, "run-all", "providers", "schema", "-json")
+	} else {
+		cmd = exec.Command(name, "providers", "schema", "-json")
+	}
 	cmd.Dir = dir
 
 	out, err := cmd.Output()
@@ -81,28 +92,74 @@ func InitProviderSchemas(dir string, iacType common.IACType, defaultToTerraform 
 		return fmt.Errorf("failed to execute '%s providers schema -json' command in directory '%s': %w", name, dir, err)
 	}
 
-	// Output can vary between operating systems. Get the correct output line.
-	for _, line := range bytes.Split(out, []byte("\n")) {
-		if len(line) > 0 && line[0] == '{' {
-			out = line
-			break
+	// Create a new provider schemas object
+	mergedProviderSchemas := &ProviderSchemas{
+		ProviderSchemas: make(map[string]*ProviderSchema),
+	}
+
+	if iacType == common.Terragrunt && isRunAll {
+		// In run-all mode, we need to parse multiple JSON objects from the output
+		jsonMatches := jsonRegex.FindAll(out, -1)
+		log.Printf("[INFO] Found %d JSON schema objects in terragrunt run-all output", len(jsonMatches))
+
+		for i, jsonData := range jsonMatches {
+			log.Printf("[INFO] Processing schema object %d", i+1)
+
+			providerSchemas := &ProviderSchemas{}
+			if err := json.Unmarshal(jsonData, providerSchemas); err != nil {
+				log.Printf("[WARN] Failed to unmarshal schema object %d: %v", i+1, err)
+				continue
+			}
+
+			// Merge this schema into our accumulated schemas
+			mergeProviderSchemas(mergedProviderSchemas, providerSchemas)
+		}
+	} else {
+		// Standard mode - just parse the single JSON object
+		// Output can vary between operating systems. Get the correct output line.
+		for _, line := range bytes.Split(out, []byte("\n")) {
+			if len(line) > 0 && line[0] == '{' {
+				out = line
+				break
+			}
+		}
+
+		if err := json.Unmarshal(out, mergedProviderSchemas); err != nil {
+			if e, ok := err.(*json.SyntaxError); ok {
+				log.Printf("syntax error at byte offset %d", e.Offset)
+			}
+			return fmt.Errorf("failed to unmarshal returned provider schemas: %w", err)
 		}
 	}
 
-	providerSchemas := &ProviderSchemas{}
-	if err := json.Unmarshal(out, providerSchemas); err != nil {
-		if e, ok := err.(*json.SyntaxError); ok {
-			log.Printf("syntax error at byte offset %d", e.Offset)
-		}
-		return fmt.Errorf("failed to unmarshal returned provider schemas: %w", err)
-	}
-
-	providerSchemasMap[dir] = providerSchemas
-	log.Print("[INFO] Successfully initialized provider schemas for directory: ", dir)
+	providerSchemasMap[dir] = mergedProviderSchemas
+	log.Printf("[INFO] Successfully initialized provider schemas for directory: %s with %d providers",
+		dir, len(mergedProviderSchemas.ProviderSchemas))
 
 	return nil
 }
 
+// mergeProviderSchemas merges the source provider schemas into the target
+func mergeProviderSchemas(target, source *ProviderSchemas) {
+	for providerName, providerSchema := range source.ProviderSchemas {
+		// If this provider already exists in the target, merge their resource schemas
+		if existingProvider, exists := target.ProviderSchemas[providerName]; exists {
+			if existingProvider.ResourceSchemas == nil {
+				existingProvider.ResourceSchemas = make(map[string]*ResourceSchema)
+			}
+
+			// Copy all resource schemas from source to target
+			for resourceType, resourceSchema := range providerSchema.ResourceSchemas {
+				existingProvider.ResourceSchemas[resourceType] = resourceSchema
+			}
+		} else {
+			// Otherwise, just add this provider to the target
+			target.ProviderSchemas[providerName] = providerSchema
+		}
+	}
+}
+
+// IsTaggable checks if a resource can be tagged
 func IsTaggable(dir string, resource hclwrite.Block) (bool, error) {
 	var isTaggable bool
 

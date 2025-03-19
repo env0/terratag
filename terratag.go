@@ -64,7 +64,7 @@ func Terratag(args cli.Args) error {
 	}
 
 	// Initialize provider schemas before processing files
-	if err := tfschema.InitProviderSchemas(args.Dir, common.IACType(args.Type), args.DefaultToTerraform); err != nil {
+	if err := tfschema.InitProviderSchemas(args.Dir, common.IACType(args.Type), args.DefaultToTerraform, args.IsRunAll); err != nil {
 		log.Printf("[WARN] Failed to pre-initialize provider schemas: %v", err)
 		// Continue even if initialization fails, as getResourceSchema will try again on-demand
 		KeepExistingTags:    args.KeepExistingTags,
