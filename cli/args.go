@@ -21,6 +21,7 @@ type Args struct {
 	Rename              bool
 	Version             bool
 	DefaultToTerraform  bool
+	IsRunAll            bool
 }
 
 func validate(args Args) error {
@@ -52,6 +53,7 @@ func InitArgs() (Args, error) {
 	fs.StringVar(&args.Type, "type", string(common.Terraform), "The IAC type. Valid values: terraform or terragrunt")
 	fs.BoolVar(&args.Version, "version", false, "Prints the version")
 	fs.BoolVar(&args.DefaultToTerraform, "default-to-terraform", false, "By default uses OpenTofu (if installed), if set will use Terraform even when Opentofu is installed")
+	fs.BoolVar(&args.IsRunAll, "terragrunt-run-all", false, "Enable support for terragrunt run-all mode")
 
 	// Set cli args based on environment variables.
 	// The command line flags have precedence over environment variables.
