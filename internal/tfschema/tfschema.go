@@ -8,7 +8,6 @@ import (
 	"log"
 	"os/exec"
 	"strings"
-	"sync"
 
 	"github.com/env0/terratag/internal/common"
 	"github.com/env0/terratag/internal/providers"
@@ -23,7 +22,6 @@ import (
 var ErrResourceTypeNotFound = errors.New("resource type not found")
 
 var providerSchemasMap map[string]*ProviderSchemas = map[string]*ProviderSchemas{}
-var providerSchemasMapLock sync.Mutex
 
 var customSupportedProviderNames = [...]string{"google-beta"}
 
@@ -51,13 +49,67 @@ type ProviderSchemas struct {
 	ProviderSchemas map[string]*ProviderSchema `json:"provider_schemas"`
 }
 
-func IsTaggable(dir string, iacType common.IACType, defaultToTerraform bool, resource hclwrite.Block) (bool, error) {
+// InitProviderSchemas fetches and stores the provider schemas for a directory
+// This can be called ahead of time to pre-populate the schemas cache
+func InitProviderSchemas(dir string, iacType common.IACType, defaultToTerraform bool) error {
+	// Use tofu by default (if it exists).
+	name := "terraform"
+	// For terragrunt - use terragrunt.
+	if iacType == common.Terragrunt {
+		name = "terragrunt"
+	} else if _, err := exec.LookPath("tofu"); !defaultToTerraform && err == nil {
+		name = "tofu"
+	}
+
+	log.Print("[INFO] Fetching provider schemas for directory: ", dir)
+	cmd := exec.Command(name, "providers", "schema", "-json")
+	cmd.Dir = dir
+
+	out, err := cmd.Output()
+	if err != nil {
+		var ee *exec.ExitError
+		if errors.As(err, &ee) && ee.Stderr != nil {
+			log.Println("===============================================")
+			log.Printf("Error output: %s\n", string(ee.Stderr))
+			log.Println("===============================================")
+		}
+
+		log.Println("===============================================")
+		log.Printf("Standard output: %s\n", string(out))
+		log.Println("===============================================")
+
+		return fmt.Errorf("failed to execute '%s providers schema -json' command in directory '%s': %w", name, dir, err)
+	}
+
+	// Output can vary between operating systems. Get the correct output line.
+	for _, line := range bytes.Split(out, []byte("\n")) {
+		if len(line) > 0 && line[0] == '{' {
+			out = line
+			break
+		}
+	}
+
+	providerSchemas := &ProviderSchemas{}
+	if err := json.Unmarshal(out, providerSchemas); err != nil {
+		if e, ok := err.(*json.SyntaxError); ok {
+			log.Printf("syntax error at byte offset %d", e.Offset)
+		}
+		return fmt.Errorf("failed to unmarshal returned provider schemas: %w", err)
+	}
+
+	providerSchemasMap[dir] = providerSchemas
+	log.Print("[INFO] Successfully initialized provider schemas for directory: ", dir)
+
+	return nil
+}
+
+func IsTaggable(dir string, resource hclwrite.Block) (bool, error) {
 	var isTaggable bool
 
 	resourceType := terraform.GetResourceType(resource)
 
 	if providers.IsSupportedResource(resourceType, resource) {
-		resourceSchema, err := getResourceSchema(resourceType, resource, dir, iacType, defaultToTerraform)
+		resourceSchema, err := getResourceSchema(resourceType, resource, dir)
 		if err != nil {
 			if errors.Is(err, ErrResourceTypeNotFound) {
 				log.Print("[WARN] Skipped ", resourceType, " as it is not YET supported")
@@ -111,64 +163,14 @@ func detectProviderName(resource hclwrite.Block) (string, error) {
 	return extractProviderNameFromResourceType(terraform.GetResourceType(resource))
 }
 
-func getResourceSchema(resourceType string, resource hclwrite.Block, dir string, iacType common.IACType, defaultToTerraform bool) (*ResourceSchema, error) {
-	providerSchemasMapLock.Lock()
-	defer providerSchemasMapLock.Unlock()
-
-	providerSchemas, ok := providerSchemasMap[dir]
-	if !ok {
-		providerSchemas = &ProviderSchemas{}
-
-		// Use tofu by default (if it exists).
-
-		name := "terraform"
-		// For terragrunt - use terragrunt.
-		if iacType == common.Terragrunt {
-			name = "terragrunt"
-		} else if _, err := exec.LookPath("tofu"); !defaultToTerraform && err == nil {
-			name = "tofu"
-		}
-
-		cmd := exec.Command(name, "providers", "schema", "-json")
-		cmd.Dir = dir
-
-		out, err := cmd.Output()
-		if err != nil {
-			var ee *exec.ExitError
-			if errors.As(err, &ee) && ee.Stderr != nil {
-				log.Println("===============================================")
-				log.Printf("Error output: %s\n", string(ee.Stderr))
-				log.Println("===============================================")
-			}
-
-			log.Println("===============================================")
-			log.Printf("Standard output: %s\n", string(out))
-			log.Println("===============================================")
-
-			return nil, fmt.Errorf("failed to execute '%s providers schema -json' command in directory '%s': %w", name, dir, err)
-		}
-
-		// Output can vary between operating systems. Get the correct output line.
-		for _, line := range bytes.Split(out, []byte("\n")) {
-			if len(line) > 0 && line[0] == '{' {
-				out = line
-
-				break
-			}
-		}
-
-		if err := json.Unmarshal(out, providerSchemas); err != nil {
-			if e, ok := err.(*json.SyntaxError); ok {
-				log.Printf("syntax error at byte offset %d", e.Offset)
-			}
-
-			return nil, fmt.Errorf("failed to unmarshal returned provider schemas: %w", err)
-		}
-
-		providerSchemasMap[dir] = providerSchemas
+func getResourceSchema(resourceType string, resource hclwrite.Block, dir string) (*ResourceSchema, error) {
+	detectedProviderName, err := detectProviderName(resource)
+	if err != nil {
+		return nil, fmt.Errorf("failed to detect provider name for resource %s: %w", resourceType, err)
 	}
 
-	detectedProviderName, _ := detectProviderName(resource)
+	providerSchemas := providerSchemasMap[dir]
+
 	// Search through all providers.
 	for providerName, providerSchema := range providerSchemas.ProviderSchemas {
 		if len(detectedProviderName) > 0 && providerName != detectedProviderName && !strings.HasSuffix(providerName, "/"+detectedProviderName) {

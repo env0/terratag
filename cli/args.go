@@ -21,6 +21,7 @@ type Args struct {
 	Rename              bool
 	Version             bool
 	DefaultToTerraform  bool
+	IsRunAll            bool
 	KeepExistingTags    bool
 }
 

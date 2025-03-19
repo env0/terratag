@@ -24,6 +24,7 @@ type TaggingArgs struct {
 	Rename              bool
 	DefaultToTerraform  bool
 	IACType             IACType
+	IsRunAll            bool
 	KeepExistingTags    bool
 }
 

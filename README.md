@@ -171,6 +171,7 @@ locals {
 - `-rename=false` - Instead of replacing files named `<basename>.tf` with `<basename>.terratag.tf`, keep the original filename
 - `-filter=<regular expression>` - defaults to `.*`. Only apply tags to the resource types matched by the regular expression
 - `-type=<terraform or terragrunt>` - defaults to `terraform` (and `opentofu`). If `terragrunt` is used, tags the files under `.terragrunt-cache` folder. Note: if Terragrunt does not create a `.terragrunt-cache` folder, use the default or omit.
+- `-terragrunt-run-all` - Enable support for terragrunt run-all mode
 - `-verbose` - Turn on verbose logging
 - `-default-to-terraform` By default uses OpenTofu (if installed), if set will use Terraform even when Opentofu is installed
 - `--keep-existing-tags` - When set, existing tags will be preserved when merging tags (by default, new tags override existing ones)
@@ -187,6 +188,7 @@ TERRATAG_VERBOSE
 TERRATAG_RENAME
 TERRATAG_TYPE
 TERRATAG_DEFAULT_TO_TERRAFORM
+TERRATAG_TERRAGRUNT_RUN_ALL
 TERRATAG_KEEP_EXISTING_TAGS
 ```
 
