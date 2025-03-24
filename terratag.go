@@ -60,6 +60,7 @@ func Terratag(args cli.Args) error {
 		Rename:              args.Rename,
 		IACType:             common.IACType(args.Type),
 		DefaultToTerraform:  args.DefaultToTerraform,
+		KeepExistingTags:    args.KeepExistingTags,
 	}
 
 	counters := tagDirectoryResources(taggingArgs)
@@ -176,11 +177,12 @@ func tagFileResources(path string, args *common.TaggingArgs) (*counters, error) 
 				perFileCounters.taggedResources += 1
 
 				result, err := tagging.TagResource(tagging.TagBlockArgs{
-					Filename: filename,
-					Block:    resource,
-					Tags:     args.Tags,
-					Terratag: terratag,
-					TagId:    providers.GetTagIdByResource(terraform.GetResourceType(*resource)),
+					Filename:         filename,
+					Block:            resource,
+					Tags:             args.Tags,
+					Terratag:         terratag,
+					TagId:            providers.GetTagIdByResource(terraform.GetResourceType(*resource)),
+					KeepExistingTags: args.KeepExistingTags,
 				})
 				if err != nil {
 					return nil, err

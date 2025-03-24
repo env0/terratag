@@ -173,6 +173,7 @@ locals {
 - `-type=<terraform or terragrunt>` - defaults to `terraform` (and `opentofu`). If `terragrunt` is used, tags the files under `.terragrunt-cache` folder. Note: if Terragrunt does not create a `.terragrunt-cache` folder, use the default or omit.
 - `-verbose` - Turn on verbose logging
 - `-default-to-terraform` By default uses OpenTofu (if installed), if set will use Terraform even when Opentofu is installed
+- `--keep-existing-tags` - When set, existing tags will be preserved when merging tags (by default, new tags override existing ones)
 
 Setting options via enviroment variables is also supported. CLI flags have a precedence over envrionment variables.
 
@@ -186,6 +187,7 @@ TERRATAG_VERBOSE
 TERRATAG_RENAME
 TERRATAG_TYPE
 TERRATAG_DEFAULT_TO_TERRAFORM
+TERRATAG_KEEP_EXISTING_TAGS
 ```
 
 ##### See more samples [here](https://github.com/env0/terratag/tree/master/test/fixture)
