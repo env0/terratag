@@ -15,6 +15,8 @@ import (
 	"github.com/env0/terratag/internal/terraform"
 	"github.com/thoas/go-funk"
 
+	"maps"
+
 	"github.com/hashicorp/hcl/v2/hclwrite"
 	"github.com/zclconf/go-cty/cty"
 )
@@ -51,11 +53,11 @@ type ProviderSchemas struct {
 
 // InitProviderSchemas fetches and stores the provider schemas for a directory
 // This can be called ahead of time to pre-populate the schemas cache
-func InitProviderSchemas(dir string, iacType common.IACType, defaultToTerraform bool, isRunAll bool) error {
+func InitProviderSchemas(dir string, iacType common.IACType, defaultToTerraform bool) error {
 	// Use tofu by default (if it exists).
 	name := "terraform"
 	// For terragrunt - use terragrunt.
-	if iacType == common.Terragrunt {
+	if iacType == common.Terragrunt || iacType == common.TerragruntRunAll {
 		name = "terragrunt"
 	} else if _, err := exec.LookPath("tofu"); !defaultToTerraform && err == nil {
 		name = "tofu"
@@ -64,7 +66,7 @@ func InitProviderSchemas(dir string, iacType common.IACType, defaultToTerraform 
 	log.Print("[INFO] Fetching provider schemas for directory: ", dir)
 
 	var cmd *exec.Cmd
-	if iacType == common.Terragrunt && isRunAll {
+	if iacType == common.TerragruntRunAll {
 		log.Print("[INFO] Using terragrunt run-all mode")
 		cmd = exec.Command(name, "run-all", "providers", "schema", "-json")
 	} else {
@@ -93,7 +95,7 @@ func InitProviderSchemas(dir string, iacType common.IACType, defaultToTerraform 
 		ProviderSchemas: make(map[string]*ProviderSchema),
 	}
 
-	if iacType == common.Terragrunt && isRunAll {
+	if iacType == common.TerragruntRunAll {
 		// In run-all mode, we need to parse multiple JSON objects from the output
 		lines := bytes.Split(out, []byte("\n"))
 		jsonCount := 0
@@ -153,9 +155,7 @@ func mergeProviderSchemas(target, source *ProviderSchemas) {
 			}
 
 			// Copy all resource schemas from source to target
-			for resourceType, resourceSchema := range providerSchema.ResourceSchemas {
-				existingProvider.ResourceSchemas[resourceType] = resourceSchema
-			}
+			maps.Copy(existingProvider.ResourceSchemas, providerSchema.ResourceSchemas)
 		} else {
 			// Otherwise, just add this provider to the target
 			target.ProviderSchemas[providerName] = providerSchema

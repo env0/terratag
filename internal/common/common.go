@@ -5,8 +5,9 @@ import "github.com/hashicorp/hcl/v2/hclwrite"
 type IACType string
 
 const (
-	Terraform  IACType = "terraform"
-	Terragrunt IACType = "terragrunt"
+	Terraform        IACType = "terraform"
+	Terragrunt       IACType = "terragrunt"
+	TerragruntRunAll IACType = "terragrunt-run-all"
 )
 
 type Version struct {
@@ -24,7 +25,6 @@ type TaggingArgs struct {
 	Rename              bool
 	DefaultToTerraform  bool
 	IACType             IACType
-	IsRunAll            bool
 	KeepExistingTags    bool
 }
 
