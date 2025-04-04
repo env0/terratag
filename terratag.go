@@ -63,6 +63,12 @@ func Terratag(args cli.Args) error {
 		KeepExistingTags:    args.KeepExistingTags,
 	}
 
+	// Initialize provider schemas before processing files
+	if err := tfschema.InitProviderSchemas(args.Dir, common.IACType(args.Type), args.DefaultToTerraform); err != nil {
+		log.Printf("[WARN] Failed to pre-initialize provider schemas: %v", err)
+		// Continue even if initialization fails, as getResourceSchema will try again on-demand
+	}
+
 	counters := tagDirectoryResources(taggingArgs)
 
 	log.Print("[INFO] Summary:")
@@ -166,7 +172,7 @@ func tagFileResources(path string, args *common.TaggingArgs) (*counters, error) 
 				}
 			}
 
-			isTaggable, err := tfschema.IsTaggable(args.Dir, args.IACType, args.DefaultToTerraform, *resource)
+			isTaggable, err := tfschema.IsTaggable(args.Dir, *resource)
 			if err != nil {
 				return nil, err
 			}

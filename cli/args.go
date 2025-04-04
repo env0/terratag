@@ -50,7 +50,7 @@ func InitArgs() (Args, error) {
 	fs.StringVar(&args.Skip, "skip", "", "Exclude the selected resource types from tagging (regex)")
 	fs.BoolVar(&args.Verbose, "verbose", false, "Enable verbose logging")
 	fs.BoolVar(&args.Rename, "rename", true, "Keep the original filename or replace it with <basename>.terratag.tf")
-	fs.StringVar(&args.Type, "type", string(common.Terraform), "The IAC type. Valid values: terraform or terragrunt")
+	fs.StringVar(&args.Type, "type", string(common.Terraform), "The IAC type. Valid values: terraform, terragrunt, or terragrunt-run-all")
 	fs.BoolVar(&args.Version, "version", false, "Prints the version")
 	fs.BoolVar(&args.DefaultToTerraform, "default-to-terraform", false, "By default uses OpenTofu (if installed), if set will use Terraform even when Opentofu is installed")
 	fs.BoolVar(&args.KeepExistingTags, "keep-existing-tags", false, "When set, existing tags will be preserved when merging tags (by default, new tags override existing ones)")
