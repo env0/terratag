@@ -304,12 +304,12 @@ func itShouldRunTerragruntInit(entryDir string, g *GomegaWithT) {
 
 func itShouldRunTerragruntRunAllValidate(entryDir string, g *GomegaWithT) {
 	err := run_terragrunt(entryDir, "validate", true)
-	g.Expect(err).To(BeNil(), "terragrunt validate failed")
+	g.Expect(err).To(BeNil(), "terragrunt run-all validate failed")
 }
 
 func itShouldRunTerragruntRunAllInit(entryDir string, g *GomegaWithT) {
 	err := run_terragrunt(entryDir, "init", true)
-	g.Expect(err).To(BeNil(), "terragrunt init failed")
+	g.Expect(err).To(BeNil(), "terragrunt run-all init failed")
 }
 
 func getConfig(terraformDir string) (*TestCaseConfig, error) {
@@ -384,7 +384,7 @@ func cloneOutput(inputDirs []string, terraformDir string) {
 	}
 }
 
-func run_terratag(entryDir string, filter string, skip string, iacType common.IACType) (err interface{}) {
+func run_terratag(entryDir string, filter string, skip string, iacType common.IACType) (err any) {
 	defer func() {
 		if innerErr := recover(); innerErr != nil {
 			fmt.Println(innerErr)
