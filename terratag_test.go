@@ -122,6 +122,32 @@ func TestTerragruntWithCache(t *testing.T) {
 	itShouldGenerateExpectedTerragruntTerratagFiles(entryDir, g)
 }
 
+func TestTerragruntRunAll(t *testing.T) {
+	if _, skip := os.LookupEnv("SKIP_INTEGRATION_TESTS"); skip {
+		t.Skip("skipping integration test")
+	}
+
+	g := NewWithT(t)
+
+	entryDir := "./test/tests/terragrunt_with_cache"
+
+	in := entryDir + "/in"
+	out := entryDir + "/out"
+
+	if err := os.RemoveAll(out); err != nil {
+		t.Fatalf("failed to remove out directory: %s %s", out, err.Error())
+	}
+
+	if err := copy.Copy(in, out); err != nil {
+		t.Fatalf("failed to copy in directory to out directory: %s", err.Error())
+	}
+
+	itShouldRunTerragruntRunAllInit(out, g)
+	itShouldRunTerratagTerragruntRunAllMode(out, g)
+	itShouldRunTerragruntRunAllValidate(out, g)
+	itShouldGenerateExpectedTerragruntTerratagFiles(entryDir, g)
+}
+
 func testTerraform(t *testing.T, version string) {
 	if _, skip := os.LookupEnv("SKIP_INTEGRATION_TESTS"); skip {
 		t.Skip("skipping integration test")
@@ -242,13 +268,18 @@ func itShouldRunTerraformValidate(entryDir string, g *GomegaWithT) {
 }
 
 func itShouldRunTerratag(entryDir string, filter string, skip string, g *GomegaWithT) {
-	err := run_terratag(entryDir, filter, skip, false)
+	err := run_terratag(entryDir, filter, skip, common.Terraform)
 	g.Expect(err).To(BeNil(), "terratag failed")
 }
 
 func itShouldRunTerratagTerragruntMode(entryDir string, g *GomegaWithT) {
-	err := run_terratag(entryDir, "", "", true)
+	err := run_terratag(entryDir, "", "", common.Terragrunt)
 	g.Expect(err).To(BeNil(), "terratag terragrunt mode failed")
+}
+
+func itShouldRunTerratagTerragruntRunAllMode(entryDir string, g *GomegaWithT) {
+	err := run_terratag(entryDir, "", "", common.TerragruntRunAll)
+	g.Expect(err).To(BeNil(), "terratag terragrunt run-all mode failed")
 }
 
 func itShouldOpenTofuInit(entryDir string, g *GomegaWithT) {
@@ -262,13 +293,23 @@ func itShouldTerraformInit(entryDir string, g *GomegaWithT) {
 }
 
 func itShouldRunTerragruntValidate(entryDir string, g *GomegaWithT) {
-	err := run_terragrunt(entryDir, "validate")
+	err := run_terragrunt(entryDir, "validate", false)
 	g.Expect(err).To(BeNil(), "terragrunt validate failed")
 }
 
 func itShouldRunTerragruntInit(entryDir string, g *GomegaWithT) {
-	err := run_terragrunt(entryDir, "init")
+	err := run_terragrunt(entryDir, "init", false)
 	g.Expect(err).To(BeNil(), "terragrunt init failed")
+}
+
+func itShouldRunTerragruntRunAllValidate(entryDir string, g *GomegaWithT) {
+	err := run_terragrunt(entryDir, "validate", true)
+	g.Expect(err).To(BeNil(), "terragrunt run-all validate failed")
+}
+
+func itShouldRunTerragruntRunAllInit(entryDir string, g *GomegaWithT) {
+	err := run_terragrunt(entryDir, "init", true)
+	g.Expect(err).To(BeNil(), "terragrunt run-all init failed")
 }
 
 func getConfig(terraformDir string) (*TestCaseConfig, error) {
@@ -343,7 +384,7 @@ func cloneOutput(inputDirs []string, terraformDir string) {
 	}
 }
 
-func run_terratag(entryDir string, filter string, skip string, terragrunt bool) (err interface{}) {
+func run_terratag(entryDir string, filter string, skip string, iacType common.IACType) (err any) {
 	defer func() {
 		if innerErr := recover(); innerErr != nil {
 			fmt.Println(innerErr)
@@ -362,8 +403,10 @@ func run_terratag(entryDir string, filter string, skip string, terragrunt bool) 
 		os.Args = append(os.Args, "-skip="+skip)
 	}
 
-	if terragrunt {
+	if iacType == common.Terragrunt {
 		os.Args = append(os.Args, "-type=terragrunt", "-rename=false")
+	} else if iacType == common.TerragruntRunAll {
+		os.Args = append(os.Args, "-type=terragrunt-run-all", "-rename=false")
 	}
 
 	args, err := cli.InitArgs()
@@ -377,21 +420,19 @@ func run_terratag(entryDir string, filter string, skip string, terragrunt bool) 
 	return Terratag(args)
 }
 
-func run(prog string, entryDir string, cmd string) error {
-	println(prog, cmd)
+func run(prog string, entryDir string, args ...string) error {
+	println(prog, strings.Join(args, " "))
 
 	var stdout bytes.Buffer
-
 	var stderr bytes.Buffer
 
-	command := exec.Command(prog, cmd)
+	command := exec.Command(prog, args...)
 	command.Dir = entryDir
 	command.Stdout = &stdout
 	command.Stderr = &stderr
 
 	if err := command.Run(); err != nil {
 		log.Println(stderr.String())
-
 		return err
 	}
 
@@ -408,8 +449,14 @@ func run_opentofu(entryDir string, cmd string) error {
 	return run("tofu", entryDir, cmd)
 }
 
-func run_terragrunt(entryDir string, cmd string) error {
-	return run("terragrunt", entryDir, cmd)
+func run_terragrunt(entryDir string, cmd string, runAll bool) error {
+	args := []string{}
+	if runAll {
+		args = append(args, "run-all")
+	}
+	args = append(args, cmd)
+
+	return run("terragrunt", entryDir, args...)
 }
 
 func filterSymlink(ss []string) (ret []string) {

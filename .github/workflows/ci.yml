@@ -90,20 +90,20 @@ jobs:
       - name: Install Terraform
         uses: hashicorp/setup-terraform@v3
         with:
-          terraform_version: 1.2.5
+          terraform_version: 1.11.4
       - name: Print Terraform version
         run: |
           terraform --version
       - name: Install Terragrunt
-        uses: autero1/action-terragrunt@v1.3.2
+        uses: autero1/action-terragrunt@v3
         with:
-          terragrunt_version: 0.54.22
+          terragrunt-version: 0.77.20
       - name: Print Terragrunt version
         run: |
           terragrunt --version
       - name: Test
         run: |
-          go test -v -run ^TestTerragruntWithCache$
+          go test -v -run ^TestTerragrunt.*$
 
   opentofu-integration-tests:
     name: OpenTofu Integration Tests
