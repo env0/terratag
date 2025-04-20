@@ -142,9 +142,9 @@ func TestTerragruntRunAll(t *testing.T) {
 		t.Fatalf("failed to in directory to out directory: %s", err.Error())
 	}
 
-	itShouldRunTerragruntInit(out, g)
+	itShouldRunTerragruntRunAllInit(out, g)
 	itShouldRunTerratagTerragruntRunAllMode(out, g)
-	itShouldRunTerragruntValidate(out, g)
+	itShouldRunTerragruntRunAllValidate(out, g)
 	itShouldGenerateExpectedTerragruntTerratagFiles(entryDir, g)
 }
 
@@ -293,12 +293,22 @@ func itShouldTerraformInit(entryDir string, g *GomegaWithT) {
 }
 
 func itShouldRunTerragruntValidate(entryDir string, g *GomegaWithT) {
-	err := run_terragrunt(entryDir, "validate")
+	err := run_terragrunt(entryDir, "validate", false)
 	g.Expect(err).To(BeNil(), "terragrunt validate failed")
 }
 
 func itShouldRunTerragruntInit(entryDir string, g *GomegaWithT) {
-	err := run_terragrunt(entryDir, "init")
+	err := run_terragrunt(entryDir, "init", false)
+	g.Expect(err).To(BeNil(), "terragrunt init failed")
+}
+
+func itShouldRunTerragruntRunAllValidate(entryDir string, g *GomegaWithT) {
+	err := run_terragrunt(entryDir, "validate", true)
+	g.Expect(err).To(BeNil(), "terragrunt validate failed")
+}
+
+func itShouldRunTerragruntRunAllInit(entryDir string, g *GomegaWithT) {
+	err := run_terragrunt(entryDir, "init", true)
 	g.Expect(err).To(BeNil(), "terragrunt init failed")
 }
 
@@ -441,7 +451,11 @@ func run_opentofu(entryDir string, cmd string) error {
 	return run("tofu", entryDir, cmd)
 }
 
-func run_terragrunt(entryDir string, cmd string) error {
+func run_terragrunt(entryDir string, cmd string, runAll bool) error {
+	if runAll {
+		cmd = "run-all " + cmd
+	}
+
 	return run("terragrunt", entryDir, cmd)
 }
 
