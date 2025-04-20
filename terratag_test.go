@@ -420,21 +420,19 @@ func run_terratag(entryDir string, filter string, skip string, iacType common.IA
 	return Terratag(args)
 }
 
-func run(prog string, entryDir string, cmd string) error {
-	println(prog, cmd)
+func run(prog string, entryDir string, args ...string) error {
+	println(prog, strings.Join(args, " "))
 
 	var stdout bytes.Buffer
-
 	var stderr bytes.Buffer
 
-	command := exec.Command(prog, cmd)
+	command := exec.Command(prog, args...)
 	command.Dir = entryDir
 	command.Stdout = &stdout
 	command.Stderr = &stderr
 
 	if err := command.Run(); err != nil {
 		log.Println(stderr.String())
-
 		return err
 	}
 
@@ -452,11 +450,13 @@ func run_opentofu(entryDir string, cmd string) error {
 }
 
 func run_terragrunt(entryDir string, cmd string, runAll bool) error {
+	args := []string{}
 	if runAll {
-		cmd = "run-all " + cmd
+		args = append(args, "run-all")
 	}
+	args = append(args, cmd)
 
-	return run("terragrunt", entryDir, cmd)
+	return run("terragrunt", entryDir, args...)
 }
 
 func filterSymlink(ss []string) (ret []string) {
