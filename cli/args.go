@@ -30,7 +30,7 @@ func validate(args Args) error {
 	}
 
 	if args.Type != string(common.Terraform) && args.Type != string(common.Terragrunt) && args.Type != string(common.TerragruntRunAll) {
-		return fmt.Errorf("invalid type %s, must be either 'terratag', 'terragrunt', or 'terragrunt-run-all'", args.Type)
+		return fmt.Errorf("invalid type %s, must be either 'terraform', 'terragrunt', or 'terragrunt-run-all'", args.Type)
 	}
 
 	return nil
