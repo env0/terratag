@@ -103,7 +103,7 @@ jobs:
           terragrunt --version
       - name: Test
         run: |
-          go test -v -run ^TestTerragrunt*$
+          go test -v -run ^TestTerragrunt.*$
 
   opentofu-integration-tests:
     name: OpenTofu Integration Tests
