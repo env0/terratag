@@ -139,7 +139,7 @@ func TestTerragruntRunAll(t *testing.T) {
 	}
 
 	if err := copy.Copy(in, out); err != nil {
-		t.Fatalf("failed to in directory to out directory: %s", err.Error())
+		t.Fatalf("failed to copy in directory to out directory: %s", err.Error())
 	}
 
 	itShouldRunTerragruntRunAllInit(out, g)
