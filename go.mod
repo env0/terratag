@@ -2,6 +2,8 @@ module github.com/env0/terratag
 
 go 1.24.4
 
+toolchain go1.24.4
+
 require (
 	github.com/bmatcuk/doublestar v1.3.4
 	github.com/hashicorp/go-hclog v1.5.0
