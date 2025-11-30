@@ -208,7 +208,7 @@ Issues and Pull Requests are very welcome!
 
 ### Prerequisites
 
-- Go ≥ 1.24.4
+- Go ≥ 1.24.9
 
 ### Build
 

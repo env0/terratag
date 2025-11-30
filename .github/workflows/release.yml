@@ -16,7 +16,7 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v5
         with:
-          go-version: 1.24.4
+          go-version: 1.24.9
       - name: Run GoReleaser
         uses: goreleaser/goreleaser-action@v5
         with:
@@ -34,10 +34,10 @@ jobs:
     steps:
       - name: Check out code into the Go module directory
         uses: actions/checkout@v4
-      - name: Set up Go 1.24.4
+      - name: Set up Go 1.24.9
         uses: actions/setup-go@v5
         with:
-          go-version: 1.24.4
+          go-version: 1.24.9
         id: go
       - name: Get dependencies
         run: |

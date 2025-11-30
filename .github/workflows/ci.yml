@@ -15,7 +15,7 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v5
         with:
-          go-version: 1.24.4
+          go-version: 1.24.9
       - name: Go fmt
         run: |
           ! go fmt ./... | read
@@ -39,7 +39,7 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v5
         with:
-          go-version: 1.24.4
+          go-version: 1.24.9
         id: go
       - name: Get dependencies
         run: |
@@ -82,7 +82,7 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v5
         with:
-          go-version: 1.24.4
+          go-version: 1.24.9
         id: go
       - name: Get dependencies
         run: |
@@ -114,7 +114,7 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v5
         with:
-          go-version: 1.24.4
+          go-version: 1.24.9
         id: go
       - name: Get dependencies
         run: |
