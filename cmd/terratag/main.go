@@ -20,7 +20,7 @@ func main() {
 		fmt.Println(err)
 		fmt.Println("Usage: terratag -tags='{ \"some_tag\": \"value\" }' [-dir=\".\"]")
 
-		return
+		os.Exit(2)
 	}
 
 	if args.Version {
@@ -39,6 +39,7 @@ func main() {
 
 	if err := terratag.Terratag(args); err != nil {
 		log.Printf("[ERROR] execution failed due to an error\n%v", err)
+		os.Exit(1)
 	}
 }
 

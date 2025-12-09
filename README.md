@@ -175,7 +175,7 @@ locals {
 - `-default-to-terraform` By default uses OpenTofu (if installed), if set will use Terraform even when Opentofu is installed
 - `--keep-existing-tags` - When set, existing tags will be preserved when merging tags (by default, new tags override existing ones)
 
-Setting options via enviroment variables is also supported. CLI flags have a precedence over envrionment variables.
+Setting options via environment variables is also supported. CLI flags have a precedence over environment variables.
 
 ```
 TERRATAG_TAGS
