@@ -145,7 +145,7 @@ func quoteBlockKeys(tagsBlock *hclwrite.Block) *hclwrite.Block {
 }
 
 func isTagKeyUnquoted(tags hclwrite.Tokens, index int) bool {
-	return tags[index].Type == hclsyntax.TokenIdent && tags[index+1].Type == hclsyntax.TokenEqual
+	return tags[index].Type == hclsyntax.TokenIdent && index+1 < len(tags) && tags[index+1].Type == hclsyntax.TokenEqual
 }
 
 func quoteAttributeKeys(tagsAttribute *hclwrite.Attribute) hclwrite.Tokens {

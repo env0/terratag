@@ -231,6 +231,9 @@ func getResourceSchema(resourceType string, resource hclwrite.Block, dir string)
 	}
 
 	providerSchemas := providerSchemasMap[dir]
+	if providerSchemas == nil {
+		return nil, ErrResourceTypeNotFound
+	}
 
 	// Search through all providers.
 	for providerName, providerSchema := range providerSchemas.ProviderSchemas {

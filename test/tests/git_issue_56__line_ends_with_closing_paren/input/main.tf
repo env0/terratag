@@ -1,3 +1,16 @@
+terraform {
+  required_providers {
+    kubernetes = {
+      source  = "hashicorp/kubernetes"
+      version = "~> 2.0"
+    }
+    google = {
+      source  = "hashicorp/google"
+      version = "~> 4.0"
+    }
+  }
+}
+
 resource "kubernetes_deployment" "audit_server" {
   metadata {
     name = "terraform-example"
