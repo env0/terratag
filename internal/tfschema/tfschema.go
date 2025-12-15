@@ -65,13 +65,17 @@ func InitProviderSchemas(dir string, iacType common.IACType, defaultToTerraform 
 
 	log.Print("[INFO] Fetching provider schemas for directory: ", dir)
 
-	var cmd *exec.Cmd
-	if iacType == common.TerragruntRunAll {
-		log.Print("[INFO] Using terragrunt run-all mode")
-		cmd = exec.Command(name, "run-all", "providers", "schema", "-json")
-	} else {
-		cmd = exec.Command(name, "providers", "schema", "-json")
+	cmd := exec.Command(name)
+	if iacType == common.Terragrunt || iacType == common.TerragruntRunAll {
+		cmd.Args = append(cmd.Args, "run")
+		if iacType == common.TerragruntRunAll {
+			log.Print("[INFO] Using terragrunt run-all mode")
+			cmd.Args = append(cmd.Args, "--all")
+		}
+		cmd.Args = append(cmd.Args, "--")
 	}
+
+	cmd.Args = append(cmd.Args, "providers", "schema", "-json")
 	cmd.Dir = dir
 
 	out, err := cmd.Output()

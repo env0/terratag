@@ -223,6 +223,27 @@ terratag -tags='{"env":"prod"}' -filter='^aws_' -skip='^aws_iam_'
   - `azurestack`
   - `azapi`
 
+### Usage with Terragrunt
+
+Terratag supports Terragrunt v0.78.0 and above.
+> Note: Terragrunt hasn't released a stable 1.x version yet,
+  so compatibility with future releases isn't guaranteed.
+
+To use terratag with Terragrunt:
+
+- Use `-type=terragrunt` for a standard unit
+- Use `-type=terragrunt-run-all` for implicit stacks
+
+> Note: Explicit stacks are not explicitly supported.
+  If you are working with an explicit stack,
+  you may run terratag on each unit individually by using `-type=terragrunt` and `-dir=<unit_path>`.
+  If your generated stack is similar to an implicit stack,
+  you may use `-type=terragrunt-run-all` from the generated stack directory (`.terragrunt-stack` by default).
+  Remember to initialize the units in the stack by either running `terragrunt stack run init`,
+  or running `terragrunt init` in each unit beforehand.
+
+If issues arise with new Terragrunt versions, please open an issue.
+
 ## Develop
 
 Issues and Pull Requests are very welcome!

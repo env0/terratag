@@ -76,6 +76,13 @@ jobs:
   terragrunt-integration-tests:
     name: Terragrunt Integration Tests
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        terragrunt_version:
+          - "0.78.0"
+          - "0.95.1"
+          - "latest"
     steps:
       - name: Check out code into the Go module directory
         uses: actions/checkout@v4
@@ -97,7 +104,7 @@ jobs:
       - name: Install Terragrunt
         uses: autero1/action-terragrunt@v3
         with:
-          terragrunt-version: 0.77.20
+          terragrunt-version: ${{ matrix.terragrunt_version }}
       - name: Print Terragrunt version
         run: |
           terragrunt --version
