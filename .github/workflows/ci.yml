@@ -80,6 +80,7 @@ jobs:
       fail-fast: false
       matrix:
         terragrunt_version:
+          - "0.77.20"
           - "0.78.0"
           - "0.95.1"
           - "latest"

@@ -16,6 +16,7 @@ import (
 	"github.com/bmatcuk/doublestar"
 	"github.com/env0/terratag/cli"
 	"github.com/env0/terratag/internal/common"
+	"github.com/env0/terratag/internal/terraform"
 	. "github.com/onsi/gomega"
 	"github.com/otiai10/copy"
 	"github.com/spf13/viper"
@@ -460,11 +461,25 @@ func run_opentofu(entryDir string, cmd string) error {
 }
 
 func run_terragrunt(entryDir string, cmd string, runAll bool) error {
-	args := []string{"run"}
-	if runAll {
-		args = append(args, "--all")
+	supportsRun, err := terraform.IsTerragruntRunSupported()
+	if err != nil {
+		return err
 	}
-	args = append(args, cmd)
+
+	args := []string{}
+	if supportsRun {
+		args = append(args, "run")
+		if runAll {
+			args = append(args, "--all")
+		}
+		args = append(args, cmd)
+	} else {
+		if runAll {
+			args = append(args, "run-all", cmd)
+		} else {
+			args = append(args, cmd)
+		}
+	}
 
 	return run("terragrunt", entryDir, args...)
 }

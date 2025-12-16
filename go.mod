@@ -5,6 +5,7 @@ go 1.25.0
 require (
 	github.com/bmatcuk/doublestar v1.3.4
 	github.com/hashicorp/go-hclog v1.6.3
+	github.com/hashicorp/go-version v1.8.0
 	github.com/hashicorp/hcl/v2 v2.24.0
 	github.com/hashicorp/logutils v1.0.0
 	github.com/onsi/gomega v1.38.2

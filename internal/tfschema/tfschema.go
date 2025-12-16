@@ -57,8 +57,18 @@ func InitProviderSchemas(dir string, iacType common.IACType, defaultToTerraform 
 	// Use tofu by default (if it exists).
 	name := "terraform"
 	// For terragrunt - use terragrunt.
-	if iacType == common.Terragrunt || iacType == common.TerragruntRunAll {
+	isTerragrunt := iacType == common.Terragrunt || iacType == common.TerragruntRunAll
+	supportsTerragruntRun := false
+
+	if isTerragrunt {
 		name = "terragrunt"
+
+		supportsRun, err := terraform.IsTerragruntRunSupported()
+		if err != nil {
+			return err
+		}
+
+		supportsTerragruntRun = supportsRun
 	} else if _, err := exec.LookPath("tofu"); !defaultToTerraform && err == nil {
 		name = "tofu"
 	}
@@ -66,13 +76,22 @@ func InitProviderSchemas(dir string, iacType common.IACType, defaultToTerraform 
 	log.Print("[INFO] Fetching provider schemas for directory: ", dir)
 
 	cmd := exec.Command(name)
-	if iacType == common.Terragrunt || iacType == common.TerragruntRunAll {
-		cmd.Args = append(cmd.Args, "run")
-		if iacType == common.TerragruntRunAll {
-			log.Print("[INFO] Using terragrunt run-all mode")
-			cmd.Args = append(cmd.Args, "--all")
+	if isTerragrunt {
+		if supportsTerragruntRun {
+			log.Print("[INFO] Using terragrunt's 'run' command")
+			cmd.Args = append(cmd.Args, "run")
+			if iacType == common.TerragruntRunAll {
+				log.Print("[INFO] Using run with --all flag")
+				cmd.Args = append(cmd.Args, "--all")
+			}
+			cmd.Args = append(cmd.Args, "--")
+		} else {
+			log.Print("[INFO] Terragrunt does not support 'run' command; using legacy invocation")
+			if iacType == common.TerragruntRunAll {
+				log.Print("[INFO] Using terragrunt run-all")
+				cmd.Args = append(cmd.Args, "run-all")
+			}
 		}
-		cmd.Args = append(cmd.Args, "--")
 	}
 
 	cmd.Args = append(cmd.Args, "providers", "schema", "-json")
