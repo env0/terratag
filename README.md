@@ -170,6 +170,7 @@ locals {
 - `-skipTerratagFiles=false` - Dont skip processing `*.terratag.tf` files (when running terratag a second time for the same directory)
 - `-rename=false` - Instead of replacing files named `<basename>.tf` with `<basename>.terratag.tf`, keep the original filename
 - `-filter=<regular expression>` - defaults to `.*`. Only apply tags to the resource types matched by the regular expression
+- `-skip=<regular expression>` - defaults to empty (no exclusion). Exclude the resource types matched by the regular expression from tagging. Applied after `-filter`.
 - `-type=<terraform, terragrunt, or terragrunt-run-all>` - defaults to `terraform` (and `opentofu`). If `terragrunt` is used, tags the files under `.terragrunt-cache` folder. Note: if Terragrunt does not create a `.terragrunt-cache` folder, use the default or omit.
 - `-verbose` - Turn on verbose logging
 - `-default-to-terraform` By default uses OpenTofu (if installed), if set will use Terraform even when Opentofu is installed
@@ -188,6 +189,26 @@ TERRATAG_RENAME
 TERRATAG_TYPE
 TERRATAG_DEFAULT_TO_TERRAFORM
 TERRATAG_KEEP_EXISTING_TAGS
+```
+
+### Filtering resource types
+
+Include only S3 and DynamoDB resources:
+
+```bash
+terratag -tags='{"env":"prod"}' -filter='aws_s3_bucket|aws_dynamodb_table'
+```
+
+Tag everything except IAM resources:
+
+```bash
+terratag -tags='{"env":"prod"}' -skip='^aws_iam_'
+```
+
+Combine both — tag all `aws_*` resources but skip IAM:
+
+```bash
+terratag -tags='{"env":"prod"}' -filter='^aws_' -skip='^aws_iam_'
 ```
 
 ##### See more samples [here](https://github.com/env0/terratag/tree/master/test/fixture)
