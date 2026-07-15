@@ -1,6 +1,7 @@
 package tagging
 
 import (
+	"strings"
 	"testing"
 
 	"github.com/env0/terratag/internal/common"
@@ -68,4 +69,35 @@ func TestTagBlock_MergeOrder(t *testing.T) {
 			assert.Equal(t, tc.expectedMerge, result, "The merge expression doesn't match expected value")
 		})
 	}
+}
+
+func TestTagAwsInstance_PreservesNullableVolumeTags(t *testing.T) {
+	file := hclwrite.NewEmptyFile()
+	resource := file.Body().AppendNewBlock("resource", []string{"aws_instance", "test"})
+	resource.Body().SetAttributeRaw(
+		"volume_tags",
+		ParseHclValueStringToTokens(`var.enable_volume_tags ? { env = "test" } : null`),
+	)
+
+	args := TagBlockArgs{
+		Filename: "main",
+		Block:    resource,
+		Tags:     `{"owner":"terratag"}`,
+		Terratag: common.TerratagLocal{
+			Found: map[string]hclwrite.Tokens{},
+			Added: `{"owner"="terratag"}`,
+		},
+		TagId: "tags",
+	}
+
+	_, err := tagAwsInstance(args)
+	assert.NoError(t, err)
+
+	volumeTags := resource.Body().GetAttribute("volume_tags")
+	assert.NotNil(t, volumeTags)
+	assert.Equal(
+		t,
+		`(var.enable_volume_tags ? { env = "test" } : null) == null ? null : merge( var.enable_volume_tags ? { env = "test" } : null, local.terratag_added_main)`,
+		strings.TrimSpace(string(volumeTags.Expr().BuildTokens(hclwrite.Tokens{}).Bytes())),
+	)
 }

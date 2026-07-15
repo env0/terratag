@@ -37,7 +37,9 @@ resource "aws_instance" "volume_tags" {
     device_name = "abcdefg"
   }
 
-  volume_tags = merge({
+  volume_tags = ({
+    c = "d"
+    }) == null ? null : merge({
     "c" = "d"
   }, local.terratag_added_main)
 
@@ -92,6 +94,23 @@ resource "aws_instance" "multiple_tags" {
   root_block_device {
     tags = local.terratag_added_main
   }
+}
+
+resource "aws_instance" "nullable_volume_tags" {
+  ami           = "dasdasD"
+  instance_type = "t3.micro"
+
+  volume_tags = (var.enable_volume_tags ? { env = "test" } : null) == null ? null : merge(var.enable_volume_tags ? { env = "test" } : null, local.terratag_added_main)
+
+  root_block_device {
+    tags = { Name = "test" }
+  }
+  tags = local.terratag_added_main
+}
+
+variable "enable_volume_tags" {
+  type    = bool
+  default = false
 }
 
 locals {

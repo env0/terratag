@@ -25,8 +25,12 @@ func tagAwsInstance(args TagBlockArgs) (*Result, error) {
 	//  2. add tags to any existing 'ebs_block_device' block.
 	// See tag guide for additional details: https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/instance#tag-guide
 
-	if args.Block.Body().GetAttribute("volume_tags") != nil {
-		// Add tags to 'volume_tags' attribute.
+	if volumeTagsAttribute := args.Block.Body().GetAttribute("volume_tags"); volumeTagsAttribute != nil {
+		originalVolumeTags := convert.GetExistingTagsExpression(
+			volumeTagsAttribute.Expr().BuildTokens(hclwrite.Tokens{}),
+		)
+
+		// Add tags to 'volume_tags' attribute while preserving a runtime null value.
 		volumeTagBlockArgs := args
 		volumeTagBlockArgs.TagId = "volume_tags"
 
@@ -35,7 +39,13 @@ func tagAwsInstance(args TagBlockArgs) (*Result, error) {
 			return nil, err
 		}
 
-		swappedTagsStrings = append(swappedTagsStrings, volumeTagBlock)
+		guardedVolumeTagBlock :=
+			"(" + originalVolumeTags + ") == null ? null : " + volumeTagBlock
+		args.Block.Body().SetAttributeRaw(
+			"volume_tags",
+			ParseHclValueStringToTokens(guardedVolumeTagBlock),
+		)
+		swappedTagsStrings = append(swappedTagsStrings, guardedVolumeTagBlock)
 	} else {
 		rootBlockDevice := args.Block.Body().FirstMatchingBlock("root_block_device", nil)
 		if rootBlockDevice == nil {
