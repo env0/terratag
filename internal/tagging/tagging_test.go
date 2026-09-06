@@ -1,6 +1,7 @@
 package tagging
 
 import (
+	"strings"
 	"testing"
 
 	"github.com/env0/terratag/internal/common"
@@ -66,6 +67,51 @@ func TestTagBlock_MergeOrder(t *testing.T) {
 
 			// Compare the exact merge string
 			assert.Equal(t, tc.expectedMerge, result, "The merge expression doesn't match expected value")
+		})
+	}
+}
+
+func TestTagAwsInstance_VolumeTags(t *testing.T) {
+	testCases := []struct {
+		name     string
+		original string
+		expected string
+	}{
+		{
+			name:     "conditionally-null expression is null-guarded",
+			original: `var.enable_volume_tags ? { env = "test" } : null`,
+			expected: `(var.enable_volume_tags ? { env = "test" } : null) == null ? null : merge( var.enable_volume_tags ? { env = "test" } : null, local.terratag_added_main)`,
+		},
+		{
+			name:     "literal map is merged without a guard",
+			original: `{ env = "test" }`,
+			expected: `merge( { "env" = "test" }, local.terratag_added_main)`,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			file := hclwrite.NewEmptyFile()
+			resource := file.Body().AppendNewBlock("resource", []string{"aws_instance", "test"})
+			resource.Body().SetAttributeRaw("volume_tags", ParseHclValueStringToTokens(tc.original))
+
+			args := TagBlockArgs{
+				Filename: "main",
+				Block:    resource,
+				Tags:     `{"owner":"terratag"}`,
+				Terratag: common.TerratagLocal{
+					Found: map[string]hclwrite.Tokens{},
+					Added: `{"owner"="terratag"}`,
+				},
+				TagId: "tags",
+			}
+
+			_, err := tagAwsInstance(args)
+			assert.NoError(t, err)
+
+			volumeTags := resource.Body().GetAttribute("volume_tags")
+			assert.NotNil(t, volumeTags)
+			assert.Equal(t, tc.expected, strings.TrimSpace(string(volumeTags.Expr().BuildTokens(hclwrite.Tokens{}).Bytes())))
 		})
 	}
 }

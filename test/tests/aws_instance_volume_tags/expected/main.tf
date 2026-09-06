@@ -94,6 +94,23 @@ resource "aws_instance" "multiple_tags" {
   }
 }
 
+resource "aws_instance" "nullable_volume_tags" {
+  ami           = "dasdasD"
+  instance_type = "t3.micro"
+
+  volume_tags = (var.enable_volume_tags ? { env = "test" } : null) == null ? null : merge(var.enable_volume_tags ? { env = "test" } : null, local.terratag_added_main)
+
+  root_block_device {
+    tags = { Name = "test" }
+  }
+  tags = local.terratag_added_main
+}
+
+variable "enable_volume_tags" {
+  type    = bool
+  default = false
+}
+
 locals {
   terratag_added_main = {"env0_environment_id"="40907eff-cf7c-419a-8694-e1c6bf1d1168","env0_project_id"="43fd4ff1-8d37-4d9d-ac97-295bd850bf94"}
 }
