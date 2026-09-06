@@ -81,3 +81,19 @@ resource "aws_instance" "multiple_tags" {
     }
   }
 }
+
+resource "aws_instance" "nullable_volume_tags" {
+  ami           = "dasdasD"
+  instance_type = "t3.micro"
+
+  volume_tags = var.enable_volume_tags ? { env = "test" } : null
+
+  root_block_device {
+    tags = { Name = "test" }
+  }
+}
+
+variable "enable_volume_tags" {
+  type    = bool
+  default = false
+}

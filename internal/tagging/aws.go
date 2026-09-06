@@ -25,7 +25,9 @@ func tagAwsInstance(args TagBlockArgs) (*Result, error) {
 	//  2. add tags to any existing 'ebs_block_device' block.
 	// See tag guide for additional details: https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/instance#tag-guide
 
-	if args.Block.Body().GetAttribute("volume_tags") != nil {
+	if volumeTagsAttribute := args.Block.Body().GetAttribute("volume_tags"); volumeTagsAttribute != nil {
+		originalTokens := volumeTagsAttribute.Expr().BuildTokens(hclwrite.Tokens{})
+
 		// Add tags to 'volume_tags' attribute.
 		volumeTagBlockArgs := args
 		volumeTagBlockArgs.TagId = "volume_tags"
@@ -33,6 +35,13 @@ func tagAwsInstance(args TagBlockArgs) (*Result, error) {
 		volumeTagBlock, err := TagBlock(volumeTagBlockArgs)
 		if err != nil {
 			return nil, err
+		}
+
+		// merge() drops null args, so a conditionally-null expression would become non-null and
+		// conflict with root_block_device.tags. Guard it; a literal map can never be null.
+		if !convert.IsHclMap(originalTokens) {
+			volumeTagBlock = "(" + convert.GetExistingTagsExpression(originalTokens) + ") == null ? null : " + volumeTagBlock
+			args.Block.Body().SetAttributeRaw("volume_tags", ParseHclValueStringToTokens(volumeTagBlock))
 		}
 
 		swappedTagsStrings = append(swappedTagsStrings, volumeTagBlock)
