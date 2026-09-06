@@ -71,33 +71,47 @@ func TestTagBlock_MergeOrder(t *testing.T) {
 	}
 }
 
-func TestTagAwsInstance_PreservesNullableVolumeTags(t *testing.T) {
-	file := hclwrite.NewEmptyFile()
-	resource := file.Body().AppendNewBlock("resource", []string{"aws_instance", "test"})
-	resource.Body().SetAttributeRaw(
-		"volume_tags",
-		ParseHclValueStringToTokens(`var.enable_volume_tags ? { env = "test" } : null`),
-	)
-
-	args := TagBlockArgs{
-		Filename: "main",
-		Block:    resource,
-		Tags:     `{"owner":"terratag"}`,
-		Terratag: common.TerratagLocal{
-			Found: map[string]hclwrite.Tokens{},
-			Added: `{"owner"="terratag"}`,
+func TestTagAwsInstance_VolumeTags(t *testing.T) {
+	testCases := []struct {
+		name     string
+		original string
+		expected string
+	}{
+		{
+			name:     "conditionally-null expression is null-guarded",
+			original: `var.enable_volume_tags ? { env = "test" } : null`,
+			expected: `(var.enable_volume_tags ? { env = "test" } : null) == null ? null : merge( var.enable_volume_tags ? { env = "test" } : null, local.terratag_added_main)`,
 		},
-		TagId: "tags",
+		{
+			name:     "literal map is merged without a guard",
+			original: `{ env = "test" }`,
+			expected: `merge( { "env" = "test" }, local.terratag_added_main)`,
+		},
 	}
 
-	_, err := tagAwsInstance(args)
-	assert.NoError(t, err)
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			file := hclwrite.NewEmptyFile()
+			resource := file.Body().AppendNewBlock("resource", []string{"aws_instance", "test"})
+			resource.Body().SetAttributeRaw("volume_tags", ParseHclValueStringToTokens(tc.original))
 
-	volumeTags := resource.Body().GetAttribute("volume_tags")
-	assert.NotNil(t, volumeTags)
-	assert.Equal(
-		t,
-		`(var.enable_volume_tags ? { env = "test" } : null) == null ? null : merge( var.enable_volume_tags ? { env = "test" } : null, local.terratag_added_main)`,
-		strings.TrimSpace(string(volumeTags.Expr().BuildTokens(hclwrite.Tokens{}).Bytes())),
-	)
+			args := TagBlockArgs{
+				Filename: "main",
+				Block:    resource,
+				Tags:     `{"owner":"terratag"}`,
+				Terratag: common.TerratagLocal{
+					Found: map[string]hclwrite.Tokens{},
+					Added: `{"owner"="terratag"}`,
+				},
+				TagId: "tags",
+			}
+
+			_, err := tagAwsInstance(args)
+			assert.NoError(t, err)
+
+			volumeTags := resource.Body().GetAttribute("volume_tags")
+			assert.NotNil(t, volumeTags)
+			assert.Equal(t, tc.expected, strings.TrimSpace(string(volumeTags.Expr().BuildTokens(hclwrite.Tokens{}).Bytes())))
+		})
+	}
 }

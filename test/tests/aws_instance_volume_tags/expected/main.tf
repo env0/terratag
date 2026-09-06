@@ -37,9 +37,7 @@ resource "aws_instance" "volume_tags" {
     device_name = "abcdefg"
   }
 
-  volume_tags = ({
-    c = "d"
-    }) == null ? null : merge({
+  volume_tags = merge({
     "c" = "d"
   }, local.terratag_added_main)
 

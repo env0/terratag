@@ -19,7 +19,7 @@ func GetExistingTagsExpression(tokens hclwrite.Tokens) string {
 	return stringifyExpression(tokens)
 }
 
-func isHclMap(tokens hclwrite.Tokens) bool {
+func IsHclMap(tokens hclwrite.Tokens) bool {
 	maybeHclMap := strings.TrimSpace(string(tokens.Bytes()))
 
 	return strings.HasPrefix(maybeHclMap, "{") && strings.HasSuffix(maybeHclMap, "}")
@@ -154,7 +154,7 @@ func quoteAttributeKeys(tagsAttribute *hclwrite.Attribute) hclwrite.Tokens {
 	tags := tagsAttribute.Expr().BuildTokens(hclwrite.Tokens{})
 
 	// if attribute is a variable
-	if !(isHclMap(tags)) {
+	if !(IsHclMap(tags)) {
 		return tags
 	}
 
