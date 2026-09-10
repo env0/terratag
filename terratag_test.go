@@ -16,6 +16,7 @@ import (
 	"github.com/bmatcuk/doublestar"
 	"github.com/env0/terratag/cli"
 	"github.com/env0/terratag/internal/common"
+	"github.com/env0/terratag/internal/terraform"
 	. "github.com/onsi/gomega"
 	"github.com/otiai10/copy"
 	"github.com/spf13/viper"
@@ -243,8 +244,10 @@ func itShouldGenerateExpectedTerragruntTerratagFiles(entryDir string, g *GomegaW
 	expectedPattern := entryDir + "/expected/**/*.tf"
 	expectedTerratag, _ := doublestar.Glob(expectedPattern)
 
-	cachePattern := entryDir + "/out/**/.terragrunt-cache"
+	cachePattern := entryDir + "/out/**/unit*/.terragrunt-cache"
 	cacheDirs, _ := doublestar.Glob(cachePattern)
+
+	g.Expect(len(cacheDirs)).To(BeNumerically(">", 0))
 
 	for _, cacheDir := range cacheDirs {
 		hashmap := make(map[string]string)
@@ -458,11 +461,25 @@ func run_opentofu(entryDir string, cmd string) error {
 }
 
 func run_terragrunt(entryDir string, cmd string, runAll bool) error {
-	args := []string{}
-	if runAll {
-		args = append(args, "run-all")
+	supportsRun, err := terraform.IsTerragruntRunSupported()
+	if err != nil {
+		return err
 	}
-	args = append(args, cmd)
+
+	args := []string{}
+	if supportsRun {
+		args = append(args, "run")
+		if runAll {
+			args = append(args, "--all")
+		}
+		args = append(args, cmd)
+	} else {
+		if runAll {
+			args = append(args, "run-all", cmd)
+		} else {
+			args = append(args, cmd)
+		}
+	}
 
 	return run("terragrunt", entryDir, args...)
 }

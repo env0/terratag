@@ -57,21 +57,46 @@ func InitProviderSchemas(dir string, iacType common.IACType, defaultToTerraform 
 	// Use tofu by default (if it exists).
 	name := "terraform"
 	// For terragrunt - use terragrunt.
-	if iacType == common.Terragrunt || iacType == common.TerragruntRunAll {
+	isTerragrunt := iacType == common.Terragrunt || iacType == common.TerragruntRunAll
+	supportsTerragruntRun := false
+
+	if isTerragrunt {
 		name = "terragrunt"
+
+		supportsRun, err := terraform.IsTerragruntRunSupported()
+		if err != nil {
+			log.Printf("[WARN] Failed to determine terragrunt version, falling back to legacy invocation: %v", err)
+		}
+
+		supportsTerragruntRun = supportsRun
 	} else if _, err := exec.LookPath("tofu"); !defaultToTerraform && err == nil {
 		name = "tofu"
 	}
 
 	log.Print("[INFO] Fetching provider schemas for directory: ", dir)
 
-	var cmd *exec.Cmd
-	if iacType == common.TerragruntRunAll {
-		log.Print("[INFO] Using terragrunt run-all mode")
-		cmd = exec.Command(name, "run-all", "providers", "schema", "-json")
-	} else {
-		cmd = exec.Command(name, "providers", "schema", "-json")
+	var args []string
+	if isTerragrunt {
+		if supportsTerragruntRun {
+			log.Print("[INFO] Using terragrunt's 'run' command")
+			args = append(args, "run")
+			if iacType == common.TerragruntRunAll {
+				log.Print("[INFO] Using run with --all flag")
+				args = append(args, "--all")
+			}
+			args = append(args, "--")
+		} else {
+			log.Print("[INFO] Terragrunt does not support 'run' command; using legacy invocation")
+			if iacType == common.TerragruntRunAll {
+				log.Print("[INFO] Using terragrunt run-all")
+				args = append(args, "run-all")
+			}
+		}
 	}
+
+	args = append(args, "providers", "schema", "-json")
+
+	cmd := exec.Command(name, args...)
 	cmd.Dir = dir
 
 	out, err := cmd.Output()
@@ -87,7 +112,7 @@ func InitProviderSchemas(dir string, iacType common.IACType, defaultToTerraform 
 		log.Printf("Standard output: %s\n", string(out))
 		log.Println("===============================================")
 
-		return fmt.Errorf("failed to execute '%s providers schema -json' command in directory '%s': %w", name, dir, err)
+		return fmt.Errorf("failed to execute '%s' command in directory '%s': %w", strings.Join(cmd.Args, " "), dir, err)
 	}
 
 	// Create a new provider schemas object
