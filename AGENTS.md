@@ -114,6 +114,8 @@ diff against `test/tests/<suite>/expected`.
   ordering. Check here before writing another map-key sort.
 - Promote a type or helper here only once a second package needs it; a single caller keeps it local.
 
+Reimplementing something named above instead of importing it is **blocking**, not a nit.
+
 ## Comments and prose
 
 State what the code cannot: a workaround, a non-obvious invariant, an ordering constraint, a git
