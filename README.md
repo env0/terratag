@@ -225,9 +225,6 @@ terratag -tags='{"env":"prod"}' -filter='^aws_' -skip='^aws_iam_'
 
 ### Usage with Terragrunt
 
-> Note: Terragrunt hasn't released a stable 1.x version yet,
-  so compatibility with future releases isn't guaranteed.
-
 To use terratag with Terragrunt:
 
 - Use `-type=terragrunt` for a standard unit
