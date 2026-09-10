@@ -1,0 +1,7 @@
+# .agents/test-contract — machine-readable form of the test-for-change table in AGENTS.md.
+# verify-written.sh keeps the two in sync. Format: changed-path regex, whitespace, required-test regex.
+^internal/tagging/.*\.go$    ^internal/tagging/tagging_test\.go$
+^terratag\.go$    ^test/tests/[^/]+/(in|input|expected)/.*\.(tf|hcl)$
+^internal/(tagging|terraform|convert|tfschema|providers|tag_keys)/.*\.go$    ^test/tests/[^/]+/(in|input|expected)/.*\.(tf|hcl)$
+^cli/.*\.go$    ^cmd/terratag/main_test\.go$
+^cmd/terratag/main\.go$    ^cmd/terratag/main_test\.go$
