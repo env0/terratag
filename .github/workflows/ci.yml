@@ -81,11 +81,23 @@ jobs:
       fail-fast: false
       matrix:
         terragrunt_version:
+          # Below TerragruntRunMinVersion (0.78.0): exercises the legacy
+          # code path, which does not use the 'run' command.
           - "0.77.20"
+          # Exact TerragruntRunMinVersion: the boundary where terratag
+          # switches from the legacy invocation to 'run'.
           - "0.78.0"
+          # First version where terragrunt stopped forwarding unknown
+          # top-level commands (the break reported in #230). Confirms
+          # the 'run' command fix works.
           - "0.88.1"
+          # Later 0.x release, further from the 0.88.0 boundary, to
+          # catch regressions before the 1.x line.
           - "0.95.1"
+          # First stable major release.
           - "1.0.0"
+          # Catches upcoming breaking changes early; non-blocking (see
+          # continue-on-error below) so it can't fail master CI.
           - "latest"
         include:
           - terragrunt_version: "latest"
