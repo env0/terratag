@@ -11,51 +11,50 @@ import (
 )
 
 var (
-	terragruntVersionOnce sync.Once
-	terragruntVersion     string
-	terragruntParsed      *version.Version
-	terragruntVersionErr  error
+	terragruntRunSupportedOnce sync.Once
+	terragruntRunSupported     bool
+	terragruntRunSupportedErr  error
 )
 
 var terragruntVersionRegex = regexp.MustCompile(`\d+\.\d+\.\d+`)
 
 const TerragruntRunMinVersion = "0.78.0"
 
-func GetTerragruntVersion() (string, error) {
-	terragruntVersionOnce.Do(func() {
+// parseTerragruntVersion extracts a semantic version from the output of 'terragrunt --version'.
+func parseTerragruntVersion(out string) (*version.Version, error) {
+	match := terragruntVersionRegex.FindString(out)
+	if match == "" {
+		return nil, fmt.Errorf("failed to parse terragrunt version from output: %s", strings.TrimSpace(out))
+	}
+
+	return version.NewVersion(match)
+}
+
+// IsTerragruntRunSupported reports whether the installed terragrunt version supports the 'run' command.
+func IsTerragruntRunSupported() (bool, error) {
+	terragruntRunSupportedOnce.Do(func() {
 		cmd := exec.Command("terragrunt", "--version")
+
 		out, err := cmd.Output()
 		if err != nil {
-			terragruntVersionErr = fmt.Errorf("failed to run 'terragrunt version': %w", err)
+			terragruntRunSupportedErr = fmt.Errorf("failed to run 'terragrunt --version': %w", err)
 			return
 		}
 
-		match := terragruntVersionRegex.FindStringSubmatch(string(out))
-		if len(match) < 1 {
-			terragruntVersionErr = fmt.Errorf("failed to parse terragrunt version from output: %s", strings.TrimSpace(string(out)))
+		parsed, err := parseTerragruntVersion(string(out))
+		if err != nil {
+			terragruntRunSupportedErr = err
 			return
 		}
 
-		terragruntVersion = match[0]
-		terragruntParsed, terragruntVersionErr = version.NewVersion(terragruntVersion)
+		minVer, err := version.NewVersion(TerragruntRunMinVersion)
+		if err != nil {
+			terragruntRunSupportedErr = fmt.Errorf("invalid min terragrunt version '%s': %w", TerragruntRunMinVersion, err)
+			return
+		}
+
+		terragruntRunSupported = parsed.GreaterThanOrEqual(minVer)
 	})
 
-	return terragruntVersion, terragruntVersionErr
-}
-
-func IsTerragruntVersionAtLeast(minVersion string) (bool, error) {
-	if _, err := GetTerragruntVersion(); err != nil {
-		return false, err
-	}
-
-	minVer, err := version.NewVersion(minVersion)
-	if err != nil {
-		return false, fmt.Errorf("invalid min terragrunt version '%s': %w", minVersion, err)
-	}
-
-	return terragruntParsed.GreaterThanOrEqual(minVer), nil
-}
-
-func IsTerragruntRunSupported() (bool, error) {
-	return IsTerragruntVersionAtLeast(TerragruntRunMinVersion)
+	return terragruntRunSupported, terragruntRunSupportedErr
 }

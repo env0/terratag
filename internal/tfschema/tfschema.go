@@ -65,7 +65,7 @@ func InitProviderSchemas(dir string, iacType common.IACType, defaultToTerraform 
 
 		supportsRun, err := terraform.IsTerragruntRunSupported()
 		if err != nil {
-			return err
+			log.Printf("[WARN] Failed to determine terragrunt version, falling back to legacy invocation: %v", err)
 		}
 
 		supportsTerragruntRun = supportsRun
@@ -75,26 +75,28 @@ func InitProviderSchemas(dir string, iacType common.IACType, defaultToTerraform 
 
 	log.Print("[INFO] Fetching provider schemas for directory: ", dir)
 
-	cmd := exec.Command(name)
+	var args []string
 	if isTerragrunt {
 		if supportsTerragruntRun {
 			log.Print("[INFO] Using terragrunt's 'run' command")
-			cmd.Args = append(cmd.Args, "run")
+			args = append(args, "run")
 			if iacType == common.TerragruntRunAll {
 				log.Print("[INFO] Using run with --all flag")
-				cmd.Args = append(cmd.Args, "--all")
+				args = append(args, "--all")
 			}
-			cmd.Args = append(cmd.Args, "--")
+			args = append(args, "--")
 		} else {
 			log.Print("[INFO] Terragrunt does not support 'run' command; using legacy invocation")
 			if iacType == common.TerragruntRunAll {
 				log.Print("[INFO] Using terragrunt run-all")
-				cmd.Args = append(cmd.Args, "run-all")
+				args = append(args, "run-all")
 			}
 		}
 	}
 
-	cmd.Args = append(cmd.Args, "providers", "schema", "-json")
+	args = append(args, "providers", "schema", "-json")
+
+	cmd := exec.Command(name, args...)
 	cmd.Dir = dir
 
 	out, err := cmd.Output()
@@ -110,7 +112,7 @@ func InitProviderSchemas(dir string, iacType common.IACType, defaultToTerraform 
 		log.Printf("Standard output: %s\n", string(out))
 		log.Println("===============================================")
 
-		return fmt.Errorf("failed to execute '%s providers schema -json' command in directory '%s': %w", name, dir, err)
+		return fmt.Errorf("failed to execute '%s' command in directory '%s': %w", strings.Join(cmd.Args, " "), dir, err)
 	}
 
 	// Create a new provider schemas object

@@ -76,14 +76,19 @@ jobs:
   terragrunt-integration-tests:
     name: Terragrunt Integration Tests
     runs-on: ubuntu-latest
+    continue-on-error: ${{ matrix.continue_on_error == true }}
     strategy:
       fail-fast: false
       matrix:
         terragrunt_version:
           - "0.77.20"
           - "0.78.0"
+          - "0.88.1"
           - "0.95.1"
           - "latest"
+        include:
+          - terragrunt_version: "latest"
+            continue_on_error: true
     steps:
       - name: Check out code into the Go module directory
         uses: actions/checkout@v4
