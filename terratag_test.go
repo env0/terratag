@@ -234,7 +234,9 @@ func getFileSha256(filename string, g *GomegaWithT) string {
 	defer f.Close()
 
 	h := sha256.New()
-	_, err = io.Copy(h, f)
+	content, err := io.ReadAll(f)
+	g.Expect(err).To(BeNil())
+	_, err = h.Write(bytes.TrimRight(content, "\n"))
 	g.Expect(err).To(BeNil())
 
 	return string(h.Sum(nil))
