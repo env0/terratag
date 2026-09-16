@@ -8,7 +8,6 @@ import (
 	"log"
 	"os"
 	"path/filepath"
-	"strings"
 
 	"github.com/bmatcuk/doublestar"
 	"github.com/env0/terratag/internal/common"
@@ -67,7 +66,7 @@ func getTerragruntFilePath(rootDir string) ([]string, error) {
 			return filepath.SkipDir
 		}
 
-		if strings.HasSuffix(path, ".tf") {
+		if isTerraformConfigFile(path) {
 			tfFiles = append(tfFiles, path)
 		}
 
@@ -80,11 +79,17 @@ func getTerragruntFilePath(rootDir string) ([]string, error) {
 }
 
 func getTerraformFilePaths(rootDir string) ([]string, error) {
+	const tofuFileMatcher = "/*.tofu"
 	const tfFileMatcher = "/*.tf"
 
-	tfFiles, err := doublestar.Glob(rootDir + tfFileMatcher)
-	if err != nil {
-		return nil, err
+	var tfFiles []string
+	for _, matcher := range []string{tfFileMatcher, tofuFileMatcher} {
+		matches, err := doublestar.Glob(rootDir + matcher)
+		if err != nil {
+			return nil, err
+		}
+
+		tfFiles = append(tfFiles, matches...)
 	}
 
 	modulesDirs, err := getTerraformModulesDirPaths(rootDir)
@@ -93,12 +98,14 @@ func getTerraformFilePaths(rootDir string) ([]string, error) {
 	}
 
 	for _, moduleDir := range modulesDirs {
-		matches, err := doublestar.Glob(moduleDir + tfFileMatcher)
-		if err != nil {
-			return nil, err
-		}
+		for _, matcher := range []string{tfFileMatcher, tofuFileMatcher} {
+			matches, err := doublestar.Glob(moduleDir + matcher)
+			if err != nil {
+				return nil, err
+			}
 
-		tfFiles = append(tfFiles, matches...)
+			tfFiles = append(tfFiles, matches...)
+		}
 	}
 
 	for i, tfFile := range tfFiles {
@@ -111,6 +118,11 @@ func getTerraformFilePaths(rootDir string) ([]string, error) {
 	}
 
 	return funk.UniqString(tfFiles), nil
+}
+
+func isTerraformConfigFile(path string) bool {
+	extension := filepath.Ext(path)
+	return extension == ".tf" || extension == ".tofu"
 }
 
 func getTerraformModulesDirPaths(dir string) ([]string, error) {
