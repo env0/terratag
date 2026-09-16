@@ -253,6 +253,8 @@ func itShouldGenerateExpectedTerragruntTerratagFiles(entryDir string, g *GomegaW
 		hashmap := make(map[string]string)
 
 		actualTerratag, _ := doublestar.Glob(cacheDir + "/**/*.tf")
+		tofuFiles, _ := doublestar.Glob(cacheDir + "/**/*.tofu")
+		actualTerratag = append(actualTerratag, tofuFiles...)
 		actualTerratag = filterSymlink(actualTerratag)
 
 		for _, actualFile := range actualTerratag {
