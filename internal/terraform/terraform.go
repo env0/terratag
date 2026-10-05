@@ -8,7 +8,6 @@ import (
 	"log"
 	"os"
 	"path/filepath"
-	"strings"
 
 	"github.com/bmatcuk/doublestar"
 	"github.com/env0/terratag/internal/common"
@@ -67,7 +66,7 @@ func getTerragruntFilePath(rootDir string) ([]string, error) {
 			return filepath.SkipDir
 		}
 
-		if strings.HasSuffix(path, ".tf") {
+		if isTerraformConfigFile(path) {
 			tfFiles = append(tfFiles, path)
 		}
 
@@ -80,7 +79,7 @@ func getTerragruntFilePath(rootDir string) ([]string, error) {
 }
 
 func getTerraformFilePaths(rootDir string) ([]string, error) {
-	const tfFileMatcher = "/*.tf"
+	const tfFileMatcher = "/*.{tf,tofu}"
 
 	tfFiles, err := doublestar.Glob(rootDir + tfFileMatcher)
 	if err != nil {
@@ -111,6 +110,12 @@ func getTerraformFilePaths(rootDir string) ([]string, error) {
 	}
 
 	return funk.UniqString(tfFiles), nil
+}
+
+func isTerraformConfigFile(path string) bool {
+	extension := filepath.Ext(path)
+
+	return extension == ".tf" || extension == ".tofu"
 }
 
 func getTerraformModulesDirPaths(dir string) ([]string, error) {

@@ -15,7 +15,8 @@ func ReplaceWithTerratagFile(path string, textContent string, rename bool) error
 	backupFilename := path + ".bak"
 
 	if rename {
-		taggedFilename := strings.TrimSuffix(path, filepath.Ext(path)) + ".terratag.tf"
+		ext := filepath.Ext(path)
+		taggedFilename := strings.TrimSuffix(path, ext) + ".terratag" + ext
 		if err := CreateFile(taggedFilename, textContent); err != nil {
 			return err
 		}
