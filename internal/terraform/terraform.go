@@ -79,17 +79,11 @@ func getTerragruntFilePath(rootDir string) ([]string, error) {
 }
 
 func getTerraformFilePaths(rootDir string) ([]string, error) {
-	const tofuFileMatcher = "/*.tofu"
-	const tfFileMatcher = "/*.tf"
+	const tfFileMatcher = "/*.{tf,tofu}"
 
-	var tfFiles []string
-	for _, matcher := range []string{tfFileMatcher, tofuFileMatcher} {
-		matches, err := doublestar.Glob(rootDir + matcher)
-		if err != nil {
-			return nil, err
-		}
-
-		tfFiles = append(tfFiles, matches...)
+	tfFiles, err := doublestar.Glob(rootDir + tfFileMatcher)
+	if err != nil {
+		return nil, err
 	}
 
 	modulesDirs, err := getTerraformModulesDirPaths(rootDir)
@@ -98,14 +92,12 @@ func getTerraformFilePaths(rootDir string) ([]string, error) {
 	}
 
 	for _, moduleDir := range modulesDirs {
-		for _, matcher := range []string{tfFileMatcher, tofuFileMatcher} {
-			matches, err := doublestar.Glob(moduleDir + matcher)
-			if err != nil {
-				return nil, err
-			}
-
-			tfFiles = append(tfFiles, matches...)
+		matches, err := doublestar.Glob(moduleDir + tfFileMatcher)
+		if err != nil {
+			return nil, err
 		}
+
+		tfFiles = append(tfFiles, matches...)
 	}
 
 	for i, tfFile := range tfFiles {
@@ -122,6 +114,7 @@ func getTerraformFilePaths(rootDir string) ([]string, error) {
 
 func isTerraformConfigFile(path string) bool {
 	extension := filepath.Ext(path)
+
 	return extension == ".tf" || extension == ".tofu"
 }
 

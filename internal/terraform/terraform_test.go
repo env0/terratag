@@ -3,46 +3,28 @@ package terraform
 import (
 	"os"
 	"path/filepath"
-	"sort"
 	"testing"
 
 	"github.com/env0/terratag/internal/common"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestGetFilePathsIncludesTofuFiles(t *testing.T) {
-	dir := t.TempDir()
-	for _, name := range []string{"main.tf", "main.tofu", "ignored.hcl"} {
-		if err := os.WriteFile(filepath.Join(dir, name), nil, 0o600); err != nil {
-			t.Fatal(err)
-		}
-	}
+	for _, iacType := range []common.IACType{common.Terraform, common.Terragrunt, common.TerragruntRunAll} {
+		t.Run(string(iacType), func(t *testing.T) {
+			// t.TempDir() can sit behind a symlink (/var on macOS); terraform mode returns resolved paths.
+			dir, err := filepath.EvalSymlinks(t.TempDir())
+			require.NoError(t, err)
 
-	got, err := GetFilePaths(dir, string(common.Terraform))
-	if err != nil {
-		t.Fatal(err)
-	}
+			for _, name := range []string{"main.tf", "main.tofu", "main.tofu.bak", "terragrunt.hcl"} {
+				require.NoError(t, os.WriteFile(filepath.Join(dir, name), nil, 0o600))
+			}
 
-	for i := range got {
-		got[i], err = filepath.EvalSymlinks(got[i])
-		if err != nil {
-			t.Fatal(err)
-		}
-	}
-	sort.Strings(got)
-	want := []string{filepath.Join(dir, "main.tf"), filepath.Join(dir, "main.tofu")}
-	for i := range want {
-		want[i], err = filepath.EvalSymlinks(want[i])
-		if err != nil {
-			t.Fatal(err)
-		}
-	}
-	sort.Strings(want)
-	if len(got) != len(want) {
-		t.Fatalf("got %v, want %v", got, want)
-	}
-	for i := range want {
-		if got[i] != want[i] {
-			t.Errorf("got %q, want %q", got[i], want[i])
-		}
+			got, err := GetFilePaths(dir, string(iacType))
+			require.NoError(t, err)
+
+			assert.ElementsMatch(t, []string{filepath.Join(dir, "main.tf"), filepath.Join(dir, "main.tofu")}, got)
+		})
 	}
 }
