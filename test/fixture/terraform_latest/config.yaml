@@ -19,3 +19,6 @@ suites:
   - aws_instance_volume_tags
   - provider_function
   - azapi
+  - tofu_file
+  - tofu_file_with_tf_twin
+  - tofu_already_tagged

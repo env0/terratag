@@ -4,6 +4,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strings"
 	"testing"
 )
 
@@ -23,6 +24,7 @@ func TestExitCodes(t *testing.T) {
 		args         []string
 		env          []string
 		expectedCode int
+		output       []string
 	}{
 		{
 			name:         "missing tags returns exit code 2",
@@ -44,6 +46,12 @@ func TestExitCodes(t *testing.T) {
 			args:         []string{"-tags={\"key\":\"value\"}", "-dir=/nonexistent/path/that/does/not/exist"},
 			expectedCode: 1,
 		},
+		{
+			name:         "help flag returns exit code 0 and mentions .tofu files",
+			args:         []string{"-h"},
+			expectedCode: 0,
+			output:       []string{".tf and .tofu files", "<basename>.terratag.tf (or .terratag.tofu)"},
+		},
 	}
 
 	for _, tt := range tests {
@@ -51,7 +59,7 @@ func TestExitCodes(t *testing.T) {
 			cmd := exec.Command(binaryPath, tt.args...)
 			cmd.Env = append(os.Environ(), tt.env...)
 
-			err := cmd.Run()
+			out, err := cmd.CombinedOutput()
 
 			exitCode := 0
 			if err != nil {
@@ -64,6 +72,12 @@ func TestExitCodes(t *testing.T) {
 
 			if exitCode != tt.expectedCode {
 				t.Errorf("expected exit code %d, got %d", tt.expectedCode, exitCode)
+			}
+
+			for _, want := range tt.output {
+				if !strings.Contains(string(out), want) {
+					t.Errorf("expected output to contain %q, got:\n%s", want, out)
+				}
 			}
 		})
 	}

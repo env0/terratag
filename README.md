@@ -166,9 +166,9 @@ locals {
 
 ### Optional CLI flags
 
-- `-dir=<path>` - defaults to `.`. Sets the opentofu/terraform folder to tag `.tf` files in
-- `-skipTerratagFiles=false` - Dont skip processing `*.terratag.tf` files (when running terratag a second time for the same directory)
-- `-rename=false` - Instead of replacing files named `<basename>.tf` with `<basename>.terratag.tf`, keep the original filename
+- `-dir=<path>` - defaults to `.`. Sets the opentofu/terraform folder to tag `.tf` and `.tofu` files in
+- `-skipTerratagFiles=false` - Dont skip processing `*.terratag.tf` and `*.terratag.tofu` files (when running terratag a second time for the same directory)
+- `-rename=false` - Instead of replacing files named `<basename>.tf` (or `.tofu`) with `<basename>.terratag.tf` (or `.terratag.tofu`), keep the original filename
 - `-filter=<regular expression>` - defaults to `.*`. Only apply tags to the resource types matched by the regular expression
 - `-skip=<regular expression>` - defaults to empty (no exclusion). Exclude the resource types matched by the regular expression from tagging. Applied after `-filter`.
 - `-type=<terraform, terragrunt, or terragrunt-run-all>` - defaults to `terraform` (and `opentofu`). If `terragrunt` is used, tags the files under `.terragrunt-cache` folder. Note: if Terragrunt does not create a `.terragrunt-cache` folder, use the default or omit.

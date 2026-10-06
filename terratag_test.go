@@ -193,7 +193,7 @@ func testTerraformWithFilter(t *testing.T, version string, filter string, skip s
 }
 
 func itShouldGenerateExpectedTerratagFiles(entryDir string, g *GomegaWithT) {
-	expectedPattern := strings.Split(entryDir, "/out/")[0] + "/expected/*.tf"
+	expectedPattern := strings.Split(entryDir, "/out/")[0] + "/expected/*.{tf,tofu}"
 
 	var expectedTerratag []string
 
@@ -201,14 +201,14 @@ func itShouldGenerateExpectedTerratagFiles(entryDir string, g *GomegaWithT) {
 
 	expectedTerratag, _ = doublestar.Glob(expectedPattern)
 	if len(expectedTerratag) == 0 {
-		expectedPattern = strings.Split(entryDir, "/out/")[0] + "/expected/**/*.tf"
+		expectedPattern = strings.Split(entryDir, "/out/")[0] + "/expected/**/*.{tf,tofu}"
 		expectedTerratag, _ = doublestar.Glob(expectedPattern)
 	}
 
-	actualTerratag, _ = doublestar.Glob(entryDir + "/*.tf")
+	actualTerratag, _ = doublestar.Glob(entryDir + "/*.{tf,tofu}")
 
 	if len(actualTerratag) == 0 {
-		actualTerratag, _ = doublestar.Glob(entryDir + "/**/*.tf")
+		actualTerratag, _ = doublestar.Glob(entryDir + "/**/*.{tf,tofu}")
 	}
 
 	actualTerratag = filterSymlink(actualTerratag)
@@ -241,7 +241,7 @@ func getFileSha256(filename string, g *GomegaWithT) string {
 }
 
 func itShouldGenerateExpectedTerragruntTerratagFiles(entryDir string, g *GomegaWithT) {
-	expectedPattern := entryDir + "/expected/**/*.tf"
+	expectedPattern := entryDir + "/expected/**/*.{tf,tofu}"
 	expectedTerratag, _ := doublestar.Glob(expectedPattern)
 
 	cachePattern := entryDir + "/out/**/unit*/.terragrunt-cache"
@@ -252,7 +252,7 @@ func itShouldGenerateExpectedTerragruntTerratagFiles(entryDir string, g *GomegaW
 	for _, cacheDir := range cacheDirs {
 		hashmap := make(map[string]string)
 
-		actualTerratag, _ := doublestar.Glob(cacheDir + "/**/*.tf")
+		actualTerratag, _ := doublestar.Glob(cacheDir + "/**/*.{tf,tofu}")
 		actualTerratag = filterSymlink(actualTerratag)
 
 		for _, actualFile := range actualTerratag {
