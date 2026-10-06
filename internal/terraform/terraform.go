@@ -66,7 +66,7 @@ func getTerragruntFilePath(rootDir string) ([]string, error) {
 			return filepath.SkipDir
 		}
 
-		if isTerraformConfigFile(path) {
+		if !d.IsDir() && isTerraformConfigFile(path) {
 			tfFiles = append(tfFiles, path)
 		}
 

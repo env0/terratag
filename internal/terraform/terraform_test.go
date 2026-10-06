@@ -28,3 +28,13 @@ func TestGetFilePathsIncludesTofuFiles(t *testing.T) {
 		})
 	}
 }
+
+func TestGetFilePathsSkipsDirectoriesInTerragrunt(t *testing.T) {
+	dir := t.TempDir()
+	require.NoError(t, os.Mkdir(filepath.Join(dir, "module.tofu"), 0o700))
+
+	got, err := GetFilePaths(dir, string(common.Terragrunt))
+	require.NoError(t, err)
+
+	assert.Empty(t, got)
+}
