@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
+	"path/filepath"
 	"regexp"
 	"strings"
 	"sync"
@@ -82,7 +83,7 @@ func tagDirectoryResources(args *common.TaggingArgs) counters {
 	var total counters
 
 	for _, path := range args.Matches {
-		if args.IsSkipTerratagFiles && (strings.HasSuffix(path, "terratag.tf") || strings.HasSuffix(path, "terratag.tofu")) {
+		if args.IsSkipTerratagFiles && strings.HasSuffix(strings.TrimSuffix(path, filepath.Ext(path)), ".terratag") {
 			log.Print("[INFO] Skipping file ", path, " as it's already tagged")
 		} else {
 			matchWaitGroup.Add(1)
