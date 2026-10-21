@@ -1,0 +1,49 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": ["config:recommended", "helpers:pinGitHubActionDigests"],
+  "minimumReleaseAge": "3 days",
+  "timezone": "Asia/Jerusalem",
+  "schedule": ["before 6am on sunday"],
+  "prCreation": "immediate",
+  "prHourlyLimit": 5,
+  "postUpdateOptions": ["gomodTidy"],
+  "labels": ["renovate 🎨"],
+  "vulnerabilityAlerts": {
+    "schedule": ["at any time"],
+    "minimumReleaseAge": null,
+    "groupName": null,
+    "labels": ["renovate 🎨", "security"]
+  },
+  "osvVulnerabilityAlerts": true,
+  "terraform": {
+    "enabled": false
+  },
+  "packageRules": [
+    {
+      "matchManagers": ["github-actions"],
+      "groupName": "GitHub Actions"
+    },
+    {
+      "description": "The go directive is left out so Go version bumps get their own PR.",
+      "matchManagers": ["gomod"],
+      "matchDepTypes": ["!golang"],
+      "matchUpdateTypes": ["minor", "patch", "digest"],
+      "groupName": "Go modules non-major"
+    },
+    {
+      "matchManagers": ["pip_requirements"],
+      "matchUpdateTypes": ["minor", "patch"],
+      "groupName": "azapi Python non-major"
+    },
+    {
+      "description": "CI and releases read the Go version from the go directive, so it must stay an exact, current patch.",
+      "matchDatasources": ["golang-version"],
+      "rangeStrategy": "bump"
+    },
+    {
+      "description": ".goreleaser.yml uses the v1 schema, and the release workflow runs only on tags, so PR CI cannot catch a v2 break.",
+      "matchPackageNames": ["goreleaser/goreleaser"],
+      "allowedVersions": "< 2"
+    }
+  ]
+}
