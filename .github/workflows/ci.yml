@@ -124,6 +124,7 @@ jobs:
         uses: autero1/action-terragrunt@v3
         with:
           terragrunt-version: ${{ matrix.terragrunt_version }}
+          token: ${{ secrets.GITHUB_TOKEN }}
       - name: Print Terragrunt version
         run: |
           terragrunt --version
