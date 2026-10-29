@@ -48,7 +48,7 @@
       "rangeStrategy": "bump"
     },
     {
-      "description": ".goreleaser.yml uses the v1 schema, and the release workflow runs only on tags, so PR CI cannot catch a v2 break.",
+      "description": ".goreleaser.yml uses the v1 schema.",
       "matchPackageNames": ["goreleaser/goreleaser"],
       "allowedVersions": "< 2"
     }
