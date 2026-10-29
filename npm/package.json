@@ -1,0 +1,14 @@
+{
+  "name": "@env0/terratag",
+  "version": "0.8.1",
+  "description": "Automatically create and maintain tags across their entire set of AWS, Azure, and GCP resources on Terraform",
+  "license": "MPL-2.0",
+  "homepage": "https://github.com/env0/terratag",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/env0/terratag.git"
+  },
+  "files": [
+    "terratag"
+  ]
+}

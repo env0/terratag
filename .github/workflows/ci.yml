@@ -25,6 +25,44 @@ jobs:
       - name: Go Test
         run: SKIP_INTEGRATION_TESTS=1 go test -v ./...
 
+  release-dry-run:
+    name: Release Dry Run
+    timeout-minutes: 15
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+      - name: Run GoReleaser in snapshot mode
+        uses: goreleaser/goreleaser-action@5742e2a039330cbb23ebf35f046f814d4c6ff811 # v5.1.0
+        with:
+          version: ~> v1
+          args: release --snapshot --clean
+        env:
+          CGO_ENABLED: 0
+      - name: Check npm package version matches release-please manifest
+        run: test "$(jq -r .version npm/package.json)" = "$(jq -r '.["."]' .release-please-manifest.json)"
+      - name: Build npm binary
+        run: CGO_ENABLED=0 go build -ldflags "-X main.version=v$(jq -r .version npm/package.json)" -a -installsuffix cgo -o ./npm/terratag ./cmd/terratag
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - name: Pack, install and run npm package
+        run: |
+          npm pack ./npm --pack-destination "$RUNNER_TEMP"
+          mkdir "$RUNNER_TEMP/consumer"
+          cd "$RUNNER_TEMP/consumer"
+          npm init --yes
+          npm install "$RUNNER_TEMP"/env0-terratag-*.tgz
+          ./node_modules/@env0/terratag/terratag -version | tee version.txt
+          grep -qx "Terratag v$(jq -r .version "$GITHUB_WORKSPACE/npm/package.json")" version.txt
+
   integration-tests:
     name: Integration Tests
     runs-on: ubuntu-latest
@@ -121,9 +159,10 @@ jobs:
         run: |
           terraform --version
       - name: Install Terragrunt
-        uses: autero1/action-terragrunt@v3
+        uses: autero1/action-terragrunt@aefb0a43c4f5503a91fefb307745c4d51c26ed0e # v3.0.2
         with:
           terragrunt-version: ${{ matrix.terragrunt_version }}
+          token: ${{ secrets.GITHUB_TOKEN }}
       - name: Print Terragrunt version
         run: |
           terragrunt --version

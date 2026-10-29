@@ -1,6 +1,8 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
   "extends": ["config:recommended", "helpers:pinGitHubActionDigests"],
+  "semanticCommits": "disabled",
+  "commitMessagePrefix": "fix(deps): ",
   "minimumReleaseAge": "3 days",
   "timezone": "Asia/Jerusalem",
   "schedule": ["before 6am on sunday"],
@@ -21,7 +23,8 @@
   "packageRules": [
     {
       "matchManagers": ["github-actions"],
-      "groupName": "GitHub Actions"
+      "groupName": "GitHub Actions",
+      "commitMessagePrefix": "chore(deps): "
     },
     {
       "description": "The go directive is left out so Go version bumps get their own PR.",
@@ -36,12 +39,16 @@
       "groupName": "azapi Python non-major"
     },
     {
+      "matchManagers": ["pip_requirements"],
+      "commitMessagePrefix": "chore(deps): "
+    },
+    {
       "description": "CI and releases read the Go version from the go directive, so it must stay an exact, current patch.",
       "matchDatasources": ["golang-version"],
       "rangeStrategy": "bump"
     },
     {
-      "description": ".goreleaser.yml uses the v1 schema, and the release workflow runs only on tags, so PR CI cannot catch a v2 break.",
+      "description": ".goreleaser.yml uses the v1 schema.",
       "matchPackageNames": ["goreleaser/goreleaser"],
       "allowedVersions": "< 2"
     }

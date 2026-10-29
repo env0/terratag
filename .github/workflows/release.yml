@@ -5,32 +5,53 @@ on:
     tags:
       - "v[0-9]+.*"
 
+permissions:
+  contents: read
+
 jobs:
   goreleaser:
     runs-on: ubuntu-latest
+    environment: release
+    permissions:
+      contents: write
     steps:
       - name: Checkout
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
+      - name: Check package version matches tag
+        run: test "$(jq -r .version npm/package.json)" = "${GITHUB_REF_NAME#v}"
       - name: Set up Go
         uses: actions/setup-go@v5
         with:
           go-version-file: go.mod
+      - name: Generate GitHub App token for the Homebrew tap
+        id: tap-token
+        uses: actions/create-github-app-token@64ab729a6294000f5aa4a4bc0b73d1f32bc45510 # v3
+        with:
+          app-id: ${{ secrets.EZ_APP_ID }}
+          private-key: ${{ secrets.EZ_APP_PRIVATE_KEY }}
+          owner: env0
+          repositories: homebrew-terratag
+          permission-contents: write
       - name: Run GoReleaser
-        uses: goreleaser/goreleaser-action@v5
+        uses: goreleaser/goreleaser-action@5742e2a039330cbb23ebf35f046f814d4c6ff811 # v5.1.0
         with:
           version: ~> v1
           args: release --clean
         env:
           CGO_ENABLED: 0
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          HOMEBREW_TAP_GITHUB_TOKEN: ${{ secrets.HOMEBREW_TAP_GITHUB_TOKEN }}
+          HOMEBREW_TAP_GITHUB_TOKEN: ${{ steps.tap-token.outputs.token }}
 
   npmbuild:
     name: Build for Alpine and publish node artifact
     runs-on: ubuntu-latest
     needs: goreleaser
+    environment: release
+    permissions:
+      contents: read
+      id-token: write
     steps:
       - name: Check out code into the Go module directory
         uses: actions/checkout@v4
@@ -43,22 +64,11 @@ jobs:
         run: |
           go get -v -t -d ./...
       - name: Build project
-        run: |
-          mkdir out
-          CGO_ENABLED=0 go build -ldflags "-X main.version=${{github.ref_name}}" -a -installsuffix cgo -o ./out/terratag/terratag ./cmd/terratag
-      # Setup .npmrc file to publish to GitHub Packages
+        run: CGO_ENABLED=0 go build -ldflags "-X main.version=${{github.ref_name}}" -a -installsuffix cgo -o ./npm/terratag ./cmd/terratag
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 24
           registry-url: "https://registry.npmjs.org"
           scope: "@env0"
-      - run: |
-          npm init --yes --scope @env0
-          ref=${{ github.ref }}
-          tag=\"${ref#"refs/tags/v"}\"
-          echo "`jq .version="${tag}" package.json`" > package.json
-        working-directory: ./out/terratag
-      - run: npm publish --access public ./out/terratag
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+      - run: npm publish --access public ./npm
