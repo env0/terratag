@@ -23,6 +23,15 @@ jobs:
         uses: actions/setup-go@v5
         with:
           go-version-file: go.mod
+      - name: Generate GitHub App token for the Homebrew tap
+        id: tap-token
+        uses: actions/create-github-app-token@64ab729a6294000f5aa4a4bc0b73d1f32bc45510 # v3
+        with:
+          app-id: ${{ secrets.EZ_APP_ID }}
+          private-key: ${{ secrets.EZ_APP_PRIVATE_KEY }}
+          owner: env0
+          repositories: homebrew-terratag
+          permission-contents: write
       - name: Run GoReleaser
         uses: goreleaser/goreleaser-action@v5
         with:
@@ -31,7 +40,7 @@ jobs:
         env:
           CGO_ENABLED: 0
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          HOMEBREW_TAP_GITHUB_TOKEN: ${{ secrets.HOMEBREW_TAP_GITHUB_TOKEN }}
+          HOMEBREW_TAP_GITHUB_TOKEN: ${{ steps.tap-token.outputs.token }}
 
   npmbuild:
     name: Build for Alpine and publish node artifact
@@ -65,10 +74,7 @@ jobs:
           scope: "@env0"
       - run: |
           npm init --yes --scope @env0
-          ref=${{ github.ref }}
-          tag=\"${ref#"refs/tags/v"}\"
-          echo "`jq .version="${tag}" package.json`" > package.json
+          jq --arg version "${GITHUB_REF_NAME#v}" '.version = $version | .repository = {type: "git", url: "git+https://github.com/env0/terratag.git"}' package.json > package.json.tmp
+          mv package.json.tmp package.json
         working-directory: ./out/terratag
       - run: npm publish --access public ./out/terratag
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
