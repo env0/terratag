@@ -9,7 +9,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/bmatcuk/doublestar"
+	"github.com/bmatcuk/doublestar/v4"
 	"github.com/env0/terratag/internal/common"
 	"github.com/hashicorp/hcl/v2/hclwrite"
 	"github.com/thoas/go-funk"
@@ -81,7 +81,7 @@ func getTerragruntFilePath(rootDir string) ([]string, error) {
 func getTerraformFilePaths(rootDir string) ([]string, error) {
 	const tfFileMatcher = "/*.{tf,tofu}"
 
-	tfFiles, err := doublestar.Glob(rootDir + tfFileMatcher)
+	tfFiles, err := doublestar.FilepathGlob(rootDir + tfFileMatcher)
 	if err != nil {
 		return nil, err
 	}
@@ -92,7 +92,7 @@ func getTerraformFilePaths(rootDir string) ([]string, error) {
 	}
 
 	for _, moduleDir := range modulesDirs {
-		matches, err := doublestar.Glob(moduleDir + tfFileMatcher)
+		matches, err := doublestar.FilepathGlob(moduleDir + tfFileMatcher)
 		if err != nil {
 			return nil, err
 		}

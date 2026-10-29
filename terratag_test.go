@@ -13,7 +13,7 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/bmatcuk/doublestar"
+	"github.com/bmatcuk/doublestar/v4"
 	"github.com/env0/terratag/cli"
 	"github.com/env0/terratag/internal/common"
 	"github.com/env0/terratag/internal/terraform"
@@ -199,16 +199,16 @@ func itShouldGenerateExpectedTerratagFiles(entryDir string, g *GomegaWithT) {
 
 	var actualTerratag []string
 
-	expectedTerratag, _ = doublestar.Glob(expectedPattern)
+	expectedTerratag, _ = doublestar.FilepathGlob(expectedPattern)
 	if len(expectedTerratag) == 0 {
 		expectedPattern = strings.Split(entryDir, "/out/")[0] + "/expected/**/*.{tf,tofu}"
-		expectedTerratag, _ = doublestar.Glob(expectedPattern)
+		expectedTerratag, _ = doublestar.FilepathGlob(expectedPattern)
 	}
 
-	actualTerratag, _ = doublestar.Glob(entryDir + "/*.{tf,tofu}")
+	actualTerratag, _ = doublestar.FilepathGlob(entryDir + "/*.{tf,tofu}")
 
 	if len(actualTerratag) == 0 {
-		actualTerratag, _ = doublestar.Glob(entryDir + "/**/*.{tf,tofu}")
+		actualTerratag, _ = doublestar.FilepathGlob(entryDir + "/**/*.{tf,tofu}")
 	}
 
 	actualTerratag = filterSymlink(actualTerratag)
@@ -242,17 +242,17 @@ func getFileSha256(filename string, g *GomegaWithT) string {
 
 func itShouldGenerateExpectedTerragruntTerratagFiles(entryDir string, g *GomegaWithT) {
 	expectedPattern := entryDir + "/expected/**/*.{tf,tofu}"
-	expectedTerratag, _ := doublestar.Glob(expectedPattern)
+	expectedTerratag, _ := doublestar.FilepathGlob(expectedPattern)
 
 	cachePattern := entryDir + "/out/**/unit*/.terragrunt-cache"
-	cacheDirs, _ := doublestar.Glob(cachePattern)
+	cacheDirs, _ := doublestar.FilepathGlob(cachePattern)
 
 	g.Expect(len(cacheDirs)).To(BeNumerically(">", 0))
 
 	for _, cacheDir := range cacheDirs {
 		hashmap := make(map[string]string)
 
-		actualTerratag, _ := doublestar.Glob(cacheDir + "/**/*.{tf,tofu}")
+		actualTerratag, _ := doublestar.FilepathGlob(cacheDir + "/**/*.{tf,tofu}")
 		actualTerratag = filterSymlink(actualTerratag)
 
 		for _, actualFile := range actualTerratag {
@@ -355,11 +355,11 @@ func getEntries(t *testing.T, version string) []TestCase {
 	}
 
 	const inputDirsMatcher = "/**/input/"
-	inputDirs, _ := doublestar.Glob(testsDir + inputDirsMatcher)
+	inputDirs, _ := doublestar.FilepathGlob(testsDir + inputDirsMatcher)
 	cloneOutput(inputDirs, terraformDir)
 
 	entryFilesMatcher := "/**/out" + terraformDir + "/**/main.tf"
-	entryFiles, _ := doublestar.Glob(testsDir + entryFilesMatcher)
+	entryFiles, _ := doublestar.FilepathGlob(testsDir + entryFilesMatcher)
 
 	testEntries := []TestCase{}
 
