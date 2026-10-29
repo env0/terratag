@@ -62,19 +62,13 @@ jobs:
         run: |
           go get -v -t -d ./...
       - name: Build project
-        run: |
-          mkdir out
-          CGO_ENABLED=0 go build -ldflags "-X main.version=${{github.ref_name}}" -a -installsuffix cgo -o ./out/terratag/terratag ./cmd/terratag
-      # Setup .npmrc file to publish to GitHub Packages
+        run: CGO_ENABLED=0 go build -ldflags "-X main.version=${{github.ref_name}}" -a -installsuffix cgo -o ./npm/terratag ./cmd/terratag
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
           node-version: 24
           registry-url: "https://registry.npmjs.org"
           scope: "@env0"
-      - run: |
-          npm init --yes --scope @env0
-          jq --arg version "${GITHUB_REF_NAME#v}" '.version = $version | .repository = {type: "git", url: "git+https://github.com/env0/terratag.git"}' package.json > package.json.tmp
-          mv package.json.tmp package.json
-        working-directory: ./out/terratag
-      - run: npm publish --access public ./out/terratag
+      - name: Check package version matches tag
+        run: test "$(jq -r .version npm/package.json)" = "${GITHUB_REF_NAME#v}"
+      - run: npm publish --access public ./npm

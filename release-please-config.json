@@ -5,6 +5,14 @@
   "pull-request-title-pattern": "chore${scope}: Release${component} v${version}",
   "include-component-in-tag": false,
   "packages": {
-    ".": {}
+    ".": {
+      "extra-files": [
+        {
+          "type": "json",
+          "path": "npm/package.json",
+          "jsonpath": "$.version"
+        }
+      ]
+    }
   }
 }
