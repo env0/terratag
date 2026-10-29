@@ -1,6 +1,8 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
   "extends": ["config:recommended", "helpers:pinGitHubActionDigests"],
+  "semanticCommits": "disabled",
+  "commitMessagePrefix": "fix(deps): ",
   "minimumReleaseAge": "3 days",
   "timezone": "Asia/Jerusalem",
   "schedule": ["before 6am on sunday"],
