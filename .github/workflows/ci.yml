@@ -157,7 +157,7 @@ jobs:
       - name: Install Terraform
         uses: hashicorp/setup-terraform@dfe3c3f87815947d99a8997f908cb6525fc44e9e # v4
         with:
-          terraform_version: v1.17.0
+          terraform_version: v1.17.1
       - name: Print Terraform version
         run: |
           terraform --version
